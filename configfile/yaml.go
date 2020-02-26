@@ -5,12 +5,12 @@ import (
 	"io/ioutil"
 )
 
-// UnmarshalYaml 转换yaml文件成数据对象.
+// YamlTo 转换yaml文件成数据对象.
 //
 // 例如:
-//	err := UnmarshalYaml('file.yaml', &obj)
+//	err := YamlTo("file.yaml", &obj)
 //
-func UnmarshalYaml(filename string, config interface{}) error {
+func YamlTo(filename string, config interface{}) error {
 	if data, err := ioutil.ReadFile(filename); err != nil {
 		return err
 	} else if err = yaml.Unmarshal(data, config); err != nil {
@@ -19,12 +19,12 @@ func UnmarshalYaml(filename string, config interface{}) error {
 	return nil
 }
 
-// UnmarshalYamlToMap 转换yaml文件成map对象.
+// YamlToMap 转换yaml文件成map对象.
 //
 // 例如:
-//  m, err := UnmarshalYamlToMap('file.yaml')
+//  m, err := YamlToMap("file.yaml")
 //
-func UnmarshalYamlToMap(filename string) (config map[interface{}]interface{}, err error) {
+func YamlToMap(filename string) (config map[interface{}]interface{}, err error) {
 	config = make(map[interface{}]interface{})
 	if data, err := ioutil.ReadFile(filename); err != nil {
 		return config, err
@@ -34,12 +34,12 @@ func UnmarshalYamlToMap(filename string) (config map[interface{}]interface{}, er
 	return
 }
 
-// MarshalYaml 生成yaml文件.
+// Yaml 生成yaml文件.
 //
 // 例如:
-//  data, err := MarshalYaml(&obj)
+//  data, err := Yaml(&obj)
 //
-func MarshalYaml(config interface{}) (data []byte, err error) {
+func Yaml(config interface{}) (data []byte, err error) {
 	data, err = yaml.Marshal(config)
 	return
 }
