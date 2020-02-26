@@ -1,8 +1,8 @@
 package log
 
 import (
-	. "github.com/angenalZZZ/gofunc"
 	"github.com/angenalZZZ/gofunc/configfile"
+	. "github.com/angenalZZZ/gofunc/f"
 	"testing"
 )
 

@@ -1,4 +1,4 @@
-package gofunc
+package f
 
 // Must not error, or panic.
 func Must(err error) {
