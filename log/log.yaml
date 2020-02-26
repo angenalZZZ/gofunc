@@ -1,8 +1,9 @@
-writers: file,stdout
-logger_level: DEBUG
-logger_file: log/chassis.log
-log_format_text: true
-rollingPolicy: size # size, daily
-log_rotate_date: 1
-log_rotate_size: 1
-log_backup_count: 7
+log: # 日志跟踪
+  writers: file,stdout # 输出位置(选项:file,stdout)
+  logger_level: DEBUG # 日志级别
+  logger_file: debug.log # 日志文件
+  log_format_text: false # 输出格式(选项:true输出json,false输出plaintext)
+  rollingPolicy: size # 转存文件依据(选项:daily,size)
+  log_rotate_date: 1 # 转存时间Day(配合rollingPolicy:daily)
+  log_rotate_size: 1 # 转存大小MB(配合rollingPolicy:size)
+  log_backup_count: 7 # 日志文件达到转存标准时进行压缩备份(指定文件最大个数)
