@@ -5,7 +5,10 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/des"
+	"crypto/hmac"
+	"crypto/sha256"
 	"errors"
+	"hash"
 )
 
 // EncryptAes aes CBC加密+key
@@ -24,10 +27,10 @@ func EncryptAes(origData, key []byte) ([]byte, error) {
 
 // EncryptAes128 aes CBC加密+key(16字节)+iv(16字节)
 func EncryptAes128(origData, key, iv []byte) ([]byte, error) {
-	if key == nil || len(key) != 16 {
+	if key == nil || len(key)%16 != 0 {
 		return nil, errors.New("wrong key")
 	}
-	if iv == nil || len(iv) != 16 {
+	if iv == nil || len(iv)%16 != 0 {
 		return nil, errors.New("wrong iv")
 	}
 	block, err := aes.NewCipher(key)
@@ -40,6 +43,12 @@ func EncryptAes128(origData, key, iv []byte) ([]byte, error) {
 	encrypted := make([]byte, len(origData))
 	blockMode.CryptBlocks(encrypted, origData)
 	return encrypted, nil
+}
+
+// EncryptAes128s aes CBC加密+key(16字节)+salt(8字节)+iv(16字节)
+func EncryptAes128s(origData, key, salt, iv []byte) ([]byte, error) {
+	password := Pbkdf2Rfc2898DeriveBytes(key, salt)
+	return EncryptAes128(origData, password[0:32], iv)
 }
 
 // DecryptAes aes CBC解密+key
@@ -60,10 +69,10 @@ func DecryptAes(encrypted, key []byte) ([]byte, error) {
 // DecryptAes128 aes CBC解密+key(16字节)+iv(16字节)
 // encrypted, err := hex.DecodeString(encryptedString)
 func DecryptAes128(encrypted, key, iv []byte) ([]byte, error) {
-	if key == nil || len(key) != 16 {
+	if key == nil || len(key)%16 != 0 {
 		return nil, errors.New("wrong key")
 	}
-	if iv == nil || len(iv) != 16 {
+	if iv == nil || len(iv)%16 != 0 {
 		return nil, errors.New("wrong iv")
 	}
 	block, err := aes.NewCipher(key)
@@ -76,6 +85,12 @@ func DecryptAes128(encrypted, key, iv []byte) ([]byte, error) {
 	blockMode.CryptBlocks(origData, encrypted)
 	origData = pkcs5UnPadding(origData)
 	return origData, nil
+}
+
+// DecryptAes128s aes CBC解密+key(16字节)+salt(8字节)+iv(16字节)
+func DecryptAes128s(encrypted, key, salt, iv []byte) ([]byte, error) {
+	password := Pbkdf2Rfc2898DeriveBytes(key, salt)
+	return DecryptAes128(encrypted, password[0:32], iv)
 }
 
 // EncryptDes128 des CBC加密+key(8字节)+iv(16字节)
@@ -252,4 +267,51 @@ func pkcs5UnPadding(origData []byte) []byte {
 
 func pkcs7UnPadding(origData []byte, blockSize int) []byte {
 	return origData[:len(origData)-int(origData[len(origData)-1])]
+}
+
+// Pbkdf2Rfc2898DeriveBytes a key provided password, salt.
+func Pbkdf2Rfc2898DeriveBytes(password, salt []byte) []byte {
+	return Pbkdf2WithHMAC(sha256.New, password, salt, 9999, 64)
+}
+
+// Pbkdf2WithHMAC derives key of length outLen from the provided password, salt,
+// and the number of iterations using PKCS#5 PBKDF2 with the provided
+// hash function in HMAC.
+//
+// Caller is responsible to make sure that outLen < (2^32-1) * hash.Size().
+func Pbkdf2WithHMAC(hash func() hash.Hash, password []byte, salt []byte, iterations int, outLen int) []byte {
+	out := make([]byte, outLen)
+	hashSize := hash().Size()
+	buf := make([]byte, 4)
+	block := 1
+	p := out
+	for outLen > 0 {
+		clean := outLen
+		if clean > hashSize {
+			clean = hashSize
+		}
+		buf[0] = byte((block >> 24) & 0xff)
+		buf[1] = byte((block >> 16) & 0xff)
+		buf[2] = byte((block >> 8) & 0xff)
+		buf[3] = byte((block) & 0xff)
+		hmacPass := hmac.New(hash, password)
+		hmacPass.Write(salt)
+		hmacPass.Write(buf)
+		tmp := hmacPass.Sum(nil)
+		for i := 0; i < clean; i++ {
+			p[i] = tmp[i]
+		}
+		for j := 1; j < iterations; j++ {
+			hmacPass.Reset()
+			hmacPass.Write(tmp)
+			tmp = hmacPass.Sum(nil)
+			for k := 0; k < clean; k++ {
+				p[k] ^= tmp[k]
+			}
+		}
+		outLen -= clean
+		block++
+		p = p[clean:]
+	}
+	return out
 }
