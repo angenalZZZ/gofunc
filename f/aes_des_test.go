@@ -34,13 +34,13 @@ func TestEncryptDecryptAes128(t *testing.T) {
 	t.Logf("DecryptAes128: %s => %s", hex.EncodeToString(encryptedRaw), origDataRaw)
 	// pbkdf2 Rfc2898DeriveBytes password
 	salt := []byte("hgt!16kl")
-	encrypted1, err1 := EncryptAes128s(origData, key, salt, iv)
+	encrypted1, err1 := EncryptAes128sha1(origData, key, salt, iv)
 	if err1 != nil {
 		t.Fatal(err1)
 	}
 	encryptedString1 := hex.EncodeToString(encrypted1)
-	// Output: EncryptAes128s: hello => 5dbfefb3b68651d1e965ddcd62afd3b5
-	t.Logf("EncryptAes128s: %s => %s", origData, encryptedString1)
+	// Output: EncryptAes128sha1: hello => 3516611625e0a983fbe503a13c0d4f28
+	t.Logf("EncryptAes128sha1: %s => %s", origData, encryptedString1)
 	encryptedRaw1, err31 := hex.DecodeString(encryptedString1)
 	if err31 != nil {
 		t.Fatal(err31)
@@ -48,15 +48,15 @@ func TestEncryptDecryptAes128(t *testing.T) {
 	if string(encryptedRaw1) != string(encrypted1) {
 		t.Fatal("encryptedRaw1 != encrypted1")
 	}
-	origDataRaw1, err41 := DecryptAes128s(encryptedRaw1, key, salt, iv)
+	origDataRaw1, err41 := DecryptAes128sha1(encryptedRaw1, key, salt, iv)
 	if err41 != nil {
 		t.Fatal(err41)
 	}
 	if string(origDataRaw1) != string(origData) {
 		t.Fatal("origDataRaw1 != origData")
 	}
-	// Output: DecryptAes128s: 5dbfefb3b68651d1e965ddcd62afd3b5 => hello
-	t.Logf("DecryptAes128s: %s => %s", hex.EncodeToString(encryptedRaw1), origDataRaw1)
+	// Output: DecryptAes128sha1: 3516611625e0a983fbe503a13c0d4f28 => hello
+	t.Logf("DecryptAes128sha1: %s => %s", hex.EncodeToString(encryptedRaw1), origDataRaw1)
 }
 
 func TestEncryptDecryptDes128(t *testing.T) {

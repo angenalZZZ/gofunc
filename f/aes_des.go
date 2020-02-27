@@ -6,6 +6,7 @@ import (
 	"crypto/cipher"
 	"crypto/des"
 	"crypto/hmac"
+	"crypto/sha1"
 	"crypto/sha256"
 	"errors"
 	"hash"
@@ -45,9 +46,15 @@ func EncryptAes128(origData, key, iv []byte) ([]byte, error) {
 	return encrypted, nil
 }
 
-// EncryptAes128s aes CBC加密+key(16字节)+salt(8字节)+iv(16字节)
-func EncryptAes128s(origData, key, salt, iv []byte) ([]byte, error) {
-	password := Pbkdf2Rfc2898DeriveBytes(key, salt)
+// EncryptAes128sha1 aes CBC加密+key(16字节)+salt(8字节)+iv(16字节)
+func EncryptAes128sha1(origData, key, salt, iv []byte) ([]byte, error) {
+	password := Pbkdf2Rfc2898DeriveBytesWithSha1(key, salt)
+	return EncryptAes128(origData, password[0:32], iv)
+}
+
+// EncryptAes128sha256 aes CBC加密+key(16字节)+salt(8字节)+iv(16字节)
+func EncryptAes128sha256(origData, key, salt, iv []byte) ([]byte, error) {
+	password := Pbkdf2Rfc2898DeriveBytesWithSha256(key, salt)
 	return EncryptAes128(origData, password[0:32], iv)
 }
 
@@ -87,9 +94,15 @@ func DecryptAes128(encrypted, key, iv []byte) ([]byte, error) {
 	return origData, nil
 }
 
-// DecryptAes128s aes CBC解密+key(16字节)+salt(8字节)+iv(16字节)
-func DecryptAes128s(encrypted, key, salt, iv []byte) ([]byte, error) {
-	password := Pbkdf2Rfc2898DeriveBytes(key, salt)
+// DecryptAes128sha1 aes CBC解密+key(16字节)+salt(8字节)+iv(16字节)
+func DecryptAes128sha1(encrypted, key, salt, iv []byte) ([]byte, error) {
+	password := Pbkdf2Rfc2898DeriveBytesWithSha1(key, salt)
+	return DecryptAes128(encrypted, password[0:32], iv)
+}
+
+// DecryptAes128sha256 aes CBC解密+key(16字节)+salt(8字节)+iv(16字节)
+func DecryptAes128sha256(encrypted, key, salt, iv []byte) ([]byte, error) {
+	password := Pbkdf2Rfc2898DeriveBytesWithSha256(key, salt)
 	return DecryptAes128(encrypted, password[0:32], iv)
 }
 
@@ -269,8 +282,13 @@ func pkcs7UnPadding(origData []byte, blockSize int) []byte {
 	return origData[:len(origData)-int(origData[len(origData)-1])]
 }
 
-// Pbkdf2Rfc2898DeriveBytes a key provided password, salt.
-func Pbkdf2Rfc2898DeriveBytes(password, salt []byte) []byte {
+// Pbkdf2Rfc2898DeriveBytesWithSha1 a key provided password, salt.
+func Pbkdf2Rfc2898DeriveBytesWithSha1(password, salt []byte) []byte {
+	return Pbkdf2WithHMAC(sha1.New, password, salt, 4096, 32)
+}
+
+// Pbkdf2Rfc2898DeriveBytesWithSha256 a key provided password, salt.
+func Pbkdf2Rfc2898DeriveBytesWithSha256(password, salt []byte) []byte {
 	return Pbkdf2WithHMAC(sha256.New, password, salt, 9999, 64)
 }
 
