@@ -282,14 +282,14 @@ func pkcs7UnPadding(origData []byte, blockSize int) []byte {
 	return origData[:len(origData)-int(origData[len(origData)-1])]
 }
 
-// CryptoNewKeyOfPbkdf2OrRfc2898DeriveBytesWithSha1 derives key provided password, salt, output 32 bytes.
+// CryptoNewKeyOfPbkdf2OrRfc2898DeriveBytesWithSha1 derives key provided password, salt, iterations 1000, output 32 bytes.
 func CryptoNewKeyOfPbkdf2OrRfc2898DeriveBytesWithSha1(password, salt []byte) []byte {
-	return CryptoNewKeyOfDerivationFunctionOfPbkdf2WithHMAC(sha1.New, password, salt, 4096, 32)
+	return CryptoNewKeyOfDerivationFunctionOfPbkdf2WithHMAC(sha1.New, password, salt, 1000, 32)
 }
 
-// CryptoNewKeyOfPbkdf2OrRfc2898DeriveBytesWithSha256 derives key provided password, salt, output 64 bytes.
+// CryptoNewKeyOfPbkdf2OrRfc2898DeriveBytesWithSha256 derives key provided password, salt, iterations 1000, output 32 bytes.
 func CryptoNewKeyOfPbkdf2OrRfc2898DeriveBytesWithSha256(password, salt []byte) []byte {
-	return CryptoNewKeyOfDerivationFunctionOfPbkdf2WithHMAC(sha256.New, password, salt, 9999, 64)
+	return CryptoNewKeyOfDerivationFunctionOfPbkdf2WithHMAC(sha256.New, password, salt, 1000, 32)
 }
 
 // CryptoNewKeyOfDerivationFunctionOfPbkdf2WithHMAC derives key of length outLen from the provided password, salt,

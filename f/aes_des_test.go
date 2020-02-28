@@ -1,9 +1,26 @@
 package f
 
 import (
+	"encoding/base64"
 	"encoding/hex"
 	"testing"
 )
+
+func TestEncryptAes128(t *testing.T) {
+	key, salt, iv := []byte("TmIhgugCGFpU7S3v"), []byte("hgt!16kl"), []byte("jkE49230Tf093b42")
+	origData := []byte(`{"Customer":"gbxy","SecretIdCard":"9c1c0dd59ff33f9ac37bd072ac2df86d","Timestamp":1582777645797}`)
+	encryptedBase64 := `dpMVVfOuahSQ/e3o9OCKcplkG756+0R7bWMeW931IHHHNbJM9Hif80s80Wt9CMmDK81fN1JpTqiiMmLRtmLo5tzdoGyXIkinSVNokXHNw4HAC5oHljXWs3JKm6W2+D8H`
+	encryptedGo, err1 := EncryptAes128sha1(origData, key, salt, iv)
+	if err1 != nil {
+		t.Fatal(err1)
+	}
+	encryptedBase64Go := base64.StdEncoding.EncodeToString(encryptedGo)
+	if encryptedBase64 != encryptedBase64Go {
+		t.Log(encryptedBase64)
+		t.Log(encryptedBase64Go)
+		t.Fatal(" encryptedBase64 != encryptedBase64Go ")
+	}
+}
 
 func TestEncryptDecryptAes128(t *testing.T) {
 	origData := []byte("hello")
