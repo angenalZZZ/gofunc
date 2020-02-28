@@ -12,7 +12,7 @@ import (
 	"hash"
 )
 
-// EncryptAes aes CBC加密+key
+// EncryptAes aes CBC模式+key.
 func EncryptAes(origData, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -26,7 +26,7 @@ func EncryptAes(origData, key []byte) ([]byte, error) {
 	return encrypted, nil
 }
 
-// EncryptAes128 aes CBC加密+key(16字节)+iv(16字节)
+// EncryptAes128 aes CBC模式+key(16bytes)+iv(16bytes).
 func EncryptAes128(origData, key, iv []byte) ([]byte, error) {
 	if key == nil || len(key)%16 != 0 {
 		return nil, errors.New("wrong key")
@@ -46,19 +46,19 @@ func EncryptAes128(origData, key, iv []byte) ([]byte, error) {
 	return encrypted, nil
 }
 
-// EncryptAes128sha1 aes CBC加密+key(16字节)+salt(8字节)+iv(16字节)
+// EncryptAes128sha1 aes CBC模式+key(16bytes)+salt(8bytes)+iv(16bytes).
 func EncryptAes128sha1(origData, key, salt, iv []byte) ([]byte, error) {
-	password := Pbkdf2Rfc2898DeriveBytesWithSha1(key, salt)
+	password := CryptoNewKeyOfPbkdf2OrRfc2898DeriveBytesWithSha1(key, salt)
 	return EncryptAes128(origData, password[0:32], iv)
 }
 
-// EncryptAes128sha256 aes CBC加密+key(16字节)+salt(8字节)+iv(16字节)
+// EncryptAes128sha256 aes CBC模式+key(16bytes)+salt(8bytes)+iv(16bytes).
 func EncryptAes128sha256(origData, key, salt, iv []byte) ([]byte, error) {
-	password := Pbkdf2Rfc2898DeriveBytesWithSha256(key, salt)
+	password := CryptoNewKeyOfPbkdf2OrRfc2898DeriveBytesWithSha256(key, salt)
 	return EncryptAes128(origData, password[0:32], iv)
 }
 
-// DecryptAes aes CBC解密+key
+// DecryptAes aes CBC模式+key.
 // encrypted, err := hex.DecodeString(encryptedString)
 func DecryptAes(encrypted, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
@@ -73,7 +73,7 @@ func DecryptAes(encrypted, key []byte) ([]byte, error) {
 	return origData, nil
 }
 
-// DecryptAes128 aes CBC解密+key(16字节)+iv(16字节)
+// DecryptAes128 aes CBC模式+key(16bytes)+iv(16bytes).
 // encrypted, err := hex.DecodeString(encryptedString)
 func DecryptAes128(encrypted, key, iv []byte) ([]byte, error) {
 	if key == nil || len(key)%16 != 0 {
@@ -94,19 +94,19 @@ func DecryptAes128(encrypted, key, iv []byte) ([]byte, error) {
 	return origData, nil
 }
 
-// DecryptAes128sha1 aes CBC解密+key(16字节)+salt(8字节)+iv(16字节)
+// DecryptAes128sha1 aes CBC模式+key(16bytes)+salt(8bytes)+iv(16bytes).
 func DecryptAes128sha1(encrypted, key, salt, iv []byte) ([]byte, error) {
-	password := Pbkdf2Rfc2898DeriveBytesWithSha1(key, salt)
+	password := CryptoNewKeyOfPbkdf2OrRfc2898DeriveBytesWithSha1(key, salt)
 	return DecryptAes128(encrypted, password[0:32], iv)
 }
 
-// DecryptAes128sha256 aes CBC解密+key(16字节)+salt(8字节)+iv(16字节)
+// DecryptAes128sha256 aes CBC模式+key(16bytes)+salt(8bytes)+iv(16bytes).
 func DecryptAes128sha256(encrypted, key, salt, iv []byte) ([]byte, error) {
-	password := Pbkdf2Rfc2898DeriveBytesWithSha256(key, salt)
+	password := CryptoNewKeyOfPbkdf2OrRfc2898DeriveBytesWithSha256(key, salt)
 	return DecryptAes128(encrypted, password[0:32], iv)
 }
 
-// EncryptDes128 des CBC加密+key(8字节)+iv(16字节)
+// EncryptDes128 des CBC模式+key(8bytes)+iv(16bytes).
 func EncryptDes128(origData, key, iv []byte) ([]byte, error) {
 	if key == nil || len(key)%8 != 0 {
 		return nil, errors.New("wrong key")
@@ -127,7 +127,7 @@ func EncryptDes128(origData, key, iv []byte) ([]byte, error) {
 	//hex.EncodeToString(encrypted)
 }
 
-// DecryptDes128 des CBC解密+key(8字节)+iv(16字节)
+// DecryptDes128 des CBC模式+key(8bytes)+iv(16bytes).
 // encrypted, err := hex.DecodeString(encryptedString)
 func DecryptDes128(encrypted, key, iv []byte) ([]byte, error) {
 	if key == nil || len(key)%8 != 0 {
@@ -148,7 +148,7 @@ func DecryptDes128(encrypted, key, iv []byte) ([]byte, error) {
 	return origData, nil
 }
 
-// EncryptDesECB des ECB加密
+// EncryptDesECB des ECB模式.
 func EncryptDesECB(origData, key []byte) ([]byte, error) {
 	block, err := des.NewCipher(key)
 	if err != nil {
@@ -169,7 +169,7 @@ func EncryptDesECB(origData, key []byte) ([]byte, error) {
 	return out, nil
 }
 
-// DecryptDesECB des ECB解密
+// DecryptDesECB des ECB模式.
 // encrypted, err := hex.DecodeString(encryptedString)
 func DecryptDesECB(encrypted, key []byte) ([]byte, error) {
 	block, err := des.NewCipher(key)
@@ -191,7 +191,7 @@ func DecryptDesECB(encrypted, key []byte) ([]byte, error) {
 	return out, nil
 }
 
-// EncryptTripleDesECB des ECB加密+key(24字节) 三重加密
+// EncryptTripleDesECB des ECB模式+key(24bytes) 三重加密.
 func EncryptTripleDesECB(origData, key []byte) ([]byte, error) {
 	if key == nil || len(key) != 24 {
 		return nil, errors.New("wrong key")
@@ -282,22 +282,21 @@ func pkcs7UnPadding(origData []byte, blockSize int) []byte {
 	return origData[:len(origData)-int(origData[len(origData)-1])]
 }
 
-// Pbkdf2Rfc2898DeriveBytesWithSha1 a key provided password, salt.
-func Pbkdf2Rfc2898DeriveBytesWithSha1(password, salt []byte) []byte {
-	return Pbkdf2WithHMAC(sha1.New, password, salt, 4096, 32)
+// CryptoNewKeyOfPbkdf2OrRfc2898DeriveBytesWithSha1 derives key provided password, salt, output 32 bytes.
+func CryptoNewKeyOfPbkdf2OrRfc2898DeriveBytesWithSha1(password, salt []byte) []byte {
+	return CryptoNewKeyOfDerivationFunctionOfPbkdf2WithHMAC(sha1.New, password, salt, 4096, 32)
 }
 
-// Pbkdf2Rfc2898DeriveBytesWithSha256 a key provided password, salt.
-func Pbkdf2Rfc2898DeriveBytesWithSha256(password, salt []byte) []byte {
-	return Pbkdf2WithHMAC(sha256.New, password, salt, 9999, 64)
+// CryptoNewKeyOfPbkdf2OrRfc2898DeriveBytesWithSha256 derives key provided password, salt, output 64 bytes.
+func CryptoNewKeyOfPbkdf2OrRfc2898DeriveBytesWithSha256(password, salt []byte) []byte {
+	return CryptoNewKeyOfDerivationFunctionOfPbkdf2WithHMAC(sha256.New, password, salt, 9999, 64)
 }
 
-// Pbkdf2WithHMAC derives key of length outLen from the provided password, salt,
-// and the number of iterations using PKCS#5 PBKDF2 with the provided
-// hash function in HMAC.
+// CryptoNewKeyOfDerivationFunctionOfPbkdf2WithHMAC derives key of length outLen from the provided password, salt,
+// and the number of iterations using PKCS#5 PBKDF2 with the provided hash function in HMAC.
 //
 // Caller is responsible to make sure that outLen < (2^32-1) * hash.Size().
-func Pbkdf2WithHMAC(hash func() hash.Hash, password []byte, salt []byte, iterations int, outLen int) []byte {
+func CryptoNewKeyOfDerivationFunctionOfPbkdf2WithHMAC(hash func() hash.Hash, password []byte, salt []byte, iterations int, outLen int) []byte {
 	out := make([]byte, outLen)
 	hashSize := hash().Size()
 	buf := make([]byte, 4)
