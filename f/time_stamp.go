@@ -1,6 +1,7 @@
 package f
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -13,94 +14,135 @@ const (
 )
 
 // TimeStamp a time stamp.
-type TimeStamp int64
-
-// String a String method.
-func (t TimeStamp) String() string {
-	return strconv.FormatInt(int64(t), 10)
+type TimeStamp struct {
+	time.Time
 }
 
-// TimeStampObject get unix/UTC time stamp,
-// 精确到秒 10位数: 1582950407  the number of seconds elapsed since January 1, 1970 UTC.
-func TimeStampObject() TimeStamp {
-	return TimeStamp(time.Now().Unix())
+// UnixSecondTimeStampString 时间戳 unix/UTC time,
+// 精确到秒 10位数: 1582950407
+// the number of seconds elapsed since January 1, 1970 UTC.
+func (t TimeStamp) UnixSecondTimeStampString() string {
+	return strconv.FormatInt(t.Unix(), 10)
+}
+
+// MilliSecondTimeStampString 时间戳 unix/UTC time,
+// 精确到毫秒 13位数: 1582950407018
+// the number of milliseconds elapsed since January 1, 1970 UTC.
+func (t TimeStamp) MilliSecondTimeStampString() string {
+	return t.UnixSecondTimeStampString() + fmt.Sprintf("%03d", t.Nanosecond()/1e5)
+}
+
+// NanoSecondTimeStampString 时间戳 unix/UTC time,
+// 精确到纳秒 18位数: 158295040701800018
+// the number of nanoseconds elapsed since January 1, 1970 UTC.
+func (t TimeStamp) NanoSecondTimeStampString() string {
+	return t.UnixSecondTimeStampString() + fmt.Sprintf("%08d", t.Nanosecond())
+}
+
+// Now get now timestamp.
+func Now() TimeStamp {
+	return TimeStampFrom(time.Now())
+}
+
+// TimeStampFrom get a timestamp.
+func TimeStampFrom(t time.Time) TimeStamp {
+	return TimeStamp{t}
 }
 
 // UTCTimeStampString get UTC time string,
-// 精确到秒 14位数: 20200229042647  the number of second.
+// 精确到毫秒 17位数: 20200202042647003  the number of second.
 func (t TimeStamp) UTCTimeStampString() string {
-	return t.AsUTCTime().Format("20060102150405")
+	s := t.AsUTCTime().Format("20060102150405.000")
+	return strings.Replace(s, ".", "", 1)
 }
 
 // LocalTimeStampString get Local time string,
-// 精确到秒 14位数: 20200229122647  the number of second.
+// 精确到毫秒 17位数: 20200202122647003  the number of second.
 func (t TimeStamp) LocalTimeStampString() string {
-	return t.AsLocalTime().Format("20060102150405")
+	s := t.Time.Format("20060102150405.000")
+	return strings.Replace(s, ".", "", 1)
 }
 
-// LocalTimeStampString get Local time string,
-// 精确到毫秒 17位数: 20200229122647003  the number of millisecond.
-func LocalTimeStampString() string {
-	t := time.Now().Format("20060102150405.000")
-	return strings.Replace(t, ".", "", 1)
-}
-
-// LocalTimeString get Local time string,
-// 精确到毫秒: 2020-02-29 12:26:47.003  the time of millisecond.
-func LocalTimeString() string {
-	return time.Now().Format(TimeFormatString)
-}
-
-// UTCTimeString get UTC time string,
-// 精确到秒: 2020-02-29 04:26:47  the time of second.
-func (t TimeStamp) UTCTimeString() string {
+// UTCString get UTC time string,
+// 精确到秒: 2020-02-02 04:26:47  the time of second.
+func (t TimeStamp) UTCString() string {
 	return t.AsUTCTime().Format(DateTimeFormatString)
 }
 
+// LocalString get Local time string,
+// 精确到秒: 2020-02-02 12:26:47  the time of second.
+func (t TimeStamp) LocalString() string {
+	return t.Time.Format(DateTimeFormatString)
+}
+
+// UTCTimeString get UTC time string,
+// 精确到毫秒: 2020-02-02 04:26:47.003  the time of millisecond.
+func (t TimeStamp) UTCTimeString() string {
+	return t.AsUTCTime().Format(TimeFormatString)
+}
+
 // LocalTimeString get Local time string,
-// 精确到秒: 2020-02-29 12:26:47  the time of second.
+// 精确到毫秒: 2020-02-02 12:26:47.003  the time of millisecond.
 func (t TimeStamp) LocalTimeString() string {
-	return t.AsLocalTime().Format(DateTimeFormatString)
+	return t.Time.Format(TimeFormatString)
+}
+
+// UTCDateString get UTC date string,
+// 精确到天: 2020-02-02  the date.
+func (t TimeStamp) UTCDateString() string {
+	return t.AsUTCTime().Format(DateFormatString)
 }
 
 // LocalDateString get Local date string,
-// 精确到天: 2020-02-29  the date.
+// 精确到天: 2020-02-02  the date.
 func (t TimeStamp) LocalDateString() string {
-	return t.AsLocalTime().Format(DateFormatString)
+	return t.Time.Format(DateFormatString)
 }
 
-// FormatLocalTimeString formats Local time string.
-func (t TimeStamp) FormatLocalTimeString(f string) string {
-	return t.AsLocalTime().Format(f)
+// AsTime get a time in Local locale.
+func (t TimeStamp) AsTime() time.Time {
+	return t.Time
+}
+
+// AsTimeIn Convert timestamp as time in a locale, equals t.In(local).
+func (t TimeStamp) AsTimeIn(local *time.Location) time.Time {
+	return time.Unix(t.Unix(), int64(t.Nanosecond())).In(local)
 }
 
 // AsLocalTime Convert timestamp as time in Local locale.
 func (t TimeStamp) AsLocalTime() time.Time {
-	return time.Unix(int64(t), 0).In(time.Local)
+	return t.Time.Local()
 }
 
 // AsUTCTime Convert timestamp as time in UTC locale.
 func (t TimeStamp) AsUTCTime() time.Time {
-	return time.Unix(int64(t), 0).In(time.UTC)
+	return t.Time.UTC()
 }
 
 // AddSeconds adds seconds and return sum.
 func (t TimeStamp) AddSeconds(seconds int64) TimeStamp {
-	return t + TimeStamp(seconds)
+	t.Time.Add(time.Duration(seconds) * time.Second)
+	return t
 }
 
-// AddDuration adds time.Duration and return sum.
-func (t TimeStamp) AddDuration(interval time.Duration) TimeStamp {
-	return t + TimeStamp(interval/time.Second)
+// AddMinutes adds minutes and return sum.
+func (t TimeStamp) AddMinutes(minutes int64) TimeStamp {
+	t.Time.Add(time.Duration(minutes) * time.Minute)
+	return t
 }
 
-// IsZero is zero time.
-func (t TimeStamp) IsZero() bool {
-	return t.AsLocalTime().IsZero()
+// AddHours adds hours and return sum.
+func (t TimeStamp) AddHours(hours int64) TimeStamp {
+	t.Time.Add(time.Duration(hours) * time.Hour)
+	return t
 }
 
-// Values returns the time's year, month, day, hour, minute, second.
-func (t TimeStamp) Values() (year, month, day, hour, minute, second int) {
-	i := t.AsLocalTime()
-	return i.Year(), int(i.Month()), i.Day(), i.Hour(), i.Minute(), i.Second()
+// YearMonthDay returns the time's year, month, day.
+func (t TimeStamp) YearMonthDay() (year, month, day int) {
+	return t.Time.Year(), int(t.Time.Month()), t.Time.Day()
+}
+
+// HourMinuteSecond returns the time's hour, minute, second.
+func (t TimeStamp) HourMinuteSecond() (hour, minute, second int) {
+	return t.Time.Hour(), t.Time.Minute(), t.Time.Second()
 }
