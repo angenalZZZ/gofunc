@@ -18,32 +18,36 @@ type TimeStamp struct {
 	time.Time
 }
 
-// UnixSecondTimeStampString 时间戳 unix/UTC time,
+// UnixSecondTimeStampString 时间戳 unix time stamp,
 // 精确到秒 10位数: 1582950407
-// the number of seconds elapsed since January 1, 1970 UTC.
+// the number of seconds elapsed since January 1, 1970 UTC. The result does not depend on the
+// location associated with t.
 func (t *TimeStamp) UnixSecondTimeStampString() string {
-	return strconv.FormatInt(t.Unix(), 10)
+	return strconv.FormatInt(t.Time.Unix(), 10)
 }
 
-// MilliSecondTimeStampString 时间戳 unix/UTC time,
+// MilliSecondTimeStampString 时间戳 unix time stamp,
 // 精确到毫秒 13位数: 1582950407018
-// the number of milliseconds elapsed since January 1, 1970 UTC.
+// the number of milliseconds elapsed since January 1, 1970 UTC. The result does not depend on the
+// location associated with t.
 func (t *TimeStamp) MilliSecondTimeStampString() string {
-	return t.UnixSecondTimeStampString() + fmt.Sprintf("%03d", t.Nanosecond()/1e6)
+	return t.UnixSecondTimeStampString() + fmt.Sprintf("%03d", t.Time.Nanosecond()/1e6)
 }
 
-// MicroSecondTimeStampString 时间戳 unix/UTC time,
+// MicroSecondTimeStampString 时间戳 unix time stamp,
 // 精确到微秒 16位数: 1582950407018018
-// the number of microseconds elapsed since January 1, 1970 UTC.
+// the number of microseconds elapsed since January 1, 1970 UTC. The result does not depend on the
+// location associated with t.
 func (t *TimeStamp) MicroSecondTimeStampString() string {
-	return t.UnixSecondTimeStampString() + fmt.Sprintf("%06d", t.Nanosecond()/1e3)
+	return t.UnixSecondTimeStampString() + fmt.Sprintf("%06d", t.Time.Nanosecond()/1e3)
 }
 
-// NanoSecondTimeStampString 时间戳 unix/UTC time,
+// NanoSecondTimeStampString 时间戳 unix time stamp,
 // 精确到纳秒 19位数: 1582950407018018100
-// the number of nanoseconds elapsed since January 1, 1970 UTC.
+// the number of nanoseconds elapsed since January 1, 1970 UTC. The result does not depend on the
+// location associated with t.
 func (t *TimeStamp) NanoSecondTimeStampString() string {
-	return t.UnixSecondTimeStampString() + fmt.Sprintf("%09d", t.Nanosecond())
+	return t.UnixSecondTimeStampString() + fmt.Sprintf("%09d", t.Time.Nanosecond())
 }
 
 // Now get now timestamp.
