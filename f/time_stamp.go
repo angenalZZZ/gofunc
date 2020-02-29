@@ -29,14 +29,21 @@ func (t *TimeStamp) UnixSecondTimeStampString() string {
 // 精确到毫秒 13位数: 1582950407018
 // the number of milliseconds elapsed since January 1, 1970 UTC.
 func (t *TimeStamp) MilliSecondTimeStampString() string {
-	return t.UnixSecondTimeStampString() + fmt.Sprintf("%03d", t.Nanosecond()/1e5)
+	return t.UnixSecondTimeStampString() + fmt.Sprintf("%03d", t.Nanosecond()/1e6)
+}
+
+// MicroSecondTimeStampString 时间戳 unix/UTC time,
+// 精确到微秒 16位数: 1582950407018018
+// the number of microseconds elapsed since January 1, 1970 UTC.
+func (t *TimeStamp) MicroSecondTimeStampString() string {
+	return t.UnixSecondTimeStampString() + fmt.Sprintf("%06d", t.Nanosecond()/1e3)
 }
 
 // NanoSecondTimeStampString 时间戳 unix/UTC time,
-// 精确到纳秒 18位数: 158295040701800018
+// 精确到纳秒 19位数: 1582950407018018100
 // the number of nanoseconds elapsed since January 1, 1970 UTC.
 func (t *TimeStamp) NanoSecondTimeStampString() string {
-	return t.UnixSecondTimeStampString() + fmt.Sprintf("%08d", t.Nanosecond())
+	return t.UnixSecondTimeStampString() + fmt.Sprintf("%09d", t.Nanosecond())
 }
 
 // Now get now timestamp.
