@@ -18,6 +18,7 @@ package log
 import (
 	"archive/zip"
 	"fmt"
+	"github.com/angenalZZZ/gofunc/f"
 	"io"
 	"log"
 	"os"
@@ -101,7 +102,7 @@ func compressFile(filePath, fileBaseName string, replaceTimestamp bool) error {
 	var zipFilePath string
 	if replaceTimestamp {
 		//svc.log.1 -> svc.log.20060102150405000.zip
-		zipFileBase := fileBaseName + "." + getTimeStamp() + "." + "zip"
+		zipFileBase := fileBaseName + "." + f.Now().LocalTimeStampString() + "." + "zip"
 		zipFilePath = filepath.Dir(filePath) + "/" + zipFileBase
 	} else {
 		zipFilePath = filePath + ".zip"
@@ -150,7 +151,7 @@ func doRollover(fPath string, MaxFileSize int, MaxBackupCount int) {
 		return
 	}
 
-	timeStamp := getTimeStamp()
+	timeStamp := f.Now().LocalTimeStampString()
 	//absolute path
 	rotateFile := fPath + "." + timeStamp
 	err := CopyFile(fPath, rotateFile)
@@ -265,13 +266,6 @@ func FilterFileList(path, pat string) ([]string, error) {
 			return nil
 		})
 	return fileList, err
-}
-
-// getTimeStamp get time stamp
-func getTimeStamp() string {
-	now := time.Now().Format("2006.01.02.15.04.05.000")
-	timeSlot := strings.Replace(now, ".", "", -1)
-	return timeSlot
 }
 
 // CopyFile copy file
