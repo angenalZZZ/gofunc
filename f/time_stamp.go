@@ -13,7 +13,7 @@ const (
 	TimeFormatString     string = "2006-01-02 15:04:05.000"
 )
 
-// TimeStamp a time stamp.
+// TimeStamp a time stamp and extended methods.
 type TimeStamp struct {
 	time.Time
 }
@@ -50,13 +50,57 @@ func (t *TimeStamp) NanoSecondTimeStampString() string {
 	return t.UnixSecondTimeStampString() + fmt.Sprintf("%09d", t.Time.Nanosecond())
 }
 
-// Now get now timestamp.
+// Now get now timestamp in Local time.
 func Now() *TimeStamp {
-	return TimeStampFrom(time.Now())
+	return TimeFrom(time.Now())
 }
 
-// TimeStampFrom get a timestamp.
-func TimeStampFrom(t time.Time) *TimeStamp {
+// TimeFrom get a timestamp in Local time.
+func TimeFrom(t time.Time) *TimeStamp {
+	ts := &TimeStamp{t}
+	return ts
+}
+
+// TimeStampFrom get a timestamp in Local time.
+// the timestamp length equals(10/13/16/19) since January 1, 1970 UTC.
+func TimeStampFrom(timestamp string) *TimeStamp {
+	if len(timestamp) < 10 {
+		return nil
+	}
+	seconds, err := strconv.ParseInt(timestamp[0:10], 10, 64)
+	if err != nil {
+		return nil
+	}
+	nanoSeconds := 0
+	switch n := timestamp[10:]; len(n) {
+	case 3:
+		if i, err := strconv.Atoi(n); err != nil {
+			return nil
+		} else {
+			nanoSeconds = i * 1e6
+		}
+	case 6:
+		if i, err := strconv.Atoi(n); err != nil {
+			return nil
+		} else {
+			nanoSeconds = i * 1e3
+		}
+	case 9:
+		if i, err := strconv.Atoi(n); err != nil {
+			return nil
+		} else {
+			nanoSeconds = i
+		}
+	default:
+		return nil
+	}
+	return TimeStampFromSeconds(seconds, int64(nanoSeconds))
+}
+
+// TimeStampFromSeconds get a timestamp in Local time.
+// the number of seconds and nanoSeconds since January 1, 1970 UTC.
+func TimeStampFromSeconds(seconds int64, nanoSeconds int64) *TimeStamp {
+	t := time.Unix(seconds, nanoSeconds).In(time.Local)
 	ts := &TimeStamp{t}
 	return ts
 }
