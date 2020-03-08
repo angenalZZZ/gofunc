@@ -3,6 +3,7 @@ module github.com/angenalZZZ/gofunc
 go 1.13
 
 require (
+	github.com/json-iterator/go v1.1.9 // indirect
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
 	gopkg.in/ini.v1 v1.52.0
