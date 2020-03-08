@@ -3,6 +3,7 @@ package f
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"io/ioutil"
 	"testing"
 )
 
@@ -114,4 +115,38 @@ func TestCryptoDes(t *testing.T) {
 	encryptedString = hex.EncodeToString(encrypted)
 	// Output: CryptoDesECBTripleEncrypt: hello => 86f21066c5ba8c49
 	t.Logf("CryptoDesECBTripleEncrypt: %s => %s", origData, encryptedString)
+}
+
+func TestCryptoRSA(t *testing.T) {
+	origData := `{"Customer":"gbxy","SecretIdCard":"9c1c0dd59ff33f9ac37bd072ac2df86d","Timestamp":1582777645797}`
+	publicKeyPemFile, privateKeyPemFile := "../test/rsa/public.pem", "../test/rsa/private.pem"
+	publicKeyPemBytes, err1 := ioutil.ReadFile(publicKeyPemFile)
+	if err1 != nil {
+		t.Fatal(err1)
+	}
+	privateKeyPemBytes, err2 := ioutil.ReadFile(privateKeyPemFile)
+	if err2 != nil {
+		t.Fatal(err2)
+	}
+	// RSA.Encrypt + base64.Encode
+	publicKeyEncrypt := NewRSAPublicKeyEncrypt(publicKeyPemBytes)
+	encryptedBytes, err1 := publicKeyEncrypt.EncryptPKCS1v15([]byte(origData))
+	if err1 != nil {
+		t.Fatal(err1)
+	}
+	encryptedBase64Go := base64.StdEncoding.EncodeToString(encryptedBytes)
+	t.Log(origData)
+	t.Log(encryptedBase64Go)
+	// base64.Decode + RSA.Decrypt
+	privateKeyDecrypt := NewRSAPrivateKeyDecrypt(privateKeyPemBytes)
+	encrypted, _ := base64.StdEncoding.DecodeString(encryptedBase64Go)
+	origDataBytes, err2 := privateKeyDecrypt.DecryptPKCS1v15(encrypted)
+	if err2 != nil {
+		t.Fatal(err2)
+	}
+	origDataGo := string(origDataBytes)
+	if origData != origDataGo {
+		t.Log(origDataGo)
+		t.Fatal(" origData != origDataGo ")
+	}
 }
