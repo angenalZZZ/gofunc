@@ -59,15 +59,15 @@ func CryptoSecretKeyPBKDF2WithHmac(hash func() hash.Hash, password, salt []byte,
 	return out
 }
 
-// pkcs5Padding for AES/CBC/PKCS5Padding
-func pkcs5Padding(cipherText []byte, blockSize int) []byte {
+// CryptoPKCS5Padding for AES/CBC/PKCS5Padding
+func CryptoPKCS5Padding(cipherText []byte, blockSize int) []byte {
 	padding := blockSize - len(cipherText)%blockSize
 	padText := bytes.Repeat([]byte{byte(padding)}, padding)
 	return append(cipherText, padText...)
 }
 
-// pkcs5UnPadding for AES/CBC/PKCS5UnPadding
-func pkcs5UnPadding(origData []byte) []byte {
+// CryptoPKCS5UnPadding for AES/CBC/PKCS5UnPadding
+func CryptoPKCS5UnPadding(origData []byte) []byte {
 	length := len(origData)
 	unPadding := int(origData[length-1])
 	return origData[:(length - unPadding)]

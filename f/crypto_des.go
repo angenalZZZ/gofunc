@@ -21,7 +21,7 @@ func CryptoDesCBCEncrypt(origData, key, iv []byte) ([]byte, error) {
 		return nil, err
 	}
 	blockSize := block.BlockSize()
-	origData = pkcs5Padding(origData, blockSize)
+	origData = CryptoPKCS5Padding(origData, blockSize)
 	blockMode := cipher.NewCBCEncrypter(block, iv[:blockSize])
 	encrypted := make([]byte, len(origData))
 	blockMode.CryptBlocks(encrypted, origData)
@@ -46,7 +46,7 @@ func CryptoDesCBCDecrypt(encrypted, key, iv []byte) ([]byte, error) {
 	mode := cipher.NewCBCDecrypter(block, iv[:blockSize])
 	origData := make([]byte, len(encrypted))
 	mode.CryptBlocks(origData, encrypted)
-	origData = pkcs5UnPadding(origData)
+	origData = CryptoPKCS5UnPadding(origData)
 	return origData, nil
 }
 
@@ -57,7 +57,7 @@ func CryptoDesECBEncrypt(origData, key []byte) ([]byte, error) {
 		return nil, err
 	}
 	blockSize := block.BlockSize()
-	origData = pkcs5Padding(origData, blockSize)
+	origData = CryptoPKCS5Padding(origData, blockSize)
 	if len(origData)%blockSize != 0 {
 		return nil, errors.New("need a multiple of the block size")
 	}
@@ -88,7 +88,7 @@ func CryptoDesECBDecrypt(encrypted, key []byte) ([]byte, error) {
 		encrypted = encrypted[blockSize:]
 		dst = dst[blockSize:]
 	}
-	out = pkcs5UnPadding(out)
+	out = CryptoPKCS5UnPadding(out)
 	return out, nil
 }
 
@@ -107,7 +107,7 @@ func CryptoDesECBTripleEncrypt(origData, key []byte) ([]byte, error) {
 		return nil, err
 	}
 	blockSize := block.BlockSize()
-	origData = pkcs5Padding(origData, blockSize)
+	origData = CryptoPKCS5Padding(origData, blockSize)
 	buf1, err1 := cryptoDesECBEncrypt(origData, k1)
 	if err1 != nil {
 		return nil, err1
