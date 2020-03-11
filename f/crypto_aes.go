@@ -6,6 +6,7 @@ import (
 )
 
 // CryptoAesCBCEncrypt AES/CBC/PKCS5Padding+key(16/24/32bytes)+iv(16/24/32bytes)-Encrypt.
+// encryptedBytes := CryptoAesCBCEncrypt(origData, key, iv)
 // encryptedString := hex.EncodeToString(encryptedBytes)
 // encryptedString := base64.StdEncoding.EncodeToString(encryptedBytes)
 func CryptoAesCBCEncrypt(origData, key, iv []byte) []byte {
@@ -33,6 +34,7 @@ func CryptoAesCBCEncryptWithHmacSHA256(origData, key, salt, iv []byte, iteration
 // CryptoAesCBCDecrypt aes AES/CBC/PKCS5Padding+key(16/24/32bytes)+iv(16/24/32bytes)-Decrypt.
 // encryptedBytes, err := hex.DecodeString(encryptedString)
 // encryptedBytes, err := base64.StdEncoding.DecodeString(encryptedString)
+// origData := CryptoAesCBCEncrypt(encryptedBytes, key, iv)
 func CryptoAesCBCDecrypt(encrypted, key, iv []byte) []byte {
 	MustBytes(key, 16, 24, 32)
 	MustBytes(iv, 16, 24, 32)
