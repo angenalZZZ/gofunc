@@ -18,13 +18,13 @@ func CryptoAesCBCEncrypt(origData, key, iv []byte) []byte {
 	return encrypted
 }
 
-// CryptoAesCBCEncryptWithHmacSHA1 aes CBC模式+key(16/24/32bytes)+salt(8bytes)+iv(16/24/32bytes), iterations 1000, output 32 bytes.
+// CryptoAesCBCEncryptWithHmacSHA1 aes CBC模式+key(16/24/32bytes)+salt(8bytes)+iv(16/24/32bytes)+iterations(1000)+outLen(32).
 func CryptoAesCBCEncryptWithHmacSHA1(origData, key, salt, iv []byte, iterations, outLen int) []byte {
 	password := CryptoSecretKeyPBKDF2WithHmacSHA1(key, salt, iterations, outLen)
 	return CryptoAesCBCEncrypt(origData, password[0:32], iv)
 }
 
-// CryptoAesCBCEncryptWithHmacSHA256 aes CBC模式+key(16/24/32bytes)+salt(8bytes)+iv(16/24/32bytes), iterations 1000, output 32 bytes.
+// CryptoAesCBCEncryptWithHmacSHA256 aes CBC模式+key(16/24/32bytes)+salt(8bytes)+iv(16/24/32bytes)+iterations(1000)+outLen(32).
 func CryptoAesCBCEncryptWithHmacSHA256(origData, key, salt, iv []byte, iterations, outLen int) []byte {
 	password := CryptoSecretKeyPBKDF2WithHmacSHA256(key, salt, iterations, outLen)
 	return CryptoAesCBCEncrypt(origData, password[0:32], iv)
@@ -42,13 +42,13 @@ func CryptoAesCBCDecrypt(encrypted, key, iv []byte) []byte {
 	return CryptoPKCS5UnPadding(origData)
 }
 
-// CryptoAesCBCDecryptWithHmacSHA1 aes CBC模式+key(16/24/32bytes)+salt(8bytes)+iv(16/24/32bytes), iterations 1000, output 32 bytes.
+// CryptoAesCBCDecryptWithHmacSHA1 aes CBC模式+key(16/24/32bytes)+salt(8bytes)+iv(16/24/32bytes)+iterations(1000)+outLen(32).
 func CryptoAesCBCDecryptWithHmacSHA1(encrypted, key, salt, iv []byte, iterations, outLen int) []byte {
 	password := CryptoSecretKeyPBKDF2WithHmacSHA1(key, salt, iterations, outLen)
 	return CryptoAesCBCDecrypt(encrypted, password[0:32], iv)
 }
 
-// CryptoAesCBCDecryptWithHmacSHA256 aes CBC模式+key(16/24/32bytes)+salt(8bytes)+iv(16/24/32bytes), iterations 1000, output 32 bytes.
+// CryptoAesCBCDecryptWithHmacSHA256 aes CBC模式+key(16/24/32bytes)+salt(8bytes)+iv(16/24/32bytes)+iterations(1000)+outLen(32).
 func CryptoAesCBCDecryptWithHmacSHA256(encrypted, key, salt, iv []byte, iterations, outLen int) []byte {
 	password := CryptoSecretKeyPBKDF2WithHmacSHA256(key, salt, iterations, outLen)
 	return CryptoAesCBCDecrypt(encrypted, password[0:32], iv)
