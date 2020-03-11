@@ -35,8 +35,7 @@ func CryptoDesCBCDecrypt(encrypted, key, iv []byte) []byte {
 	mode := cipher.NewCBCDecrypter(block, iv[:blockSize])
 	origData := make([]byte, len(encrypted))
 	mode.CryptBlocks(origData, encrypted)
-	origData = CryptoPKCS5UnPadding(origData)
-	return origData
+	return CryptoPKCS5UnPadding(origData)
 }
 
 // CryptoDesECBEncrypt DES/ECB/PKCS5Padding+key(8bytes)-Encrypt.
