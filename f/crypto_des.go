@@ -96,9 +96,6 @@ func CryptoDesECBTripleEncrypt(origData, key []byte) []byte {
 }
 
 func cryptoDesECBEncrypt(origData, key []byte) []byte {
-	if len(origData) < 1 || len(key) < 1 {
-		return nil
-	}
 	block, err := des.NewCipher(key)
 	Must(err)
 	bs := block.BlockSize()
@@ -116,9 +113,6 @@ func cryptoDesECBEncrypt(origData, key []byte) []byte {
 }
 
 func cryptoDesECBDecrypt(encrypted, key []byte) []byte {
-	if len(encrypted) < 1 || len(key) < 1 {
-		return nil
-	}
 	block, err := des.NewCipher(key)
 	Must(err)
 	out := make([]byte, len(encrypted))
