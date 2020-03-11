@@ -6,6 +6,7 @@ import (
 )
 
 // CryptoDesCBCEncrypt DES/CBC/PKCS5Padding+key(8bytes)+iv(16bytes)-Encrypt.
+// encryptedBytes := CryptoDesCBCEncrypt(origData, key, iv)
 // encryptedString := hex.EncodeToString(encryptedBytes)
 // encryptedString := base64.StdEncoding.EncodeToString(encryptedBytes)
 func CryptoDesCBCEncrypt(origData, key, iv []byte) []byte {
@@ -24,6 +25,7 @@ func CryptoDesCBCEncrypt(origData, key, iv []byte) []byte {
 // CryptoDesCBCDecrypt DES/CBC/PKCS5Padding+key(8bytes)+iv(16bytes)-Decrypt.
 // encryptedBytes, err := hex.DecodeString(encryptedString)
 // encryptedBytes, err := base64.StdEncoding.DecodeString(encryptedString)
+// origData := CryptoDesCBCDecrypt(encryptedBytes, key, iv)
 func CryptoDesCBCDecrypt(encrypted, key, iv []byte) []byte {
 	MustBytes(key, 8)
 	MustBytes(iv, 16)
