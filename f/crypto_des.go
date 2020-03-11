@@ -5,7 +5,7 @@ import (
 	"crypto/des"
 )
 
-// CryptoDesCBCEncrypt des CBC模式+key(8bytes)+iv(16bytes).
+// CryptoDesCBCEncrypt DES/CBC/PKCS5Padding+key(8bytes)+iv(16bytes).
 // encryptedString := hex.EncodeToString(encryptedBytes)
 // encryptedString := base64.StdEncoding.EncodeToString(encryptedBytes)
 func CryptoDesCBCEncrypt(origData, key, iv []byte) []byte {
@@ -21,7 +21,7 @@ func CryptoDesCBCEncrypt(origData, key, iv []byte) []byte {
 	return encrypted
 }
 
-// CryptoDesCBCDecrypt des CBC模式+key(8bytes)+iv(16bytes).
+// CryptoDesCBCDecrypt DES/CBC/PKCS5Padding+key(8bytes)+iv(16bytes).
 // encryptedBytes, err := hex.DecodeString(encryptedString)
 // encryptedBytes, err := base64.StdEncoding.DecodeString(encryptedString)
 func CryptoDesCBCDecrypt(encrypted, key, iv []byte) []byte {
@@ -37,7 +37,7 @@ func CryptoDesCBCDecrypt(encrypted, key, iv []byte) []byte {
 	return origData
 }
 
-// CryptoDesECBEncrypt des ECB模式+key(8bytes).
+// CryptoDesECBEncrypt DES/ECB/PKCS5Padding+key(8bytes).
 func CryptoDesECBEncrypt(origData, key []byte) []byte {
 	MustBytes(key, 8)
 	block, err := des.NewCipher(key)
@@ -57,7 +57,7 @@ func CryptoDesECBEncrypt(origData, key []byte) []byte {
 	return out
 }
 
-// CryptoDesECBDecrypt des ECB模式+key(8bytes).
+// CryptoDesECBDecrypt DES/ECB/PKCS5Padding+key(8bytes).
 func CryptoDesECBDecrypt(encrypted, key []byte) []byte {
 	MustBytes(key, 8)
 	block, err := des.NewCipher(key)
@@ -76,7 +76,7 @@ func CryptoDesECBDecrypt(encrypted, key []byte) []byte {
 	return CryptoPKCS5UnPadding(out)
 }
 
-// CryptoDesECBTripleEncrypt des ECB模式+key(24bytes)+Triple三重加密.
+// CryptoDesECBTripleEncrypt DES/ECB/PKCS5Padding+key(24bytes)+Tripled-Encrypt.
 func CryptoDesECBTripleEncrypt(origData, key []byte) []byte {
 	MustBytes(key, 24)
 	tk := make([]byte, 24, 24)
