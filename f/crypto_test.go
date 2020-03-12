@@ -135,4 +135,12 @@ func TestCryptoAesCBCEncryptWithHmacSHA1_ABP(t *testing.T) {
 		t.Log(encryptedBase64Go)
 		t.Fatal(" encryptedBase64 != encryptedBase64Go ")
 	}
+	//encryptedBytes = CryptoAesCBCEncryptWithHmacSHA256(origData, key, salt, iv, 1000, 32)
+	//encryptedBase64 = "HKSRK014LeYE7xzoPWxkqexBmcvVt3cRqIYhjCIVJ53xbcJ65B3nwaGjoZ7y8+RcOqziIcQhUa0TyoNpG2HHobTF+4bKlNIF1KNO9GtiWJHZe646i0bb3aokH+UPtoqe"
+	//encryptedBase64Go = base64.StdEncoding.EncodeToString(encryptedBytes)
+	//if encryptedBase64 != encryptedBase64Go {
+	//	t.Log(encryptedBase64)
+	//	t.Log(encryptedBase64Go)
+	//	t.Fatal(" encryptedBase64 != encryptedBase64Go ")
+	//}
 }
