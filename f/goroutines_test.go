@@ -8,22 +8,19 @@ import (
 )
 
 func TestGoroutines(t *testing.T) {
-	var sum int32
+	defer GoHandle.Release()
 
+	var sum int32
 	myFunc := func(i interface{}) {
 		n := i.(int32)
 		atomic.AddInt32(&sum, n)
 	}
-
 	demoFunc := func() {
 		time.Sleep(10 * time.Millisecond)
 	}
 
-	defer Go.Release()
-
-	runTimes := 1000
-
 	// Use the common pool.
+	runTimes := 1000
 	var wg sync.WaitGroup
 	syncCalculateSum := func() {
 		demoFunc()
@@ -31,10 +28,11 @@ func TestGoroutines(t *testing.T) {
 	}
 	for i := 0; i < runTimes; i++ {
 		wg.Add(1)
-		_ = Go.Submit(syncCalculateSum)
+		_ = GoHandle.Submit(syncCalculateSum)
 	}
 	wg.Wait()
-	t.Logf("running goroutines: %d\n", Go.Running())
+	goroutines := GoHandle.Running()
+	t.Logf("running goroutines: %d\n", goroutines)
 	t.Log("finish all tasks.")
 
 	// Use the pool with a function,
