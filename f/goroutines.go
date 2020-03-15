@@ -1,6 +1,7 @@
 package f
 
 import (
+	"fmt"
 	"github.com/panjf2000/ants/v2"
 )
 
@@ -13,6 +14,14 @@ type GoPool struct {
 var GoHandle *GoPool
 
 func init() {
-	defaultPool, _ := ants.NewPool(ants.DefaultAntsPoolSize)
+	defaultPool, _ := ants.NewPool(ants.DefaultAntsPoolSize, ants.WithOptions(ants.Options{
+		ExpiryDuration:   ants.DefaultCleanIntervalTime,
+		PreAlloc:         false,
+		Nonblocking:      true,
+		MaxBlockingTasks: 0,
+		PanicHandler: func(err interface{}) {
+			_ = fmt.Errorf(" GoHandle/worker: %s\n %v", Now().LocalTimeString(), err)
+		},
+	}))
 	GoHandle = &GoPool{Pool: defaultPool}
 }

@@ -1,20 +1,21 @@
 package f
 
 import (
+	"fmt"
 	"github.com/panjf2000/ants/v2"
-	"time"
 )
 
-// GoPoolWithFunc ants.PoolWithFunc
+// GoPoolWithFunc ants.PoolWithFunc.
 type GoPoolWithFunc struct {
 	*ants.PoolWithFunc
 }
 
-// GoHttpHandle a Http Handle Goroutines Pool
+// GoHttpHandle a Http Handle Goroutines Pool.
 var GoHttpHandle *GoPoolWithFunc
 
-func init() {
-	defaultHttpHandlePool, _ := ants.NewPoolWithFunc(100000, func(payload interface{}) {
+// InitHttpHandleRequest Init the GoHttpHandle.
+func InitHttpHandleRequest(throttleLimitNumber, poolTotalSize int) {
+	defaultHttpHandlePool, _ := ants.NewPoolWithFunc(poolTotalSize, func(payload interface{}) {
 		if GoHttpHandle == nil {
 			return
 		}
@@ -26,18 +27,18 @@ func init() {
 
 		request.HandleFunc()
 	}, ants.WithOptions(ants.Options{
-		ExpiryDuration:   time.Minute,
+		ExpiryDuration:   ants.DefaultCleanIntervalTime,
 		PreAlloc:         true,
-		MaxBlockingTasks: 0,
-		Nonblocking:      true,
+		Nonblocking:      false,
+		MaxBlockingTasks: throttleLimitNumber,
 		PanicHandler: func(err interface{}) {
-			panic(err)
+			_ = fmt.Errorf(" GoHttpHandle/worker: %s\n %v", Now().LocalTimeString(), err)
 		},
 	}))
 	GoHttpHandle = &GoPoolWithFunc{PoolWithFunc: defaultHttpHandlePool}
 }
 
-// GoHttpHandleRequest Handling input and output
+// GoHttpHandleRequest Handling input and output.
 type GoHttpHandleRequest struct {
 	Body       []byte           // Input
 	Param      interface{}      // Input
