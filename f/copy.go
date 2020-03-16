@@ -10,7 +10,7 @@ type CopyInterface interface {
 	Copy() interface{}
 }
 
-// Copy creates a deep copy of whatever is passed to it and returns the copy
+// Copy create a deep copy of whatever is passed to it and returns the copy
 // in an interface{}.  The returned value will need to be asserted to the correct type.
 func Copy(src interface{}) interface{} {
 	if src == nil {

@@ -2,7 +2,7 @@ package f
 
 import "reflect"
 
-// IsEmpty 判断变量是否为空
+// IsEmpty Is the variable empty.
 func IsEmpty(val interface{}) bool {
 	if val == nil {
 		return true
