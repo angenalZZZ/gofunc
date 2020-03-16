@@ -1,6 +1,9 @@
 package f
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // Must not error, or panic.
 func Must(err error) {
@@ -27,4 +30,9 @@ func MustBytes(p []byte, n ...int) {
 			panic(errors.New("wrong bytes length"))
 		}
 	}
+}
+
+// Panic exit with error.
+func Panic(format string, args ...interface{}) {
+	panic(fmt.Sprintf(format, args...))
 }
