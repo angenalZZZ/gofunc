@@ -8,9 +8,12 @@ import (
 )
 
 const (
-	DateFormatString     string = "2006-01-02"
-	DateTimeFormatString string = "2006-01-02 15:04:05"
-	TimeFormatString     string = "2006-01-02 15:04:05.000"
+	DateFormatStringG     string = "20060102"
+	DateFormatString      string = "2006-01-02"
+	DateTimeFormatStringH string = "2006-01-02 15"
+	DateTimeFormatStringM string = "2006-01-02 15:04"
+	DateTimeFormatString  string = "2006-01-02 15:04:05"
+	TimeFormatString      string = "2006-01-02 15:04:05.000"
 )
 
 // TimeStamp a time stamp and extended methods.
@@ -201,4 +204,131 @@ func (t *TimeStamp) YearMonthDay() (year, month, day int) {
 // HourMinuteSecond returns the time's hour, minute, second.
 func (t *TimeStamp) HourMinuteSecond() (hour, minute, second int) {
 	return t.Time.Hour(), t.Time.Minute(), t.Time.Second()
+}
+
+// ToTime convert string to time.Time
+func ToTime(s string, layouts ...string) (t time.Time, err error) {
+	layout := toTimeLayout(s, layouts...)
+	if layout == "" {
+		err = errConvertFail
+		return
+	}
+	t, err = time.Parse(layout, s)
+	return
+}
+
+// ToLocalTime convert string to time.Time
+func ToLocalTime(s string, layouts ...string) (t time.Time, err error) {
+	layout := toTimeLayout(s, layouts...)
+	if layout == "" {
+		err = errConvertFail
+		return
+	}
+	t, err = time.ParseInLocation(layout, s, time.Local)
+	return
+}
+
+func toTimeLayout(s string, layouts ...string) string {
+	var layout string
+	if len(layouts) > 0 {
+		layout = layouts[0]
+	} else {
+		switch len(s) {
+		case 8:
+			layout = DateFormatStringG
+		case 10:
+			layout = DateFormatString
+		case 13:
+			layout = DateTimeFormatStringH
+		case 16:
+			layout = DateTimeFormatStringM
+		case 19:
+			layout = DateTimeFormatString
+		case 20:
+		case 25:
+			layout = time.RFC3339
+		case 30:
+		case 35:
+			layout = time.RFC3339Nano
+		}
+	}
+
+	if layout != "" {
+		// has 'T' eg.2006-01-02T15:04:05
+		if strings.ContainsRune(s, 'T') {
+			layout = strings.Replace(layout, " ", "T", -1)
+		}
+		// eg: 2006/01/02 15:04:05
+		if strings.ContainsRune(s, '/') {
+			layout = strings.Replace(layout, "-", "/", -1)
+		}
+	}
+
+	return layout
+}
+
+// IsDate check value is an date string.
+func IsDate(srcDate string) bool {
+	_, err := ToTime(srcDate)
+	return err == nil
+}
+
+// BeforeDate check
+func BeforeDate(srcDate, dstDate string) bool {
+	st, err := ToTime(srcDate)
+	if err != nil {
+		return false
+	}
+
+	dt, err := ToTime(dstDate)
+	if err != nil {
+		return false
+	}
+
+	return st.Before(dt)
+}
+
+// BeforeOrEqualDate check
+func BeforeOrEqualDate(srcDate, dstDate string) bool {
+	st, err := ToTime(srcDate)
+	if err != nil {
+		return false
+	}
+
+	dt, err := ToTime(dstDate)
+	if err != nil {
+		return false
+	}
+
+	return st.Before(dt) || st.Equal(dt)
+}
+
+// AfterOrEqualDate check
+func AfterOrEqualDate(srcDate, dstDate string) bool {
+	st, err := ToTime(srcDate)
+	if err != nil {
+		return false
+	}
+
+	dt, err := ToTime(dstDate)
+	if err != nil {
+		return false
+	}
+
+	return st.After(dt) || st.Equal(dt)
+}
+
+// AfterDate check
+func AfterDate(srcDate, dstDate string) bool {
+	st, err := ToTime(srcDate)
+	if err != nil {
+		return false
+	}
+
+	dt, err := ToTime(dstDate)
+	if err != nil {
+		return false
+	}
+
+	return st.After(dt)
 }

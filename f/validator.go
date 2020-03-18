@@ -13,61 +13,40 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 	"unicode/utf8"
 )
 
 // Basic regular expressions for validating strings.
-const (
-	_rxEmail     = "^(((([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+(\\.([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+)*)|((\\x22)((((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(([\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]|\\x21|[\\x23-\\x5b]|[\\x5d-\\x7e]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(\\([\\x01-\\x09\\x0b\\x0c\\x0d-\\x7f]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}]))))*(((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(\\x22)))@((([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|\\.|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.)+(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.?$"
-	_rxUUID3     = "^[0-9a-f]{8}-[0-9a-f]{4}-3[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$"
-	_rxUUID4     = "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
-	_rxUUID5     = "^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
-	_rxUUID      = "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-	_rxInt       = "^(?:[-+]?(?:0|[1-9][0-9]*))$"
-	_rxFloat     = "^(?:[-+]?(?:[0-9]+))?(?:\\.[0-9]*)?(?:[eE][\\+\\-]?(?:[0-9]+))?$"
-	_rxRGBColor  = "^rgb\\(\\s*(0|[1-9]\\d?|1\\d\\d?|2[0-4]\\d|25[0-5])\\s*,\\s*(0|[1-9]\\d?|1\\d\\d?|2[0-4]\\d|25[0-5])\\s*,\\s*(0|[1-9]\\d?|1\\d\\d?|2[0-4]\\d|25[0-5])\\s*\\)$"
-	_rxBase64    = "^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=|[A-Za-z0-9+\\/]{4})$"
-	_rxLatitude  = "^[-+]?([1-8]?\\d(\\.\\d+)?|90(\\.0+)?)$"
-	_rxLongitude = "^[-+]?(180(\\.0+)?|((1[0-7]\\d)|([1-9]?\\d))(\\.\\d+)?)$"
-	_rxDNSName   = `^([a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62}){1}(\.[a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62})*[\._]?$`
-	_rxFullURL   = `^(?:ftp|tcp|udp|wss?|https?):\/\/[\w\.\/#=?&]+$`
-	_rxURLSchema = `((ftp|tcp|udp|wss?|https?):\/\/)`
-	_rxWinPath   = `^[a-zA-Z]:\\(?:[^\\/:*?"<>|\r\n]+\\)*[^\\/:*?"<>|\r\n]*$`
-	_rxUnixPath  = `^(/[^/\x00]*)+/?$`
-)
-
-// some string regexp.
 var (
-	rxEmail          = regexp.MustCompile(_rxEmail)
+	rxEmail          = regexp.MustCompile("^(((([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+(\\.([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+)*)|((\\x22)((((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(([\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]|\\x21|[\\x23-\\x5b]|[\\x5d-\\x7e]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(\\([\\x01-\\x09\\x0b\\x0c\\x0d-\\x7f]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}]))))*(((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(\\x22)))@((([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|\\.|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.)+(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.?$")
 	rxISBN10         = regexp.MustCompile("^(?:[0-9]{9}X|[0-9]{10})$")
 	rxISBN13         = regexp.MustCompile("^(?:[0-9]{13})$")
-	rxUUID3          = regexp.MustCompile(_rxUUID3)
-	rxUUID4          = regexp.MustCompile(_rxUUID4)
-	rxUUID5          = regexp.MustCompile(_rxUUID5)
-	rxUUID           = regexp.MustCompile(_rxUUID)
+	rxUUID3          = regexp.MustCompile("^[0-9a-f]{8}-[0-9a-f]{4}-3[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$")
+	rxUUID4          = regexp.MustCompile("^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
+	rxUUID5          = regexp.MustCompile("^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
+	rxUUID           = regexp.MustCompile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 	rxAlpha          = regexp.MustCompile("^[a-zA-Z]+$")
 	rxAlphaNum       = regexp.MustCompile("^[a-zA-Z0-9]+$")
 	rxAlphaDash      = regexp.MustCompile(`^(?:[\w-]+)$`)
 	rxNumber         = regexp.MustCompile("^[0-9]+$")
-	rxInt            = regexp.MustCompile(_rxInt)
-	rxFloat          = regexp.MustCompile(_rxFloat)
+	rxInt            = regexp.MustCompile("^(?:[-+]?(?:0|[1-9][0-9]*))$")
+	rxFloat          = regexp.MustCompile("^(?:[-+]?(?:[0-9]+))?(?:\\.[0-9]*)?(?:[eE][\\+\\-]?(?:[0-9]+))?$")
 	rxCnMobile       = regexp.MustCompile(`^1\d{10}$`)
 	rxHexColor       = regexp.MustCompile("^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
-	rxRGBColor       = regexp.MustCompile(_rxRGBColor)
+	rxRGBColor       = regexp.MustCompile("^rgb\\(\\s*(0|[1-9]\\d?|1\\d\\d?|2[0-4]\\d|25[0-5])\\s*,\\s*(0|[1-9]\\d?|1\\d\\d?|2[0-4]\\d|25[0-5])\\s*,\\s*(0|[1-9]\\d?|1\\d\\d?|2[0-4]\\d|25[0-5])\\s*\\)$")
 	rxASCII          = regexp.MustCompile("^[\x00-\x7F]+$")
 	rxHexadecimal    = regexp.MustCompile("^[0-9a-fA-F]+$")
 	rxPrintableASCII = regexp.MustCompile("^[\x20-\x7E]+$")
 	rxMultiByte      = regexp.MustCompile("[^\x00-\x7F]")
-	rxBase64         = regexp.MustCompile(_rxBase64)
+	rxBase64         = regexp.MustCompile("^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=|[A-Za-z0-9+\\/]{4})$")
 	rxDataURI        = regexp.MustCompile(`^data:.+/(.+);base64,(?:.+)`)
-	rxLatitude       = regexp.MustCompile(_rxLatitude)
-	rxLongitude      = regexp.MustCompile(_rxLongitude)
-	rxDNSName        = regexp.MustCompile(_rxDNSName)
-	rxFullURL        = regexp.MustCompile(_rxFullURL)
-	rxURLSchema      = regexp.MustCompile(_rxURLSchema)
-	rxWinPath        = regexp.MustCompile(_rxWinPath)
-	rxUnixPath       = regexp.MustCompile(_rxUnixPath)
+	rxLatitude       = regexp.MustCompile("^[-+]?([1-8]?\\d(\\.\\d+)?|90(\\.0+)?)$")
+	rxLongitude      = regexp.MustCompile("^[-+]?(180(\\.0+)?|((1[0-7]\\d)|([1-9]?\\d))(\\.\\d+)?)$")
+	rxDNSName        = regexp.MustCompile(`^([a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62}){1}(\.[a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62})*[\._]?$`)
+	rxFullURL        = regexp.MustCompile(`^(?:ftp|tcp|udp|wss?|https?):\/\/[\w\.\/#=?&]+$`)
+	rxURLSchema      = regexp.MustCompile(`((ftp|tcp|udp|wss?|https?):\/\/)`)
+	rxWinPath        = regexp.MustCompile(`^[a-zA-Z]:\\(?:[^\\/:*?"<>|\r\n]+\\)*[^\\/:*?"<>|\r\n]*$`)
+	rxUnixPath       = regexp.MustCompile(`^(/[^/\x00]*)+/?$`)
 	rxHasLowerCase   = regexp.MustCompile(".*[[:lower:]]")
 	rxHasUpperCase   = regexp.MustCompile(".*[[:upper:]]")
 )
@@ -78,170 +57,47 @@ var (
 	errBadComparisonType = errors.New("invalid type for operation")
 )
 
-// Bool convert string to bool
-func Bool(s string) bool {
-	lower := strings.ToLower(s)
-	switch lower {
-	case "1", "on", "yes", "true":
-		return true
-	case "0", "off", "no", "false":
-		return false
-	}
-	return false
+// Contains asserts that the specified string, list(array, slice...) or map contains the
+// specified substring or element.
+//
+//    Contains(t, "Hello World", "World")
+//    Contains(t, ["Hello", "World"], "World")
+//    Contains(t, {"Hello": "World"}, "Hello")
+func Contains(s, sub interface{}) bool {
+	ok, found := ContainsElement(s, sub)
+
+	// ok == false: 's' could not be applied builtin len()
+	// found == false: 's' does not contain 'sub'
+	return ok && found
 }
 
-// ToBool parse string to bool
-func ToBool(s string) (bool, error) {
-	lower := strings.ToLower(s)
-	switch lower {
-	case "1", "on", "yes", "true":
-		return true, nil
-	case "0", "off", "no", "false":
-		return false, nil
-	}
-	return false, fmt.Errorf("'%s' cannot convert to bool", s)
+// NotContains check that the specified string, list(array, slice) or map does NOT contain the
+// specified substring or element.
+//
+// Notice: list check value exist. map check key exist.
+func NotContains(s, sub interface{}) bool {
+	ok, found := ContainsElement(s, sub)
+
+	// ok == false: could not be applied builtin len()
+	// found == true: 's' contain 'sub'
+	return ok && !found
 }
 
-// ToInt64 parse string to int64
-func ToInt64(v interface{}, strict bool) (i64 int64, err error) {
-	switch tVal := v.(type) {
-	case string:
-		if strict {
-			return 0, errConvertFail
-		}
-		i64, err = strconv.ParseInt(strings.TrimSpace(tVal), 10, 0)
-	case int:
-		i64 = int64(tVal)
-	case int8:
-		i64 = int64(tVal)
-	case int16:
-		i64 = int64(tVal)
-	case int32:
-		i64 = int64(tVal)
-	case int64:
-		i64 = tVal
-	case uint:
-		i64 = int64(tVal)
-	case uint8:
-		i64 = int64(tVal)
-	case uint16:
-		i64 = int64(tVal)
-	case uint32:
-		i64 = int64(tVal)
-	case uint64:
-		i64 = int64(tVal)
-	case float32:
-		if strict {
-			return 0, errConvertFail
-		}
-		i64 = int64(tVal)
-	case float64:
-		if strict {
-			return 0, errConvertFail
-		}
-		i64 = int64(tVal)
-	default:
-		err = errConvertFail
-	}
-	return
-}
-
-// ToString convert number to string
-func ToString(val interface{}) (str string) {
-	switch tVal := val.(type) {
-	case int:
-		str = strconv.Itoa(tVal)
-	case int8:
-		str = strconv.Itoa(int(tVal))
-	case int16:
-		str = strconv.Itoa(int(tVal))
-	case int32:
-		str = strconv.Itoa(int(tVal))
-	case int64:
-		str = strconv.Itoa(int(tVal))
-	case uint:
-		str = strconv.Itoa(int(tVal))
-	case uint8:
-		str = strconv.Itoa(int(tVal))
-	case uint16:
-		str = strconv.Itoa(int(tVal))
-	case uint32:
-		str = strconv.Itoa(int(tVal))
-	case uint64:
-		str = strconv.Itoa(int(tVal))
-	case float32:
-		str = fmt.Sprint(tVal)
-	case float64:
-		str = fmt.Sprint(tVal)
-	case string:
-		str = tVal
-	case nil:
-		str = ""
-	default:
-		str = ""
-	}
-	return
-}
-
-// ToTime convert date string to time.Time
-func ToTime(s string, layouts ...string) (t time.Time, err error) {
-	var layout string
-	if len(layouts) > 0 { // custom layout
-		layout = layouts[0]
-	} else { // auto match layout.
-		switch len(s) {
-		case 8:
-			layout = "20060102"
-		case 10:
-			layout = "2006-01-02"
-		case 13:
-			layout = "2006-01-02 15"
-		case 16:
-			layout = "2006-01-02 15:04"
-		case 19:
-			layout = "2006-01-02 15:04:05"
-		case 20: // time.RFC3339
-			layout = "2006-01-02T15:04:05Z07:00"
-		}
-	}
-
-	if layout == "" {
-		err = errConvertFail
-		return
-	}
-
-	// has 'T' eg.2006-01-02T15:04:05
-	if strings.ContainsRune(s, 'T') {
-		layout = strings.Replace(layout, " ", "T", -1)
-	}
-
-	// eg: 2006/01/02 15:04:05
-	if strings.ContainsRune(s, '/') {
-		layout = strings.Replace(layout, "-", "/", -1)
-	}
-
-	t, err = time.Parse(layout, s)
-	// t, err = time.ParseInLocation(layout, s, time.Local)
-	return
-}
-
-// Includes from package: github.com/stretchr/testify/assert/assertions.go
-func Includes(list, element interface{}) (ok, found bool) {
+// ContainsElement from package: github.com/stretchr/testify/assert/assertions.go
+func ContainsElement(list, element interface{}) (ok, found bool) {
 	listValue := reflect.ValueOf(list)
-	elementValue := reflect.ValueOf(element)
-	listKind := listValue.Type().Kind()
-
-	// string contains check
-	if listKind == reflect.String {
-		return true, strings.Contains(listValue.String(), elementValue.String())
-	}
-
+	listKind := reflect.TypeOf(list).Kind()
 	defer func() {
 		if e := recover(); e != nil {
-			ok = false // call Value.Len() panic.
+			ok = false
 			found = false
 		}
 	}()
+
+	if listKind == reflect.String {
+		elementValue := reflect.ValueOf(element)
+		return true, strings.Contains(listValue.String(), elementValue.String())
+	}
 
 	if listKind == reflect.Map {
 		mapKeys := listValue.MapKeys()
@@ -258,32 +114,7 @@ func Includes(list, element interface{}) (ok, found bool) {
 			return true, true
 		}
 	}
-
 	return true, false
-}
-
-// Contains check that the specified string, list(array, slice) or map contains the
-// specified substring or element.
-//
-// Notice: list check value exist. map check key exist.
-func Contains(s, sub interface{}) bool {
-	ok, found := Includes(s, sub)
-
-	// ok == false: 's' could not be applied builtin len()
-	// found == false: 's' does not contain 'sub'
-	return ok && found
-}
-
-// NotContains check that the specified string, list(array, slice) or map does NOT contain the
-// specified substring or element.
-//
-// Notice: list check value exist. map check key exist.
-func NotContains(s, sub interface{}) bool {
-	ok, found := Includes(s, sub)
-
-	// ok == false: could not be applied builtin len()
-	// found == true: 's' contain 'sub'
-	return ok && !found
 }
 
 // IsUint check, allow: intX, uintX, string
@@ -410,7 +241,7 @@ func IsInt(val interface{}, minAndMax ...int64) (ok bool) {
 		return false
 	}
 
-	intVal, err := ToInt64(val, true)
+	intVal, err := ToInt(val, true)
 	if err != nil {
 		return false
 	}
@@ -805,6 +636,61 @@ func IsUnixPath(s string) bool {
  * global: compare validators
  *************************************************************/
 
+// Implements asserts that an object is implemented by the specified interface.
+//
+//    Implements((*MyInterface)(nil), new(MyObject))
+func Implements(interfaceObject interface{}, object interface{}) bool {
+	if object == nil {
+		return false
+	}
+
+	interfaceType := reflect.TypeOf(interfaceObject).Elem()
+	return reflect.TypeOf(object).Implements(interfaceType)
+}
+
+// AreEqual determines if two objects are considered equal.
+//
+// This function does no assertion of any kind.
+func AreEqual(expected, actual interface{}) bool {
+	if expected == nil || actual == nil {
+		return expected == actual
+	}
+
+	exp, ok := expected.([]byte)
+	if !ok {
+		return reflect.DeepEqual(expected, actual)
+	}
+
+	act, ok := actual.([]byte)
+	if !ok {
+		return false
+	}
+	if exp == nil || act == nil {
+		return exp == nil && act == nil
+	}
+	return bytes.Equal(exp, act)
+}
+
+// AreEqualValues gets whether two objects are equal, or if their
+// values are equal.
+func AreEqualValues(expected, actual interface{}) bool {
+	if AreEqual(expected, actual) {
+		return true
+	}
+
+	actualType := reflect.TypeOf(actual)
+	if actualType == nil {
+		return false
+	}
+	expectedValue := reflect.ValueOf(expected)
+	if expectedValue.IsValid() && expectedValue.Type().ConvertibleTo(actualType) {
+		// Attempt comparison after type conversion
+		return reflect.DeepEqual(expectedValue.Convert(actualType).Interface(), actual)
+	}
+
+	return false
+}
+
 // IsEqual check two value is equals.
 // Support:
 // 	bool, int(X), uint(X), string, float(X) AND slice, array, map
@@ -826,7 +712,7 @@ func IsEqual(val, wantVal interface{}) bool {
 	}
 
 	// compare basic type: bool, int(X), uint(X), string, float(X)
-	equal, err := eq(sv, wv)
+	equal, err := Eq(sv, wv)
 
 	// is not an basic type, eg: slice, array, map ...
 	if err != nil {
@@ -852,6 +738,52 @@ func IsEqual(val, wantVal interface{}) bool {
 // NotEqual check
 func NotEqual(val, wantVal interface{}) bool {
 	return !IsEqual(val, wantVal)
+}
+
+// Eq evaluates the comparison a == b
+// Support:
+// 	bool, int(X), uint(X), string, float(X)
+func Eq(arg1 reflect.Value, arg2 reflect.Value) (bool, error) {
+	v1 := indirectInterface(arg1)
+	k1, err := basicKind(v1)
+	if err != nil {
+		return false, err
+	}
+
+	v2 := indirectInterface(arg2)
+	k2, err := basicKind(v2)
+	if err != nil {
+		return false, err
+	}
+
+	truth := false
+	if k1 != k2 {
+		// Special case: Can compare integer values regardless of type's sign.
+		switch {
+		case k1 == intKind && k2 == uintKind:
+			truth = v1.Int() >= 0 && uint64(v1.Int()) == v2.Uint()
+		case k1 == uintKind && k2 == intKind:
+			truth = v2.Int() >= 0 && v1.Uint() == uint64(v2.Int())
+		}
+		return truth, nil
+	}
+
+	switch k1 {
+	case boolKind:
+		truth = v1.Bool() == v2.Bool()
+	case complexKind:
+		truth = v1.Complex() == v2.Complex()
+	case floatKind:
+		truth = v1.Float() == v2.Float()
+	case intKind:
+		truth = v1.Int() == v2.Int()
+	case stringKind:
+		truth = v1.String() == v2.String()
+	case uintKind:
+		truth = v1.Uint() == v2.Uint()
+	}
+
+	return truth, nil
 }
 
 type kind int
@@ -886,54 +818,6 @@ func basicKind(v reflect.Value) (kind, error) {
 	return invalidKind, errBadComparisonType
 }
 
-// eq evaluates the comparison a == b
-func eq(arg1 reflect.Value, arg2 reflect.Value) (bool, error) {
-	v1 := indirectInterface(arg1)
-	k1, err := basicKind(v1)
-	if err != nil {
-		return false, err
-	}
-
-	v2 := indirectInterface(arg2)
-	k2, err := basicKind(v2)
-	if err != nil {
-		return false, err
-	}
-
-	truth := false
-	if k1 != k2 {
-		// Special case: Can compare integer values regardless of type's sign.
-		switch {
-		case k1 == intKind && k2 == uintKind:
-			truth = v1.Int() >= 0 && uint64(v1.Int()) == v2.Uint()
-		case k1 == uintKind && k2 == intKind:
-			truth = v2.Int() >= 0 && v1.Uint() == uint64(v2.Int())
-			// default:
-			// 	 return false, errBadComparison
-		}
-		return truth, nil
-	}
-
-	switch k1 {
-	case boolKind:
-		truth = v1.Bool() == v2.Bool()
-	case complexKind:
-		truth = v1.Complex() == v2.Complex()
-	case floatKind:
-		truth = v1.Float() == v2.Float()
-	case intKind:
-		truth = v1.Int() == v2.Int()
-	case stringKind:
-		truth = v1.String() == v2.String()
-	case uintKind:
-		truth = v1.Uint() == v2.Uint()
-		// default:
-		// 	panic("invalid kind")
-	}
-
-	return truth, nil
-}
-
 // indirectInterface returns the concrete value in an interface value,
 // or else the zero reflect.Value.
 // That is, if v represents the interface value x, the result is the same as reflect.ValueOf(x):
@@ -948,6 +832,17 @@ func indirectInterface(v reflect.Value) reflect.Value {
 	}
 
 	return v.Elem()
+}
+
+// containsKind checks if a specified kind in the slice of kinds.
+func containsKind(kinds []reflect.Kind, kind reflect.Kind) bool {
+	for i := 0; i < len(kinds); i++ {
+		if kind == kinds[i] {
+			return true
+		}
+	}
+
+	return false
 }
 
 /*************************************************************
@@ -1055,89 +950,6 @@ func StringLength(val interface{}, minLen int, maxLen ...int) bool {
 }
 
 /*************************************************************
- * global: date/time validators
- *************************************************************/
-
-// IsDate check value is an date string.
-func IsDate(srcDate string) bool {
-	_, err := ToTime(srcDate)
-	return err == nil
-}
-
-// DateFormat check
-func DateFormat(s string, layout string) bool {
-	_, err := time.Parse(layout, s)
-	return err == nil
-}
-
-// DateEquals check.
-// Usage:
-// 	DateEquals(val, "2017-05-12")
-// func DateEquals(srcDate, dstDate string) bool {
-// 	return false
-// }
-
-// BeforeDate check
-func BeforeDate(srcDate, dstDate string) bool {
-	st, err := ToTime(srcDate)
-	if err != nil {
-		return false
-	}
-
-	dt, err := ToTime(dstDate)
-	if err != nil {
-		return false
-	}
-
-	return st.Before(dt)
-}
-
-// BeforeOrEqualDate check
-func BeforeOrEqualDate(srcDate, dstDate string) bool {
-	st, err := ToTime(srcDate)
-	if err != nil {
-		return false
-	}
-
-	dt, err := ToTime(dstDate)
-	if err != nil {
-		return false
-	}
-
-	return st.Before(dt) || st.Equal(dt)
-}
-
-// AfterOrEqualDate check
-func AfterOrEqualDate(srcDate, dstDate string) bool {
-	st, err := ToTime(srcDate)
-	if err != nil {
-		return false
-	}
-
-	dt, err := ToTime(dstDate)
-	if err != nil {
-		return false
-	}
-
-	return st.After(dt) || st.Equal(dt)
-}
-
-// AfterDate check
-func AfterDate(srcDate, dstDate string) bool {
-	st, err := ToTime(srcDate)
-	if err != nil {
-		return false
-	}
-
-	dt, err := ToTime(dstDate)
-	if err != nil {
-		return false
-	}
-
-	return st.After(dt)
-}
-
-/*************************************************************
  * Reflection:
  * From package(go 1.13) "reflect" -> reflect/value.go
  *************************************************************/
@@ -1193,7 +1005,7 @@ func IsEmpty(val interface{}) bool {
 
 	v := reflect.ValueOf(val)
 	switch v.Kind() {
-	case reflect.String, reflect.Array:
+	case reflect.String, reflect.Array, reflect.Chan:
 		return v.Len() == 0
 	case reflect.Map, reflect.Slice:
 		return v.Len() == 0 || v.IsNil()
@@ -1206,8 +1018,33 @@ func IsEmpty(val interface{}) bool {
 	case reflect.Float32, reflect.Float64:
 		return v.Float() == 0
 	case reflect.Interface, reflect.Ptr:
-		return v.IsNil()
+		if v.IsNil() {
+			return true
+		}
+		return IsEmpty(v.Elem().Interface())
 	}
 
 	return reflect.DeepEqual(val, reflect.Zero(v.Type()).Interface())
+}
+
+// IsNil checks if a specified object is nil or not, without Failing.
+func IsNil(object interface{}) bool {
+	if object == nil {
+		return true
+	}
+
+	value := reflect.ValueOf(object)
+	kind := value.Kind()
+	isNilKind := containsKind(
+		[]reflect.Kind{
+			reflect.Chan, reflect.Func,
+			reflect.Interface, reflect.Map,
+			reflect.Ptr, reflect.Slice},
+		kind)
+
+	if isNilKind && value.IsNil() {
+		return true
+	}
+
+	return false
 }
