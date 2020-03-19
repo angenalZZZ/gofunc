@@ -14,6 +14,8 @@ type GoPoolWithFunc struct {
 var GoHttpHandle *GoPoolWithFunc
 
 // InitHttpHandleRequest Init the GoHttpHandle.
+// @throttleLimitNumber 1000: More than it, return HTTP code 429 Too Many Requests.
+// @poolTotalSize 100000: Set total goroutines and tasks.
 func InitHttpHandleRequest(throttleLimitNumber, poolTotalSize int) {
 	defaultHttpHandlePool, _ := ants.NewPoolWithFunc(poolTotalSize, func(payload interface{}) {
 		if GoHttpHandle == nil {
