@@ -102,7 +102,7 @@ func TestCryptoRSA(t *testing.T) {
 		t.Fatal(err2)
 	}
 	// RSA.Encrypt + base64.Encode
-	publicKeyEncrypt := NewRSAPublicKeyEncrypt(publicKeyPemBytes)
+	publicKeyEncrypt := NewRSAPublicKey(publicKeyPemBytes)
 	encryptedBytes, err1 := publicKeyEncrypt.EncryptPKCS1v15([]byte(origData))
 	if err1 != nil {
 		t.Fatal(err1)
@@ -111,7 +111,7 @@ func TestCryptoRSA(t *testing.T) {
 	t.Log(origData)
 	t.Log(encryptedBase64Go)
 	// base64.Decode + RSA.Decrypt
-	privateKeyDecrypt := NewRSAPrivateKeyDecrypt(privateKeyPemBytes)
+	privateKeyDecrypt := NewRSAPrivateKey(privateKeyPemBytes)
 	encrypted, _ := base64.StdEncoding.DecodeString(encryptedBase64Go)
 	origDataBytes, err2 := privateKeyDecrypt.DecryptPKCS1v15(encrypted)
 	if err2 != nil {
