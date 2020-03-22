@@ -1,9 +1,9 @@
 package f
 
 import (
+	"crypto"
 	"crypto/hmac"
 	"crypto/md5"
-	"crypto/sha256"
 	"encoding/hex"
 )
 
@@ -14,15 +14,18 @@ func CryptoMD5(origData string) string {
 	return hex.EncodeToString(s.Sum(nil))
 }
 
-// CryptoHS256 hmac sha256 hash.
-func CryptoHS256(origData, privateKey string, encode func(src []byte) string) string {
-	hash := hmac.New(sha256.New, []byte(privateKey))
-	_, err := hash.Write([]byte(origData))
+// CryptoHmac hmac SHA256|SHA384|SHA512 hash.
+// encryptedBytes, err := CryptoHmac(origData, key, crypto.SHA256, base64.URLEncoding.EncodeToString)
+// encryptedBytes, err := CryptoHmac(origData, key, crypto.SHA384, EncodeBase64RawURL)
+// encryptedBytes, err := CryptoHmac(origData, key, crypto.SHA512, EncodeBase64URL)
+func CryptoHmac(origData, key string, hash crypto.Hash, encode func(src []byte) string) string {
+	hasher := hmac.New(hash.New, []byte(key))
+	_, err := hasher.Write([]byte(origData))
 	if err == nil {
 		if encode == nil {
 			encode = EncodeBase64RawURL
 		}
-		return encode(hash.Sum(nil))
+		return encode(hasher.Sum(nil))
 	}
 	return ""
 }
