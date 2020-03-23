@@ -39,30 +39,18 @@ func ToInt(v interface{}, strict bool) (i int64, err error) {
 		}
 		i, err = strconv.ParseInt(strings.TrimSpace(t), 10, 0)
 	case int:
-		i = int64(t)
 	case int8:
-		i = int64(t)
 	case int16:
-		i = int64(t)
 	case int32:
-		i = int64(t)
 	case int64:
 		i = t
 	case uint:
-		i = int64(t)
 	case uint8:
-		i = int64(t)
 	case uint16:
-		i = int64(t)
 	case uint32:
-		i = int64(t)
 	case uint64:
 		i = int64(t)
 	case float32:
-		if strict {
-			return 0, errConvertFail
-		}
-		i = int64(t)
 	case float64:
 		if strict {
 			return 0, errConvertFail
@@ -90,7 +78,6 @@ func ToString(val interface{}) (str string) {
 	case uint64:
 		str = strconv.FormatUint(tVal, 10)
 	case float32:
-		str = fmt.Sprint(tVal)
 	case float64:
 		str = fmt.Sprint(tVal)
 	case string:
@@ -98,7 +85,11 @@ func ToString(val interface{}) (str string) {
 	case nil:
 		str = ""
 	default:
-		str = fmt.Sprintf("%+v", tVal)
+		if t, ok := tVal.(fmt.Stringer); ok {
+			str = t.String()
+		} else {
+			str = fmt.Sprintf("%v", tVal)
+		}
 	}
 	return
 }
