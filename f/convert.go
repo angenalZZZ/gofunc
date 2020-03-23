@@ -79,7 +79,7 @@ func ToString(val interface{}) (str string) {
 		str = strconv.FormatUint(tVal, 10)
 	case float32:
 	case float64:
-		str = fmt.Sprint(tVal)
+		str = fmt.Sprintf("%g", tVal)
 	case string:
 		str = tVal
 	case nil:
