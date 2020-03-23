@@ -7,13 +7,14 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"math/big"
+	"net/http"
 	"strings"
 
 	"golang.org/x/crypto/acme/autocert"
 )
 
-// NewServerTLSAutoCertConfig serve over tls with autoCerts from let's encrypt.
-func NewServerTLSAutoCertConfig(email string, domains string) *tls.Config {
+// NewTLSServerAutoCertConfig serve over tls with autoCerts from let's encrypt.
+func NewTLSServerAutoCertConfig(email string, domains string) *tls.Config {
 	certDomains := strings.Split(domains, " ")
 	certManager := &autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
@@ -44,8 +45,8 @@ func NewServerTLSAutoCertConfig(email string, domains string) *tls.Config {
 	}
 }
 
-// NewServerTLSConfig Setup a bare-bones TLS config for the server.
-func NewServerTLSConfig(nextProto string) *tls.Config {
+// NewTLSServerTestConfig Setup a bare-bones TLS config for the server.
+func NewTLSServerTestConfig(nextProto string) *tls.Config {
 	key, err := rsa.GenerateKey(rand.Reader, 1024)
 	Must(err)
 
@@ -67,10 +68,17 @@ func NewServerTLSConfig(nextProto string) *tls.Config {
 	}
 }
 
-// NewClientTLSConfig Setup a bare-bones TLS config for the client.
-func NewClientTLSConfig(nextProto string) *tls.Config {
+// NewTLSClientTestConfig Setup a bare-bones TLS config for the client.
+func NewTLSClientTestConfig(nextProto string) *tls.Config {
 	return &tls.Config{
-		InsecureSkipVerify: true, // 忽略服务器证书校验; 忽略自签名的服务器证书
+		InsecureSkipVerify: true, // 忽略服务器证书校验; 忽略自签名的服务器证书.
 		NextProtos:         []string{nextProto},
+	}
+}
+
+// NewHttpsTransportSkipVerify 用于 Client Dial 忽略服务器证书校验; 忽略自签名的服务器证书.
+func NewHttpsTransportSkipVerify() *http.Transport {
+	return &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 }
