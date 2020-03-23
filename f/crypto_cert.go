@@ -70,7 +70,7 @@ func NewServerTLSConfig(nextProto string) *tls.Config {
 // NewClientTLSConfig Setup a bare-bones TLS config for the client.
 func NewClientTLSConfig(nextProto string) *tls.Config {
 	return &tls.Config{
-		InsecureSkipVerify: true,
+		InsecureSkipVerify: true, // 忽略服务器证书校验; 忽略自签名的服务器证书
 		NextProtos:         []string{nextProto},
 	}
 }
