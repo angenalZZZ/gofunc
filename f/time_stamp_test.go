@@ -9,6 +9,7 @@ func TestTimeStamp(t *testing.T) {
 	// Input: f.Now()
 	ts := Now() // equals f.TimeFrom(time.Now())
 	ts = TimeFrom(time.Now())
+	t.Log(ts.LocalTimeString())
 	ts = TimeStampFrom("1583637582")
 	ts = TimeStampFrom("1583637582780")
 	ts = TimeStampFrom("1583637582780102")
