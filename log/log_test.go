@@ -2,14 +2,13 @@ package log
 
 import (
 	"github.com/angenalZZZ/gofunc/configfile"
-	. "github.com/angenalZZZ/gofunc/f"
 	"testing"
 )
 
 func TestYamlFileConfig(t *testing.T) {
 	// 配置选项
 	type AppConfig struct {
-		Log PassLagerCfg
+		Log Config
 	}
 
 	// 配置文件
@@ -20,10 +19,10 @@ func TestYamlFileConfig(t *testing.T) {
 	}
 
 	// 初始化配置
-	Must(InitWithConfig(&appConfig.Log))
+	Log = Init(appConfig.Log)
 
 	// 写日志文件
-	Infof("Yaml File: %s", filename)
-	Infof("File Config: %#v", appConfig.Log)
-	Infof("Test finish.")
+	Log.Printf("Yaml File: %s", filename)
+	Log.Printf("File Config: %#v", appConfig.Log)
+	Log.Info().Msg("Test finish.")
 }
