@@ -1,7 +1,7 @@
 package log
 
 import (
-	"encoding/json"
+	"github.com/angenalZZZ/gofunc/f"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
@@ -130,14 +130,14 @@ func checkPassLagerDefinition(lag *Lager) {
 }
 
 // createLogFile create log file
-func createLogFile(localPath, outputpath string) {
-	_, err := os.Stat(strings.Replace(filepath.Dir(filepath.Join(localPath, outputpath)), "\\", "/", -1))
+func createLogFile(localPath, outputPath string) {
+	_, err := os.Stat(strings.Replace(filepath.Dir(filepath.Join(localPath, outputPath)), "\\", "/", -1))
 	if err != nil && os.IsNotExist(err) {
-		_ = os.MkdirAll(strings.Replace(filepath.Dir(filepath.Join(localPath, outputpath)), "\\", "/", -1), os.ModePerm)
+		_ = os.MkdirAll(strings.Replace(filepath.Dir(filepath.Join(localPath, outputPath)), "\\", "/", -1), os.ModePerm)
 	} else if err != nil {
 		panic(err)
 	}
-	f, err := os.OpenFile(strings.Replace(filepath.Join(localPath, outputpath), "\\", "/", -1), os.O_CREATE, os.ModePerm)
+	f, err := os.OpenFile(strings.Replace(filepath.Join(localPath, outputPath), "\\", "/", -1), os.O_CREATE, os.ModePerm)
 	if err != nil {
 		panic(err)
 	}
@@ -198,6 +198,6 @@ func Init() error {
 }
 
 func marshalDefinition() string {
-	data, _ := json.Marshal(PassLagerDefinition)
+	data, _ := f.EncodeJson(PassLagerDefinition)
 	return string(data)
 }

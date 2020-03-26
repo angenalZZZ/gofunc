@@ -4,9 +4,9 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/angenalZZZ/gofunc/f"
 	"strings"
 )
 
@@ -59,7 +59,7 @@ func GetClaims(token string) map[string]interface{} {
 	}
 
 	dst := map[string]interface{}{}
-	err = json.Unmarshal(payload, &dst)
+	err = f.DecodeJson(payload, &dst)
 	if err != nil {
 		return nil
 	}
@@ -96,7 +96,7 @@ type signedDecoded struct {
 }
 
 func newEncoded(claims map[string]interface{}) (encoded, error) {
-	header, err := json.Marshal(defaultHeader)
+	header, err := f.EncodeJson(defaultHeader)
 	if err != nil {
 		return encoded{}, err
 	}
@@ -107,7 +107,7 @@ func newEncoded(claims map[string]interface{}) (encoded, error) {
 		}
 	}
 
-	payload, err := json.Marshal(claims)
+	payload, err := f.EncodeJson(claims)
 	if err != nil {
 		return encoded{}, err
 	}

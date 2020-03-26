@@ -45,7 +45,7 @@ func RegisterWriter(name string, writer io.Writer) {
 	m.Unlock()
 }
 
-//DefaultConfig is a function which retuns config object with default configuration
+//DefaultConfig is a function which returns config object with default configuration
 func DefaultConfig() *Config {
 	return &Config{
 		LoggerLevel:    INFO,
