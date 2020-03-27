@@ -17,6 +17,7 @@ type (
 // Log default logger.
 var Log Logger
 
+// Log level.
 const (
 	// DebugLevel defines debug log level.
 	DebugLevel = zerolog.DebugLevel
@@ -48,9 +49,11 @@ func Init(c Config) Logger {
 
 	var writers []io.Writer
 	if strings.Contains(c.Writers, "file") {
+		// create dir
 		//if _, err := os.Stat(c.Filename); err != nil && os.IsNotExist(err) {
-		//	if err = os.MkdirAll(c.Filename, 0644); err != nil {
-		//		panic(err)
+		//	if err = os.MkdirAll(c.Filename, 0744); err != nil {
+		//		_ = fmt.Errorf("can't make directories for new logfile: %s", err)
+		//		return nil
 		//	}
 		//}
 		w := &lumberjack.Logger{
@@ -84,7 +87,7 @@ func InitConsole() Logger {
 
 func newConsole() io.Writer {
 	w := zerolog.NewConsoleWriter()
-	w.TimeFormat = "01-02 15:04:05"
+	w.TimeFormat = "2006-01-02 15:04:05"
 	w.NoColor = true
 	// FormatLevel https://github.com/rs/zerolog/blob/master/console.go#L315
 	w.FormatLevel = func(i interface{}) string {
