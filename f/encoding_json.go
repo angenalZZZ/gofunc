@@ -1,6 +1,22 @@
 package f
 
-import json "github.com/json-iterator/go"
+import (
+	json "github.com/json-iterator/go"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
+)
+
+const JSON JsonString = ""
+
+type JsonString string
+
+func (j *JsonString) Get(data string) gjson.Result {
+	return gjson.Parse(data)
+}
+
+func (j *JsonString) Set(data, path string, value interface{}) (string, error) {
+	return sjson.Set(data, path, value)
+}
 
 // EncodeJson encode a object v to json data.
 func EncodeJson(v interface{}) ([]byte, error) {
