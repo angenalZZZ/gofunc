@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unsafe"
 )
 
 // Bool convert string to bool
@@ -92,4 +93,45 @@ func ToString(val interface{}) (str string) {
 		}
 	}
 	return
+}
+
+// BytesToString convert []byte type to string type.
+func BytesToString(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
+}
+
+// StringToBytes convert string type to []byte type.
+// NOTE: panic if modify the member value of the []byte.
+func StringToBytes(s string) []byte {
+	sp := *(*[2]uintptr)(unsafe.Pointer(&s))
+	bp := [3]uintptr{sp[0], sp[1], sp[1]}
+	return *(*[]byte)(unsafe.Pointer(&bp))
+}
+
+// StringsConvert converts the string slice to a new slice using fn.
+// If fn returns error, exit the conversion and return the error.
+func StringsConvert(a []string, fn func(string) (string, error)) ([]string, error) {
+	ret := make([]string, len(a))
+	for i, s := range a {
+		r, err := fn(s)
+		if err != nil {
+			return nil, err
+		}
+		ret[i] = r
+	}
+	return ret, nil
+}
+
+// StringsConvertMap converts the string slice to a new map using fn.
+// If fn returns error, exit the conversion and return the error.
+func StringsConvertMap(a []string, fn func(string) (string, error)) (map[string]string, error) {
+	ret := make(map[string]string, len(a))
+	for _, s := range a {
+		r, err := fn(s)
+		if err != nil {
+			return nil, err
+		}
+		ret[s] = r
+	}
+	return ret, nil
 }
