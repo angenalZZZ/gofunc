@@ -2,6 +2,7 @@ package f
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"unsafe"
@@ -103,9 +104,9 @@ func BytesToString(b []byte) string {
 // StringToBytes convert string type to []byte type.
 // NOTE: panic if modify the member value of the []byte.
 func StringToBytes(s string) []byte {
-	sp := *(*[2]uintptr)(unsafe.Pointer(&s))
-	bp := [3]uintptr{sp[0], sp[1], sp[1]}
-	return *(*[]byte)(unsafe.Pointer(&bp))
+	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	bh := reflect.SliceHeader{Data: sh.Data, Len: sh.Len, Cap: sh.Len}
+	return *(*[]byte)(unsafe.Pointer(&bh))
 }
 
 // StringsConvert converts the string slice to a new slice using fn.

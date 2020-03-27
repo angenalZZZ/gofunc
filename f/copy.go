@@ -1,6 +1,10 @@
 package f
 
 import (
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"reflect"
 	"time"
 )
@@ -10,14 +14,14 @@ type CopyInterface interface {
 	Copy() interface{}
 }
 
-// Clone a deep copy of src object.
-func Clone(src interface{}) interface{} {
-	return Copy(src)
+// CloneInterface for delegating copy process to type
+type CloneInterface interface {
+	Clone() interface{}
 }
 
 // Copy create a deep copy of whatever is passed to it and returns the copy
 // in an interface{}.  The returned value will need to be asserted to the correct type.
-func Copy(src interface{}) interface{} {
+func Clone(src interface{}) interface{} {
 	if src == nil {
 		return nil
 	}
@@ -38,10 +42,14 @@ func Copy(src interface{}) interface{} {
 // copyRecursive does the actual copying of the interface. It currently has
 // limited support for what it can handle. Add as needed.
 func copyRecursive(original, cpy reflect.Value) {
-	// check for implement CopyInterface
+	// check for implement CloneInterface
 	if original.CanInterface() {
 		if copier, ok := original.Interface().(CopyInterface); ok {
 			cpy.Set(reflect.ValueOf(copier.Copy()))
+			return
+		}
+		if copier, ok := original.Interface().(CloneInterface); ok {
+			cpy.Set(reflect.ValueOf(copier.Clone()))
 			return
 		}
 	}
@@ -108,11 +116,108 @@ func copyRecursive(original, cpy reflect.Value) {
 			originalValue := original.MapIndex(key)
 			copyValue := reflect.New(originalValue.Type()).Elem()
 			copyRecursive(originalValue, copyValue)
-			copyKey := Copy(key.Interface())
+			copyKey := Clone(key.Interface())
 			cpy.SetMapIndex(reflect.ValueOf(copyKey), copyValue)
 		}
 
 	default:
 		cpy.Set(original)
 	}
+}
+
+// Copy recursively copies the file, directory or symbolic link at src
+// to dst. The destination must not exist. Symbolic links are not
+// followed.
+//
+// If the copy fails half way through, the destination might be left
+// partially written.
+func Copy(srcFile, dstFile string) error {
+	srcInfo, srcErr := os.Lstat(srcFile)
+	if srcErr != nil {
+		return srcErr
+	}
+	_, dstErr := os.Lstat(dstFile)
+	if dstErr == nil {
+		return fmt.Errorf("will not overwrite %q", dstFile)
+	}
+	if !os.IsNotExist(dstErr) {
+		return dstErr
+	}
+	switch mode := srcInfo.Mode(); mode & os.ModeType {
+	case os.ModeSymlink:
+		return CopySymLink(srcFile, dstFile)
+	case os.ModeDir:
+		return CopyDir(srcFile, dstFile, mode)
+	case 0:
+		return CopyFile(srcFile, dstFile, mode)
+	default:
+		return fmt.Errorf("cannot copy file with mode %v", mode)
+	}
+}
+
+func CopySymLink(srcFile, dstFile string) error {
+	target, err := os.Readlink(srcFile)
+	if err != nil {
+		return err
+	}
+	return os.Symlink(target, dstFile)
+}
+
+func CopyFile(src, dst string, mode os.FileMode) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode.Perm())
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+	// Make the actual permissions match the source permissions
+	// even in the presence of umask.
+	if err := os.Chmod(dstFile.Name(), mode.Perm()); err != nil {
+		return err
+	}
+	if _, err := io.Copy(dstFile, srcFile); err != nil {
+		return fmt.Errorf("cannot copy %q to %q: %v", src, dst, err)
+	}
+	return nil
+}
+
+// CopyDir copy directory.
+func CopyDir(src, dst string, mode os.FileMode) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+	if mode&0500 == 0 {
+		// The source directory doesn't have write permission,
+		// so give the new directory write permission anyway
+		// so that we have permission to create its contents.
+		// We'll make the permissions match at the end.
+		mode |= 0500
+	}
+	if err := os.Mkdir(dst, mode.Perm()); err != nil {
+		return err
+	}
+	for {
+		names, err := srcFile.Readdirnames(100)
+		for _, name := range names {
+			if err := Copy(filepath.Join(src, name), filepath.Join(dst, name)); err != nil {
+				return err
+			}
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("error reading directory %q: %v", src, err)
+		}
+	}
+	if err := os.Chmod(dst, mode.Perm()); err != nil {
+		return err
+	}
+	return nil
 }
