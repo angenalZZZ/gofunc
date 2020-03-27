@@ -3,9 +3,11 @@ module github.com/angenalZZZ/gofunc
 go 1.13
 
 require (
+	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/json-iterator/go v1.1.9
 	github.com/panjf2000/ants/v2 v2.3.1
 	github.com/rs/zerolog v1.18.0
+	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/tidwall/gjson v1.6.0
 	github.com/tidwall/sjson v1.0.4
