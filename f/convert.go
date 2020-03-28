@@ -90,6 +90,8 @@ func ToString(val interface{}) (str string) {
 		str = fmt.Sprintf("%g", tVal)
 	case string:
 		str = tVal
+	case []byte:
+		str = String(tVal)
 	case nil:
 		str = ""
 	default:
