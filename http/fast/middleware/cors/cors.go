@@ -35,6 +35,7 @@ type Config struct {
 //  }
 // app.Use(cors.New())
 func New(config ...Config) func(*fast.Ctx) {
+	// Init config
 	var cfg Config
 	if len(config) > 0 {
 		cfg = config[0]
