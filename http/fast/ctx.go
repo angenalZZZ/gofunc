@@ -782,6 +782,28 @@ func (ctx *Ctx) Status(status int) *Ctx {
 	return ctx
 }
 
+// Token gets token from request(query url, post args, header authorization).
+func (ctx *Ctx) Token(key ...string) string {
+	k := "token"
+	if len(key) > 0 {
+		k = key[0]
+	}
+	switch ctx.method {
+	case "POST", "PUT":
+		if ctx.C.Request.PostArgs().Has(k) {
+			return getString(ctx.C.Request.PostArgs().Peek(k))
+		}
+	}
+	if token := ctx.C.Request.Header.Peek("Authorization"); token != nil && len(token) > 8 {
+		t := strings.Split(getString(token), " ")
+		return t[len(t)-1]
+	}
+	if ctx.C.QueryArgs().Has(k) {
+		return getString(ctx.C.QueryArgs().Peek(k))
+	}
+	return ""
+}
+
 // Type sets the Content-Type HTTP header to the MIME type specified by the file extension.
 func (ctx *Ctx) Type(ext string) *Ctx {
 	ctx.C.Response.Header.SetContentType(getMIME(ext))
