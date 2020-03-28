@@ -64,6 +64,12 @@ func ToInt(v interface{}, strict bool) (i int64, err error) {
 	return
 }
 
+// String converts byte slice to a string without memory allocation.
+// See https://groups.google.com/forum/#!msg/Golang-Nuts/ENgbUzYvCuU/90yGx7GUAgAJ .
+func String(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
+}
+
 // ToString convert number to string
 func ToString(val interface{}) (str string) {
 	switch tVal := val.(type) {
@@ -96,14 +102,15 @@ func ToString(val interface{}) (str string) {
 	return
 }
 
-// BytesToString convert []byte type to string type.
-func BytesToString(b []byte) string {
-	return *(*string)(unsafe.Pointer(&b))
+// Bytes converts string to a byte slice without memory allocation.
+// NOTE: panic if modify the member value of the []byte.
+func Bytes(s string) (b []byte) {
+	return *(*[]byte)(unsafe.Pointer(&s))
 }
 
-// StringToBytes convert string type to []byte type.
+// ToBytes converts string to a byte slice without memory allocation.
 // NOTE: panic if modify the member value of the []byte.
-func StringToBytes(s string) []byte {
+func ToBytes(s string) []byte {
 	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
 	bh := reflect.SliceHeader{Data: sh.Data, Len: sh.Len, Cap: sh.Len}
 	return *(*[]byte)(unsafe.Pointer(&bh))

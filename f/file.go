@@ -411,6 +411,6 @@ func ReplaceFile(filename string, start, end int, newContent string) error {
 		if start > end {
 			start = end
 		}
-		return bytes.Replace(content, content[start:end], StringToBytes(newContent), 1), nil
+		return bytes.Replace(content, content[start:end], ToBytes(newContent), 1), nil
 	})
 }
