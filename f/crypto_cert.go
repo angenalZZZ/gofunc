@@ -13,6 +13,17 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
+// NewTLSLoadConfig Load X509 Key Pair.
+func NewTLSLoadConfig(crtFile, keyFile string, insecureSkipVerify bool) *tls.Config {
+	cer, err := tls.LoadX509KeyPair(crtFile, keyFile)
+	Must(err)
+
+	return &tls.Config{
+		InsecureSkipVerify: insecureSkipVerify, // 忽略服务器证书校验; 忽略自签名的服务器证书.
+		Certificates:       []tls.Certificate{cer},
+	}
+}
+
 // NewTLSServerAutoCertConfig serve over tls with autoCerts from let's encrypt.
 func NewTLSServerAutoCertConfig(email string, domains string) *tls.Config {
 	certDomains := strings.Split(domains, " ")
