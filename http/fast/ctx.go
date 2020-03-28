@@ -852,3 +852,15 @@ func (ctx *Ctx) Write(bodies ...interface{}) {
 func (ctx *Ctx) XHR() bool {
 	return ctx.Get("X-Requested-With") == "XMLHttpRequest"
 }
+
+// XSSProtection X-XSS-Protection...
+func (ctx *Ctx) XSSProtection() {
+	ctx.Set("X-Content-Type-Options", "nosniff")
+	ctx.Set("X-Frame-Options", "SAMEORIGIN") // or DENY
+	ctx.Set("X-XSS-Protection", "1; mode=block")
+	if ctx.C.IsTLS() {
+		ctx.Set("Strict-Transport-Security", "max-age=31536000")
+	}
+	// Also consider adding Content-Security-Policy headers
+	// c.Header("Content-Security-Policy", "script-src 'self' https://cdnjs.cloudflare.com")
+}

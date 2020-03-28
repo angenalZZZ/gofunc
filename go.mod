@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
-	github.com/gorilla/schema v1.1.0 // indirect
+	github.com/gorilla/schema v1.1.0
 	github.com/json-iterator/go v1.1.9
 	github.com/panjf2000/ants/v2 v2.3.1
 	github.com/rs/zerolog v1.18.0
@@ -12,7 +12,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/tidwall/gjson v1.6.0
 	github.com/tidwall/sjson v1.0.4
-	github.com/valyala/fasthttp v1.9.0 // indirect
+	github.com/valyala/fasthttp v1.9.0
 	golang.org/x/crypto v0.0.0-20200320181102-891825fb96df
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
