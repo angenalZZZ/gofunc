@@ -4,5 +4,8 @@ log: # 日志跟踪
   maxage: 1 # 转存时间days
   maxbackups: 60 # 保留最大旧日志文件数
   localtime: true # 使用本地时间,不然文件名就是UTC时间
+  timeformat: 2006-01-02 15:04:05.000
   compress: false # 压缩备份gzip
   writers: file,stdout # 输出位置(选项:file,stdout)
+  level: info # 日志级别(选项:debug,info,warn,error,fatal,panic,trace)
+  json: false # 输出json格式

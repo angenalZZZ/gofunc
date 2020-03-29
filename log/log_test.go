@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"github.com/angenalZZZ/gofunc/configfile"
 	"testing"
 )
@@ -21,8 +22,8 @@ func TestYamlFileConfig(t *testing.T) {
 	// 初始化配置
 	Log = Init(appConfig.Log)
 
-	// 写日志文件
-	Log.Printf("Yaml File: %s", filename)
-	Log.Printf("File Config: %#v", appConfig.Log)
-	Log.Info().Msg("Test finish.")
+	// 写日志
+	Log.Debug().Msgf("Yaml File: %s", filename)
+	Log.Info().Str("Config", fmt.Sprintf("%+v", appConfig.Log)).Send()
+	Log.Info().Timestamp().Msg("Test finish.\n ok!")
 }

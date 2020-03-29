@@ -394,8 +394,8 @@ func (ctx *Ctx) Fresh() bool {
 // Get returns the HTTP request header specified by field.
 // Field names are case-insensitive
 func (ctx *Ctx) Get(key string) (value string) {
-	if key == "referrer" {
-		key = "referer"
+	if key == "Referrer" {
+		key = "Referer"
 	}
 	return getString(ctx.C.Request.Header.Peek(key))
 }

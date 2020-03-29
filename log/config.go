@@ -12,8 +12,12 @@ type Config struct {
 	MaxBackups int `json:"maxbackups"`
 	// 使用本地时间,不然文件名就是UTC时间
 	LocalTime bool `json:"localtime"`
+	// 设置时间格式
+	TimeFormat string `json:"timeformat"`
 	// 压缩备份gzip
 	Compress bool `json:"compress"`
 	// 输出位置(选项:file,stdout)
 	Writers string `json:"writers"`
+	// 日志级别(选项:debug,info,warn,error,fatal,panic,trace)
+	Level string `json:"level"`
 }

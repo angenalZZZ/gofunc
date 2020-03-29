@@ -33,7 +33,7 @@ type Config struct {
 //    MaxAge: 86400,
 //    X: true,
 //  }
-// app.Use(cors.New())
+// app.Use(cors.New(cfg))
 func New(config ...Config) func(*fast.Ctx) {
 	// Init config
 	var cfg Config

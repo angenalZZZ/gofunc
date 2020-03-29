@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"github.com/angenalZZZ/gofunc/f"
 	"github.com/rs/zerolog"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
@@ -9,53 +10,39 @@ import (
 	"time"
 )
 
-type (
-	Logger = *zerolog.Logger
-	Level  = zerolog.Level
-)
-
-// Log default logger.
+// Log default logger, or use log of import "github.com/rs/zerolog/log"
 var Log Logger
 
-// Log level.
-const (
-	// DebugLevel defines debug log level.
-	DebugLevel = zerolog.DebugLevel
-	// InfoLevel defines info log level.
-	InfoLevel = zerolog.InfoLevel
-	// WarnLevel defines warn log level.
-	WarnLevel = zerolog.WarnLevel
-	// ErrorLevel defines error log level.
-	ErrorLevel = zerolog.ErrorLevel
-	// FatalLevel defines fatal log level.
-	FatalLevel = zerolog.FatalLevel
-	// PanicLevel defines panic log level.
-	PanicLevel = zerolog.PanicLevel
-	// NoLevel defines an absent log level.
-	NoLevel = zerolog.NoLevel
-	// Disabled disables the logger.
-	Disabled = zerolog.Disabled
+// Logger *zerolog.Logger
+type Logger = *zerolog.Logger
 
-	// TraceLevel defines trace log level.
-	TraceLevel Level = -1
-)
+// Init the global zero logger.
+func init() {
+	zerolog.CallerFieldName = "c"     // default: caller
+	zerolog.ErrorFieldName = "e"      // default: error
+	zerolog.ErrorStackFieldName = "s" // default: stack
+	zerolog.LevelFieldName = "l"      // default: level
+	zerolog.MessageFieldName = "m"    // default: message
+	zerolog.TimestampFieldName = "t"  // default: time
 
-// Init zero logger.
-func Init(c Config) Logger {
-	zerolog.TimeFieldFormat = "2006-01-02 15:04:05.000"
 	zerolog.DurationFieldInteger = true
-	zerolog.TimestampFieldName = "timestamp"
 	zerolog.DurationFieldUnit = time.Millisecond
+	//zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	//zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack // Enable stack trace
+}
 
+// Init the zero logger.
+func Init(c Config) Logger {
+	// sets the global override for log level and time format.
+	if level, err := zerolog.ParseLevel(c.Level); err == nil {
+		zerolog.SetGlobalLevel(level)
+	}
+	if c.TimeFormat != "" {
+		zerolog.TimeFieldFormat = c.TimeFormat
+	}
+	// configs writers
 	var writers []io.Writer
 	if strings.Contains(c.Writers, "file") {
-		// create dir
-		//if _, err := os.Stat(c.Filename); err != nil && os.IsNotExist(err) {
-		//	if err = os.MkdirAll(c.Filename, 0744); err != nil {
-		//		_ = fmt.Errorf("can't make directories for new logfile: %s", err)
-		//		return nil
-		//	}
-		//}
 		w := &lumberjack.Logger{
 			Filename:   c.Filename,
 			MaxSize:    c.MaxSize,
@@ -67,10 +54,9 @@ func Init(c Config) Logger {
 		writers = append(writers, w)
 	}
 	if strings.Contains(c.Writers, "stdout") {
-		w := newConsole()
+		w := newConsole(zerolog.TimeFieldFormat, false)
 		writers = append(writers, w)
 	}
-
 	w := io.MultiWriter(writers...)
 	z := zerolog.New(w).With().Timestamp()
 	l := z.Logger()
@@ -78,26 +64,37 @@ func Init(c Config) Logger {
 }
 
 // InitConsole zero console logger.
-func InitConsole() Logger {
-	w := newConsole()
-	z := zerolog.New(w).With().Timestamp()
-	l := z.Logger()
+func InitConsole(timeFormat string, jsonWriter bool) Logger {
+	w := newConsole(timeFormat, jsonWriter)
+	l := zerolog.New(w).With().Timestamp().Logger()
 	return &l
 }
 
-func newConsole() io.Writer {
+func newConsole(timeFormat string, jsonWriter bool) io.Writer {
 	w := zerolog.NewConsoleWriter()
-	w.TimeFormat = "2006-01-02 15:04:05"
-	w.NoColor = true
-	// FormatLevel https://github.com/rs/zerolog/blob/master/console.go#L315
-	w.FormatLevel = func(i interface{}) string {
-		if s, ok := i.(string); ok {
-			return s
-		}
-		if s, ok := i.(fmt.Stringer); ok {
-			return s.String()
-		}
-		return fmt.Sprint(i)
+	w.TimeFormat = timeFormat
+	w.NoColor = true // NoColor to Improve efficiency
+	if jsonWriter {
+		return w
 	}
+	setConsoleWriterFormat(&w)
+	return &w
+}
+
+func newFileWriter(writer io.Writer, timeFormat string) io.Writer {
+	w := &zerolog.ConsoleWriter{Out: writer}
+	setConsoleWriterFormat(w)
 	return w
+}
+
+func setConsoleWriterFormat(w *zerolog.ConsoleWriter) {
+	// https://github.com/rs/zerolog/blob/master/console.go#L315
+	w.FormatLevel = func(i interface{}) string {
+		return fmt.Sprintf(`[%s]`, i)
+	}
+	w.FormatFieldName = func(i interface{}) string {
+		return fmt.Sprintf(`"%s":`, i)
+	}
+	w.FormatFieldValue = f.ToString
+	w.FormatMessage = f.ToString
 }

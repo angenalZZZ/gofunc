@@ -41,7 +41,7 @@ type Config struct {
 //    Timeout: 1,
 //    Max: 100,
 //  }
-// app.Use(limiter.New())
+// app.Use(limiter.New(cfg))
 func New(config ...Config) func(*fast.Ctx) {
 	// Init config
 	var cfg Config

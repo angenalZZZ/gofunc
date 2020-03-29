@@ -28,7 +28,7 @@ type Config struct {
 //  cfg := compression.Config{
 //    Level: compression.LevelBestSpeed,
 //  }
-// app.Use(compression.New())
+// app.Use(compression.New(cfg))
 func New(config ...Config) func(*fast.Ctx) {
 	// Init config
 	var cfg Config

@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// TimeFormat https://programming.guide/go/format-parse-string-time-date-example.html
 const (
 	DateFormatStringG     string = "20060102"
 	DateFormatString      string = "2006-01-02"
