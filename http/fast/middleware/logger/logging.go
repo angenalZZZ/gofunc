@@ -99,6 +99,9 @@ func New(config ...Config) func(*fast.Ctx) {
 		// handle request
 		c.Next()
 		// build log
+		if cfg.Output == nil {
+			return
+		}
 		stop := time.Now()
 		if cfg.JsonOutput == false {
 			buf := pool.Get().(*bytes.Buffer)
