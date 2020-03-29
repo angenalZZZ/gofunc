@@ -96,7 +96,7 @@ func New(settings ...*Settings) *Fast {
 			app.Settings.BodyLimit = 4 * 1024 * 1024
 		}
 		if app.Settings.Immutable { // Replace unsafe conversion funcs
-			getString = getStringImmutable
+			GetString = getStringImmutable
 		}
 	}
 	return app

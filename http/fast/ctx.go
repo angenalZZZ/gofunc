@@ -67,8 +67,8 @@ var poolCtx = sync.Pool{
 func acquireCtx(fctx *fasthttp.RequestCtx) *Ctx {
 	ctx := poolCtx.Get().(*Ctx)
 	ctx.index = -1
-	ctx.path = getString(fctx.URI().Path())
-	ctx.method = getString(fctx.Request.Header.Method())
+	ctx.path = GetString(fctx.URI().Path())
+	ctx.method = GetString(fctx.Request.Header.Method())
 	ctx.C = fctx
 	return ctx
 }
@@ -199,7 +199,7 @@ func (ctx *Ctx) Append(field string, values ...string) {
 	if len(values) == 0 {
 		return
 	}
-	h := getString(ctx.C.Response.Header.Peek(field))
+	h := GetString(ctx.C.Response.Header.Peek(field))
 	for i := range values {
 		if h == "" {
 			h += values[i]
@@ -231,11 +231,11 @@ func (ctx *Ctx) BaseURL() string {
 func (ctx *Ctx) Body(key ...string) string {
 	// Return request body
 	if len(key) == 0 {
-		return getString(ctx.C.Request.Body())
+		return GetString(ctx.C.Request.Body())
 	}
 	// Return post value by key
 	if len(key) > 0 {
-		return getString(ctx.C.Request.PostArgs().Peek(key[0]))
+		return GetString(ctx.C.Request.PostArgs().Peek(key[0]))
 	}
 	return ""
 }
@@ -245,7 +245,7 @@ func (ctx *Ctx) Body(key ...string) string {
 // application/json, application/xml, application/x-www-form-urlencoded, multipart/form-data
 func (ctx *Ctx) BodyParser(out interface{}) error {
 	// Query Params
-	ct := getString(ctx.C.Request.Header.ContentType())
+	ct := GetString(ctx.C.Request.Header.ContentType())
 	// application/json
 	if strings.HasPrefix(ct, "application/json") {
 		return jsoniter.Unmarshal(ctx.C.Request.Body(), out)
@@ -256,7 +256,7 @@ func (ctx *Ctx) BodyParser(out interface{}) error {
 	}
 	// application/x-www-form-urlencoded
 	if strings.HasPrefix(ct, "application/x-www-form-urlencoded") {
-		data, err := url.ParseQuery(getString(ctx.C.PostBody()))
+		data, err := url.ParseQuery(GetString(ctx.C.PostBody()))
 		if err != nil {
 			return err
 		}
@@ -284,7 +284,7 @@ func (ctx *Ctx) ClearCookie(key ...string) {
 	}
 	//ctx.C.Response.Header.DelAllCookies()
 	ctx.C.Request.Header.VisitAllCookie(func(k, v []byte) {
-		ctx.C.Response.Header.DelClientCookie(getString(k))
+		ctx.C.Response.Header.DelClientCookie(GetString(k))
 	})
 }
 
@@ -322,7 +322,7 @@ func (ctx *Ctx) Cookies(key ...string) (value string) {
 	if len(key) == 0 {
 		return ctx.Get("Cookie")
 	}
-	return getString(ctx.C.Request.Header.Cookie(key[0]))
+	return GetString(ctx.C.Request.Header.Cookie(key[0]))
 }
 
 // Download transfers the file from path as an attachment.
@@ -356,7 +356,7 @@ func (ctx *Ctx) Format(body interface{}) {
 	case string:
 		b = val
 	case []byte:
-		b = getString(val)
+		b = GetString(val)
 	default:
 		if t, ok := val.(fmt.Stringer); ok {
 			b = t.String()
@@ -383,7 +383,7 @@ func (ctx *Ctx) FormFile(key string) (*multipart.FileHeader, error) {
 
 // FormValue returns the first value by key from a MultipartForm.
 func (ctx *Ctx) FormValue(key string) (value string) {
-	return getString(ctx.C.FormValue(key))
+	return GetString(ctx.C.FormValue(key))
 }
 
 // Fresh is not implemented yet, pull requests are welcome!
@@ -397,12 +397,12 @@ func (ctx *Ctx) Get(key string) (value string) {
 	if key == "Referrer" {
 		key = "Referer"
 	}
-	return getString(ctx.C.Request.Header.Peek(key))
+	return GetString(ctx.C.Request.Header.Peek(key))
 }
 
 // Hostname contains the hostname derived from the Host HTTP header.
 func (ctx *Ctx) Hostname() string {
-	return getString(ctx.C.URI().Host())
+	return GetString(ctx.C.URI().Host())
 }
 
 // IP returns the remote IP address of the request.
@@ -451,7 +451,7 @@ func (ctx *Ctx) JSON(json interface{}) error {
 	}
 	// Set http headers
 	ctx.C.Response.Header.SetContentType("application/json")
-	ctx.C.Response.SetBodyString(getString(stream.Buffer()))
+	ctx.C.Response.SetBodyString(GetString(stream.Buffer()))
 	// Success!
 	return nil
 }
@@ -474,7 +474,7 @@ func (ctx *Ctx) JSONP(json interface{}, callback ...string) error {
 	if len(callback) > 0 {
 		str = callback[0] + "("
 	}
-	str += getString(stream.Buffer()) + ");"
+	str += GetString(stream.Buffer()) + ");"
 
 	ctx.Set("X-Content-Type-Options", "nosniff")
 	ctx.C.Response.Header.SetContentType("application/javascript")
@@ -541,7 +541,7 @@ func (ctx *Ctx) Next(err ...error) {
 
 // OriginalURL contains the original request URL.
 func (ctx *Ctx) OriginalURL() string {
-	return getString(ctx.C.Request.Header.RequestURI())
+	return GetString(ctx.C.Request.Header.RequestURI())
 }
 
 // Params is used to get the route parameters.
@@ -585,7 +585,7 @@ func (ctx *Ctx) Protocol() string {
 
 // Query returns the query string parameter in the url.
 func (ctx *Ctx) Query(key string) (value string) {
-	return getString(ctx.C.QueryArgs().Peek(key))
+	return GetString(ctx.C.QueryArgs().Peek(key))
 }
 
 // Range returns a struct containing the type and a slice of ranges.
@@ -661,7 +661,7 @@ func (ctx *Ctx) Render(file string, bind interface{}) error {
 	if ctx.app.Settings.TemplateEngine != nil {
 		// Custom template engine
 		// https://github.com/valyala/quicktemplate
-		if html, err = ctx.app.Settings.TemplateEngine(getString(raw), bind); err != nil {
+		if html, err = ctx.app.Settings.TemplateEngine(GetString(raw), bind); err != nil {
 			return err
 		}
 	} else {
@@ -670,7 +670,7 @@ func (ctx *Ctx) Render(file string, bind interface{}) error {
 		var buf bytes.Buffer
 		var tmpl *template.Template
 
-		if tmpl, err = template.New("").Parse(getString(raw)); err != nil {
+		if tmpl, err = template.New("").Parse(GetString(raw)); err != nil {
 			return err
 		}
 		if err = tmpl.Execute(&buf, bind); err != nil {
@@ -708,7 +708,7 @@ func (ctx *Ctx) Send(bodies ...interface{}) {
 		case string:
 			ctx.C.Response.AppendBodyString(body)
 		case []byte:
-			ctx.C.Response.AppendBody(body) // .AppendBodyString(getString(body))
+			ctx.C.Response.AppendBody(body) // .AppendBodyString(GetString(body))
 		default:
 			if t, ok := body.(fmt.Stringer); ok {
 				ctx.C.Response.AppendBodyString(t.String())
@@ -722,7 +722,7 @@ func (ctx *Ctx) Send(bodies ...interface{}) {
 // SendBytes sets the HTTP response body for []byte types
 // This means no type assertion, recommended for faster performance
 func (ctx *Ctx) SendBytes(body []byte) {
-	ctx.C.Response.SetBodyString(getString(body))
+	ctx.C.Response.SetBodyString(GetString(body))
 }
 
 // SendFile transfers the file from the given path.
@@ -791,15 +791,15 @@ func (ctx *Ctx) Token(key ...string) string {
 	switch ctx.method {
 	case "POST", "PUT":
 		if ctx.C.Request.PostArgs().Has(k) {
-			return getString(ctx.C.Request.PostArgs().Peek(k))
+			return GetString(ctx.C.Request.PostArgs().Peek(k))
 		}
 	}
 	if token := ctx.C.Request.Header.Peek("Authorization"); token != nil && len(token) > 8 {
-		t := strings.Split(getString(token), " ")
+		t := strings.Split(GetString(token), " ")
 		return t[len(t)-1]
 	}
 	if ctx.C.QueryArgs().Has(k) {
-		return getString(ctx.C.QueryArgs().Peek(k))
+		return GetString(ctx.C.QueryArgs().Peek(k))
 	}
 	return ""
 }
@@ -817,7 +817,7 @@ func (ctx *Ctx) Vary(fields ...string) {
 		return
 	}
 
-	h := getString(ctx.C.Response.Header.Peek("Vary"))
+	h := GetString(ctx.C.Response.Header.Peek("Vary"))
 	for i := range fields {
 		if h == "" {
 			h += fields[i]
@@ -836,7 +836,7 @@ func (ctx *Ctx) Write(bodies ...interface{}) {
 		case string:
 			ctx.C.Response.AppendBodyString(body)
 		case []byte:
-			ctx.C.Response.AppendBody(body) // .AppendBodyString(getString(body))
+			ctx.C.Response.AppendBody(body) // .AppendBodyString(GetString(body))
 		default:
 			if t, ok := body.(fmt.Stringer); ok {
 				ctx.C.Response.AppendBodyString(t.String())

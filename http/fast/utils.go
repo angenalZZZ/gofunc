@@ -78,7 +78,7 @@ func getMIME(extension string) (mime string) {
 	return mime
 }
 
-var getString = func(b []byte) string {
+var GetString = func(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 var getStringImmutable = func(b []byte) string {

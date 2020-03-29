@@ -22,21 +22,22 @@ type Config struct {
 	Filter func(*fast.Ctx) bool
 	// Format defines the logging format with defined variables
 	// Optional. Default: "${time} - ${method} ${path} - ${ip}\t${ua}\n"
-	// Possible values: time, ip, url, host, method, path, protocol
+	// Possible values: ip, url, host, method, path, protocol
 	// referer, ua, header:<key>, query:<key>, form:<key>, cookie:<key>
 	Format string
 	// Format json defines
-	// Optional values: time,ip,method,path,status,latency,query,data
+	// Optional Default: ip,method,path,status,latency,query,data
 	JsonFormat string
-	// TimeFormat https://programming.guide/go/format-parse-string-time-date-example.html
-	// Optional. Default: 15:04:05
-	TimeFormat string
 	// Output is a writer where logs are written
 	// Default: log.Log
 	Output log.Logger
+	// Output json defines with JsonFormat
+	JsonOutput bool
 	// ConfigFile log.yaml
 	// Optional if cfg.Output equals nil.
 	ConfigFile string
+	// Tag extension field.
+	Tag string
 }
 
 // LogConfig Defines Config File
@@ -46,8 +47,9 @@ type LogConfig struct {
 
 // New middleware.
 //  cfg := logger.Config{
-//    JsonFormat: "time,ip,method,path,status,latency,query,data",
+//    JsonOutput: true,
 //    ConfigFile: "log.yaml",
+//    Tag: "1",
 //  }
 // app.Use(logger.New(cfg))
 func New(config ...Config) func(*fast.Ctx) {
@@ -59,11 +61,12 @@ func New(config ...Config) func(*fast.Ctx) {
 	}
 	// Set config default values
 	if cfg.Format == "" {
-		cfg.Format = "${time} ${ip} ${method} ${path} -> ${status} - ${latency} <- ${query} -d ${data}"
+		cfg.Format = "${ip} ${method} ${path} -> ${status} - ${latency} <- ${query} -d ${data}"
 	}
-	if cfg.TimeFormat == "" {
-		cfg.TimeFormat = "15:04:05"
+	if cfg.JsonFormat == "" {
+		cfg.JsonFormat = "ip,method,path,status,latency,query,data"
 	}
+	tags := strings.Split(cfg.JsonFormat, ",")
 	if cfg.Output == nil {
 		if cfg.ConfigFile == "" {
 			cfg.Output = log.Log
@@ -82,21 +85,6 @@ func New(config ...Config) func(*fast.Ctx) {
 			return bytes.NewBuffer(make([]byte, 256))
 		},
 	}
-	var tags []string
-	timestamp := time.Now().Format(cfg.TimeFormat)
-	if cfg.JsonFormat == "" {
-		// Update date/time every second in a go routine
-		if strings.Contains(cfg.Format, "${time}") {
-			go func() {
-				for {
-					timestamp = time.Now().Format(cfg.TimeFormat)
-					time.Sleep(1 * time.Second)
-				}
-			}()
-		}
-	} else {
-		tags = strings.Split(cfg.JsonFormat, ",")
-	}
 	// Middleware function
 	return func(c *fast.Ctx) {
 		// Filter request to skip middleware
@@ -109,14 +97,12 @@ func New(config ...Config) func(*fast.Ctx) {
 		c.Next()
 		// build log
 		stop := time.Now()
-		if cfg.JsonFormat == "" {
+		if cfg.JsonOutput == false {
 			buf := pool.Get().(*bytes.Buffer)
 			buf.Reset()
 			defer pool.Put(buf)
 			_, err := tmpl.ExecuteFunc(buf, func(w io.Writer, tag string) (int, error) {
 				switch tag {
-				case "time":
-					return buf.WriteString(timestamp)
 				case "latency":
 					return buf.WriteString(stop.Sub(start).String())
 				default:
@@ -130,14 +116,24 @@ func New(config ...Config) func(*fast.Ctx) {
 			if err != nil {
 				buf.WriteString(err.Error())
 			}
-			if _, err := cfg.Output.Write(buf.Bytes()); err != nil {
-				cfg.Output.Err(err)
+			l := cfg.Output.Log()
+			if cfg.Tag != "" {
+				l.Str("tag", cfg.Tag)
 			}
+			l.Msg(fast.GetString(buf.Bytes()))
 		} else {
-			l := cfg.Output.Log().Timestamp()
+			l := cfg.Output.Log()
+			if cfg.Tag != "" {
+				l.Str("tag", cfg.Tag)
+			}
 			for _, tag := range tags {
-				if val := formatTag(c, tag); val != nil {
-					l.Bytes(tag, val)
+				switch tag {
+				case "latency":
+					l.Str(tag, stop.Sub(start).String())
+				default:
+					if val := formatTag(c, tag); val != nil {
+						l.Bytes(tag, val)
+					}
 				}
 			}
 			l.Send()
