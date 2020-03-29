@@ -76,6 +76,9 @@ func New(config ...Config) func(*fast.Ctx) {
 				_ = fmt.Errorf("%s", err.Error())
 			}
 			cfg.Output = log.Init(logCfg.Log)
+			if log.Log == nil {
+				log.Log = cfg.Output
+			}
 		}
 	}
 	// Middleware settings
