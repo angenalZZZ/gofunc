@@ -1,9 +1,6 @@
 package f
 
-import (
-	"encoding/json"
-	"sync"
-)
+import "sync"
 
 // Map Shard Count
 var CMapShardCount = 32
@@ -300,7 +297,7 @@ func (m CMap) JSON() ([]byte, error) {
 	for item := range m.IterBuffered() {
 		tmp[item.Key] = item.Val
 	}
-	return json.Marshal(tmp)
+	return EncodeJson(tmp)
 }
 
 func fnv32(key string) uint32 {
