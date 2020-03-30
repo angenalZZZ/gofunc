@@ -57,7 +57,7 @@ func copyRecursive(original, cpy reflect.Value) {
 	// handle according to original's Kind
 	switch original.Kind() {
 	case reflect.Ptr:
-		// Get the actual value being pointed to.
+		// GetHeader the actual value being pointed to.
 		originalValue := original.Elem()
 
 		// if  it isn't valid, return.
@@ -72,10 +72,10 @@ func copyRecursive(original, cpy reflect.Value) {
 		if original.IsNil() {
 			return
 		}
-		// Get the value for the interface, not the pointer.
+		// GetHeader the value for the interface, not the pointer.
 		originalValue := original.Elem()
 
-		// Get the value by calling Elem().
+		// GetHeader the value by calling Elem().
 		copyValue := reflect.New(originalValue.Type()).Elem()
 		copyRecursive(originalValue, copyValue)
 		cpy.Set(copyValue)

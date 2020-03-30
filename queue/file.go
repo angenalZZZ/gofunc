@@ -29,7 +29,7 @@ const (
 //
 // Returns true if types are compatible and false if incompatible.
 func checkQueueType(dataDir string, gt queueType) (bool, error) {
-	// Set the path to 'queue' file.
+	// SetHeader the path to 'queue' file.
 	path := filepath.Join(dataDir, "queue")
 
 	// Read 'queue' file for this directory.
@@ -57,7 +57,7 @@ func checkQueueType(dataDir string, gt queueType) (bool, error) {
 	}
 	defer f.Close()
 
-	// Get the saved type from the file.
+	// GetHeader the saved type from the file.
 	fb := make([]byte, 1)
 	_, err = f.Read(fb)
 	if err != nil {

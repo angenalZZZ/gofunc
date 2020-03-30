@@ -4,9 +4,21 @@ import (
 	json "github.com/json-iterator/go"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
+	"strings"
 )
 
 type Json string
+
+// NewJson New Json string.
+func NewJson(s string) Json {
+	if s == "" {
+		return ""
+	}
+	if j := strings.TrimSpace(s); j != "" && len(j) > 1 {
+		return Json(j)
+	}
+	return ""
+}
 
 // Parse parses the json and returns a result.
 //
@@ -18,7 +30,7 @@ func (j Json) Parse() gjson.Result {
 	return gjson.Parse(string(j))
 }
 
-// Get searches json for the specified path.
+// GetHeader searches json for the specified path.
 // A path is in dot syntax, such as "name.last" or "age".
 // When the value is found it's returned immediately.
 //
@@ -62,7 +74,7 @@ func (j Json) GetMany(path ...string) []gjson.Result {
 	return gjson.GetMany(string(j), path...)
 }
 
-// Set sets a json value for the specified path.
+// SetHeader sets a json value for the specified path.
 // A path is in dot syntax, such as "name.last" or "age".
 // This function expects that the json is well-formed, and does not validate.
 // Invalid json will not panic, but it may return back unexpected results.
@@ -95,6 +107,11 @@ func (j Json) Deletes(path string) Json {
 // String gets string from Json.
 func (j Json) String() string {
 	return string(j)
+}
+
+// HasValue gets json not equals "".
+func (j Json) HasValue() bool {
+	return j != ""
 }
 
 // EncodeJson encode a object v to json data.

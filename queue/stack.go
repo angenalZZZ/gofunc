@@ -49,7 +49,7 @@ func OpenStack(dataDir string) (*Stack, error) {
 		return s, ErrIncompatibleType
 	}
 
-	// Set isOpen and return.
+	// SetHeader isOpen and return.
 	s.isOpen = true
 	return s, s.init()
 }
@@ -301,7 +301,7 @@ func (s *Stack) getItemByID(id uint64) (*Item, error) {
 		return nil, ErrOutOfBounds
 	}
 
-	// Get item from database.
+	// GetHeader item from database.
 	var err error
 	item := &Item{ID: id, Key: idToKey(id)}
 	if item.Value, err = s.db.Get(item.Key, nil); err != nil {
@@ -317,12 +317,12 @@ func (s *Stack) init() error {
 	iter := s.db.NewIterator(nil, nil)
 	defer iter.Release()
 
-	// Set stack head to the last item.
+	// SetHeader stack head to the last item.
 	if iter.Last() {
 		s.head = keyToID(iter.Key())
 	}
 
-	// Set stack tail to the first item.
+	// SetHeader stack tail to the first item.
 	if iter.First() {
 		s.tail = keyToID(iter.Key()) - 1
 	}

@@ -65,7 +65,7 @@ func OpenPrefixQueue(dataDir string) (*PrefixQueue, error) {
 		return nil, ErrIncompatibleType
 	}
 
-	// Set isOpen and return.
+	// SetHeader isOpen and return.
 	pq.isOpen = true
 	return pq, pq.init()
 }
@@ -80,7 +80,7 @@ func (pq *PrefixQueue) Enqueue(prefix, value []byte) (*Item, error) {
 		return nil, ErrDBClosed
 	}
 
-	// Get the queue for this prefix.
+	// GetHeader the queue for this prefix.
 	q, err := pq.getOrCreateQueue(prefix)
 	if err != nil {
 		return nil, err
@@ -163,7 +163,7 @@ func (pq *PrefixQueue) Dequeue(prefix []byte) (*Item, error) {
 		return nil, ErrDBClosed
 	}
 
-	// Get the queue for this prefix.
+	// GetHeader the queue for this prefix.
 	q, err := pq.getQueue(prefix)
 	if err != nil {
 		return nil, err
@@ -213,7 +213,7 @@ func (pq *PrefixQueue) Peek(prefix []byte) (*Item, error) {
 		return nil, ErrDBClosed
 	}
 
-	// Get the queue for this prefix.
+	// GetHeader the queue for this prefix.
 	q, err := pq.getQueue(prefix)
 	if err != nil {
 		return nil, err
@@ -257,7 +257,7 @@ func (pq *PrefixQueue) Update(prefix []byte, id uint64, newValue []byte) (*Item,
 		return nil, ErrDBClosed
 	}
 
-	// Get the queue for this prefix.
+	// GetHeader the queue for this prefix.
 	q, err := pq.getQueue(prefix)
 	if err != nil {
 		return nil, err
@@ -425,7 +425,7 @@ func (pq *PrefixQueue) getItemByPrefixID(prefix []byte, id uint64) (*Item, error
 		return nil, ErrEmpty
 	}
 
-	// Get the queue for this prefix.
+	// GetHeader the queue for this prefix.
 	q, err := pq.getQueue(prefix)
 	if err != nil {
 		return nil, err
@@ -436,7 +436,7 @@ func (pq *PrefixQueue) getItemByPrefixID(prefix []byte, id uint64) (*Item, error
 		return nil, ErrOutOfBounds
 	}
 
-	// Get item from database.
+	// GetHeader item from database.
 	item := &Item{
 		ID:  id,
 		Key: generateKeyPrefixID(prefix, id),
@@ -451,7 +451,7 @@ func (pq *PrefixQueue) getItemByPrefixID(prefix []byte, id uint64) (*Item, error
 
 // init initializes the prefix queue data.
 func (pq *PrefixQueue) init() error {
-	// Get the main prefix queue data.
+	// GetHeader the main prefix queue data.
 	val, err := pq.db.Get(pq.getDataKey(), nil)
 	if err == errors.ErrNotFound {
 		return nil

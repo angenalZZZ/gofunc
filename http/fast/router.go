@@ -103,7 +103,7 @@ func (app *Fast) handler(fctx *fasthttp.RequestCtx) {
 	// get fiber context from sync pool
 	ctx := acquireCtx(fctx)
 	defer releaseCtx(ctx)
-	// attach app poiner and compress settings
+	// attach app pointer and compress settings
 	ctx.app = app
 
 	// Case sensitive routing
@@ -141,7 +141,7 @@ func (app *Fast) registerMethod(method, path string, handlers ...func(*Ctx)) {
 	if !app.Settings.StrictRouting && len(path) > 1 {
 		path = strings.TrimRight(path, "/")
 	}
-	// Set route booleans
+	// SetHeader route booleans
 	var isGet = method == "GET"
 	var isMiddleware = method == "USE"
 	// Middleware / All allows all HTTP methods
@@ -235,7 +235,7 @@ func (app *Fast) registerStatic(prefix, root string, config ...Static) {
 			ctx.Response.SetBodyString("Not Found")
 		},
 	}
-	// Set config if provided
+	// SetHeader config if provided
 	if len(config) > 0 {
 		fs.Compress = config[0].Compress
 		fs.AcceptByteRange = config[0].ByteRange

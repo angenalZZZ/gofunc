@@ -56,7 +56,7 @@ type Config struct {
 	// Note that the payload is not encrypted.
 	// The attributes mentioned on jwt.io can't be used as keys for the map.
 	// Optional, by default no additional data will be set.
-	PayloadFunc func(data interface{}) MapClaims
+	PayloadFunc func(data interface{}) fast.H
 
 	// User can define own Unauthorized func.
 	Unauthorized func(*fast.Ctx, int, string)
@@ -129,10 +129,6 @@ type Config struct {
 	CookieName string
 }
 
-// MapClaims type that uses the map[string]interface{} for JSON decoding
-// This is the default claims type if you don't supply one
-type MapClaims map[string]interface{}
-
 // New middleware.
 //  cfg := jwt.Config{
 //    AllowHeaders: "authorization, origin, content-type, accept",
@@ -147,6 +143,8 @@ func New(config ...Config) func(*fast.Ctx) {
 		cfg = config[0]
 	}
 
+	_ = cfg.Init()
+
 	// Middleware function
 	return func(c *fast.Ctx) {
 		// Filter request to skip middleware
@@ -154,6 +152,8 @@ func New(config ...Config) func(*fast.Ctx) {
 			c.Next()
 			return
 		}
+
+		// TODO: jwt Middleware
 
 	}
 }
@@ -266,9 +266,8 @@ func (mw *Config) usingPublicKeyAlgo() bool {
 	return false
 }
 
-// MiddlewareInit initialize jwt configs.
-func (mw *Config) MiddlewareInit() error {
-
+// Init initialize jwt configs.
+func (mw *Config) Init() error {
 	if mw.TokenLookup == "" {
 		mw.TokenLookup = "header:Authorization"
 	}
@@ -298,7 +297,7 @@ func (mw *Config) MiddlewareInit() error {
 
 	if mw.Unauthorized == nil {
 		mw.Unauthorized = func(c *fast.Ctx, code int, message string) {
-			_ = c.JSON(map[string]interface{}{
+			_ = c.JSON(fast.H{
 				"code":    code,
 				"message": message,
 			})
@@ -307,7 +306,7 @@ func (mw *Config) MiddlewareInit() error {
 
 	if mw.LoginResponse == nil {
 		mw.LoginResponse = func(c *fast.Ctx, code int, token string, expire time.Time) {
-			_ = c.JSON(map[string]interface{}{
+			_ = c.JSON(fast.H{
 				"code":   http.StatusOK,
 				"token":  token,
 				"expire": expire.Format(time.RFC3339),
@@ -317,7 +316,7 @@ func (mw *Config) MiddlewareInit() error {
 
 	if mw.LogoutResponse == nil {
 		mw.LogoutResponse = func(c *fast.Ctx, code int) {
-			_ = c.JSON(map[string]interface{}{
+			_ = c.JSON(fast.H{
 				"code": http.StatusOK,
 			})
 		}
@@ -325,7 +324,7 @@ func (mw *Config) MiddlewareInit() error {
 
 	if mw.RefreshResponse == nil {
 		mw.RefreshResponse = func(c *fast.Ctx, code int, token string, expire time.Time) {
-			_ = c.JSON(map[string]interface{}{
+			_ = c.JSON(fast.H{
 				"code":   http.StatusOK,
 				"token":  token,
 				"expire": expire.Format(time.RFC3339),
@@ -378,22 +377,22 @@ func (mw *Config) MiddlewareFunc() func(c *fast.Ctx) {
 func (mw *Config) middlewareImpl(c *fast.Ctx) {
 	claims, err := mw.GetClaimsFromJWT(c)
 	if err != nil {
-		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(err, c))
+		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(c, err))
 		return
 	}
 
 	if claims["exp"] == nil {
-		mw.unauthorized(c, http.StatusBadRequest, mw.HTTPStatusMessageFunc(ErrMissingExpField, c))
+		mw.unauthorized(c, http.StatusBadRequest, mw.HTTPStatusMessageFunc(c, ErrMissingExpField))
 		return
 	}
 
 	if _, ok := claims["exp"].(float64); !ok {
-		mw.unauthorized(c, http.StatusBadRequest, mw.HTTPStatusMessageFunc(ErrWrongFormatOfExp, c))
+		mw.unauthorized(c, http.StatusBadRequest, mw.HTTPStatusMessageFunc(c, ErrWrongFormatOfExp))
 		return
 	}
 
 	if int64(claims["exp"].(float64)) < mw.TimeFunc().Unix() {
-		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(ErrExpiredToken, c))
+		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(c, ErrExpiredToken))
 		return
 	}
 
@@ -404,8 +403,8 @@ func (mw *Config) middlewareImpl(c *fast.Ctx) {
 		c.Set(mw.IdentityKey, identity)
 	}
 
-	if !mw.Authorizator(identity, c) {
-		mw.unauthorized(c, http.StatusForbidden, mw.HTTPStatusMessageFunc(ErrForbidden, c))
+	if !mw.Authorizator(c, identity) {
+		mw.unauthorized(c, http.StatusForbidden, mw.HTTPStatusMessageFunc(c, ErrForbidden))
 		return
 	}
 
@@ -413,7 +412,7 @@ func (mw *Config) middlewareImpl(c *fast.Ctx) {
 }
 
 // GetClaimsFromJWT get claims from JWT token
-func (mw *Config) GetClaimsFromJWT(c *fast.Ctx) (MapClaims, error) {
+func (mw *Config) GetClaimsFromJWT(c *fast.Ctx) (fast.H, error) {
 	token, err := mw.ParseToken(c)
 
 	if err != nil {
@@ -421,12 +420,12 @@ func (mw *Config) GetClaimsFromJWT(c *fast.Ctx) (MapClaims, error) {
 	}
 
 	if mw.SendAuthorization {
-		if v, ok := c.Get("JWT_TOKEN"); ok {
-			c.Header("Authorization", mw.TokenHeadName+" "+v.(string))
+		if v := c.Get("JWT_TOKEN"); v != nil {
+			c.SetHeader("Authorization", mw.TokenHeadName+" "+v.(string))
 		}
 	}
 
-	claims := MapClaims{}
+	claims := fast.H{}
 	for key, value := range token.Claims.(jwt.MapClaims) {
 		claims[key] = value
 	}
@@ -439,14 +438,14 @@ func (mw *Config) GetClaimsFromJWT(c *fast.Ctx) (MapClaims, error) {
 // Reply will be of the form {"token": "TOKEN"}.
 func (mw *Config) LoginHandler(c *fast.Ctx) {
 	if mw.Authenticator == nil {
-		mw.unauthorized(c, http.StatusInternalServerError, mw.HTTPStatusMessageFunc(ErrMissingAuthenticatorFunc, c))
+		mw.unauthorized(c, http.StatusInternalServerError, mw.HTTPStatusMessageFunc(c, ErrMissingAuthenticatorFunc))
 		return
 	}
 
 	data, err := mw.Authenticator(c)
 
 	if err != nil {
-		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(err, c))
+		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(c, err))
 		return
 	}
 
@@ -466,17 +465,17 @@ func (mw *Config) LoginHandler(c *fast.Ctx) {
 	tokenString, err := mw.signedString(token)
 
 	if err != nil {
-		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(ErrFailedTokenCreation, c))
+		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(c, ErrFailedTokenCreation))
 		return
 	}
 
 	// set cookie
 	if mw.SendCookie {
-		maxage := int(expire.Unix() - time.Now().Unix())
+		//maxage := int(expire.Unix() - time.Now().Unix())
 		c.SetCookie(
 			mw.CookieName,
 			tokenString,
-			maxage,
+			expire,
 			"/",
 			mw.CookieDomain,
 			mw.SecureCookie,
@@ -494,7 +493,7 @@ func (mw *Config) LogoutHandler(c *fast.Ctx) {
 		c.SetCookie(
 			mw.CookieName,
 			"",
-			-1,
+			mw.TimeFunc().Add(mw.Timeout*-1),
 			"/",
 			mw.CookieDomain,
 			mw.SecureCookie,
@@ -522,7 +521,7 @@ func (mw *Config) signedString(token *jwt.Token) (string, error) {
 func (mw *Config) RefreshHandler(c *fast.Ctx) {
 	tokenString, expire, err := mw.RefreshToken(c)
 	if err != nil {
-		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(err, c))
+		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(c, err))
 		return
 	}
 
@@ -555,11 +554,11 @@ func (mw *Config) RefreshToken(c *fast.Ctx) (string, time.Time, error) {
 
 	// set cookie
 	if mw.SendCookie {
-		maxage := int(expire.Unix() - time.Now().Unix())
+		//maxage := int(expire.Unix() - time.Now().Unix())
 		c.SetCookie(
 			mw.CookieName,
 			tokenString,
-			maxage,
+			expire,
 			"/",
 			mw.CookieDomain,
 			mw.SecureCookie,
@@ -573,6 +572,10 @@ func (mw *Config) RefreshToken(c *fast.Ctx) (string, time.Time, error) {
 // CheckIfTokenExpire check if token expire
 func (mw *Config) CheckIfTokenExpire(c *fast.Ctx) (jwt.MapClaims, error) {
 	token, err := mw.ParseToken(c)
+
+	if token == nil {
+		return nil, ErrExpiredToken
+	}
 
 	if err != nil {
 		// If we receive an error, and the error is anything other than a single
@@ -620,7 +623,7 @@ func (mw *Config) TokenGenerator(data interface{}) (string, time.Time, error) {
 }
 
 func (mw *Config) jwtFromHeader(c *fast.Ctx, key string) (string, error) {
-	authHeader := c.Request.Header.Get(key)
+	authHeader := c.GetHeader(key)
 
 	if authHeader == "" {
 		return "", ErrEmptyAuthHeader
@@ -645,7 +648,7 @@ func (mw *Config) jwtFromQuery(c *fast.Ctx, key string) (string, error) {
 }
 
 func (mw *Config) jwtFromCookie(c *fast.Ctx, key string) (string, error) {
-	cookie, _ := c.Cookie(key)
+	cookie := c.Cookies(key)
 
 	if cookie == "" {
 		return "", ErrEmptyCookieToken
@@ -655,7 +658,7 @@ func (mw *Config) jwtFromCookie(c *fast.Ctx, key string) (string, error) {
 }
 
 func (mw *Config) jwtFromParam(c *fast.Ctx, key string) (string, error) {
-	token := c.Param(key)
+	token := c.Params(key)
 
 	if token == "" {
 		return "", ErrEmptyParamToken
@@ -723,31 +726,31 @@ func (mw *Config) ParseTokenString(token string) (*jwt.Token, error) {
 }
 
 func (mw *Config) unauthorized(c *fast.Ctx, code int, message string) {
-	c.Header("WWW-Authenticate", "JWT realm="+mw.Realm)
+	c.SetHeader("WWW-Authenticate", "JWT realm="+mw.Realm)
 	if !mw.DisabledAbort {
-		c.Abort()
+		c.C.Deadline()
 	}
 
 	mw.Unauthorized(c, code, message)
 }
 
 // ExtractClaims help to extract the JWT claims
-func ExtractClaims(c *fast.Ctx) MapClaims {
-	claims, exists := c.Get("JWT_PAYLOAD")
-	if !exists {
-		return make(MapClaims)
+func ExtractClaims(c *fast.Ctx) fast.H {
+	claims := c.Get("JWT_PAYLOAD")
+	if claims == nil {
+		return make(fast.H)
 	}
 
-	return claims.(MapClaims)
+	return claims.(fast.H)
 }
 
 // ExtractClaimsFromToken help to extract the JWT claims from token
-func ExtractClaimsFromToken(token *jwt.Token) MapClaims {
+func ExtractClaimsFromToken(token *jwt.Token) fast.H {
 	if token == nil {
-		return make(MapClaims)
+		return make(fast.H)
 	}
 
-	claims := MapClaims{}
+	claims := fast.H{}
 	for key, value := range token.Claims.(jwt.MapClaims) {
 		claims[key] = value
 	}
@@ -757,8 +760,8 @@ func ExtractClaimsFromToken(token *jwt.Token) MapClaims {
 
 // GetToken help to get the JWT token string
 func GetToken(c *fast.Ctx) string {
-	token, exists := c.Get("JWT_TOKEN")
-	if !exists {
+	token := c.Get("JWT_TOKEN")
+	if token != "" {
 		return ""
 	}
 

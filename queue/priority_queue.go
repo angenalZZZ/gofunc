@@ -19,8 +19,8 @@ type order int
 
 // Defines which priority order to dequeue in.
 const (
-	ASC  order = iota // Set priority level 0 as most important.
-	DESC              // Set priority level 255 as most important.
+	ASC  order = iota // SetHeader priority level 0 as most important.
+	DESC              // SetHeader priority level 255 as most important.
 )
 
 // priorityLevel holds the head and tail position of a priority
@@ -76,7 +76,7 @@ func OpenPriorityQueue(dataDir string, order order) (*PriorityQueue, error) {
 		return pq, ErrIncompatibleType
 	}
 
-	// Set isOpen and return.
+	// SetHeader isOpen and return.
 	pq.isOpen = true
 	return pq, pq.init()
 }
@@ -91,7 +91,7 @@ func (pq *PriorityQueue) Enqueue(priority uint8, value []byte) (*PriorityItem, e
 		return nil, ErrDBClosed
 	}
 
-	// Get the priorityLevel.
+	// GetHeader the priorityLevel.
 	level := pq.levels[priority]
 
 	// Create new PriorityItem.
@@ -462,7 +462,7 @@ func (pq *PriorityQueue) findOffset(offset uint64) (*PriorityItem, error) {
 func (pq *PriorityQueue) getNextItem() (*PriorityItem, error) {
 	// If the current priority level is empty.
 	if pq.levels[pq.curLevel].length() == 0 {
-		// Set starting value for curLevel.
+		// SetHeader starting value for curLevel.
 		pq.resetCurrentLevel()
 
 		// Try to get the next priority level.
@@ -491,7 +491,7 @@ func (pq *PriorityQueue) getItemByPriorityID(priority uint8, id uint64) (*Priori
 		return nil, ErrOutOfBounds
 	}
 
-	// Get item from database.
+	// GetHeader item from database.
 	var err error
 	item := &PriorityItem{ID: id, Priority: priority, Key: pq.generateKey(priority, id)}
 	if item.Value, err = pq.db.Get(item.Key, nil); err != nil {
@@ -521,7 +521,7 @@ func (pq *PriorityQueue) generateKey(priority uint8, id uint64) []byte {
 
 // init initializes the priority queue data.
 func (pq *PriorityQueue) init() error {
-	// Set starting value for curLevel.
+	// SetHeader starting value for curLevel.
 	pq.resetCurrentLevel()
 
 	// Loop through each priority level.
@@ -536,7 +536,7 @@ func (pq *PriorityQueue) init() error {
 			tail: 0,
 		}
 
-		// Set priority level head to the first item.
+		// SetHeader priority level head to the first item.
 		if iter.First() {
 			pl.head = keyToID(iter.Key()[2:]) - 1
 
@@ -546,7 +546,7 @@ func (pq *PriorityQueue) init() error {
 			}
 		}
 
-		// Set priority level tail to the last item.
+		// SetHeader priority level tail to the last item.
 		if iter.Last() {
 			pl.tail = keyToID(iter.Key()[2:])
 		}

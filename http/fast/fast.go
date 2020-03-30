@@ -83,12 +83,12 @@ func New(settings ...*Settings) *Fast {
 	app := new(Fast)
 	// Create settings
 	app.Settings = new(Settings)
-	// Set default settings
+	// SetHeader default settings
 	app.Settings.Prefork = isPrefork
 	app.Settings.BodyLimit = 4 * 1024 * 1024
 	// If settings exist, set defaults
 	if len(settings) > 0 {
-		app.Settings = settings[0] // Set custom settings
+		app.Settings = settings[0] // SetHeader custom settings
 		if !app.Settings.Prefork { // Default to -prefork flag if false
 			app.Settings.Prefork = isPrefork
 		}
@@ -206,7 +206,7 @@ func (app *Fast) Trace(path string, handlers ...func(*Ctx)) *Fast {
 	return app
 }
 
-// Get http method handler.
+// GetHeader http method handler.
 func (app *Fast) Get(path string, handlers ...func(*Ctx)) *Fast {
 	app.registerMethod("GET", path, handlers...)
 	return app
@@ -305,7 +305,7 @@ func (grp *Group) Trace(path string, handlers ...func(*Ctx)) *Group {
 	return grp
 }
 
-// Get http method handler.
+// GetHeader http method handler.
 func (grp *Group) Get(path string, handlers ...func(*Ctx)) *Group {
 	grp.app.registerMethod("GET", groupPaths(grp.prefix, path), handlers...)
 	return grp

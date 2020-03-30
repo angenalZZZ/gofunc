@@ -55,11 +55,11 @@ type LogConfig struct {
 func New(config ...Config) func(*fast.Ctx) {
 	// Init config
 	var cfg Config
-	// Set config if provided
+	// SetHeader config if provided
 	if len(config) > 0 {
 		cfg = config[0]
 	}
-	// Set config default values
+	// SetHeader config default values
 	if cfg.Format == "" {
 		cfg.Format = "${ip} ${method} ${path} -> ${status} - ${latency} <- ${query} -d ${data}"
 	}

@@ -104,7 +104,7 @@ func New(config ...Config) func(*fast.Ctx) {
 			c.Next()
 			return
 		}
-		// Get key (default is the remote IP)
+		// GetHeader key (default is the remote IP)
 		key := cfg.Key(c)
 		// Increment key hits
 		var hitCount int64
@@ -114,7 +114,7 @@ func New(config ...Config) func(*fast.Ctx) {
 			hitCount = 1
 		}
 		hits.Set(key, hitCount)
-		// Set unix timestamp if not exist
+		// SetHeader unix timestamp if not exist
 		var hitReset int64
 		if hit, ok := reset.Get(key); ok {
 			hitReset = hit.(int64)
@@ -122,7 +122,7 @@ func New(config ...Config) func(*fast.Ctx) {
 			hitReset = timestamp + cfg.Timeout
 			reset.Set(key, hitReset)
 		}
-		// Set how many hits we have left
+		// SetHeader how many hits we have left
 		remaining := cfg.Max - hitCount
 		// Calculate when it resets in seconds
 		resetTime := hitReset - timestamp
@@ -132,13 +132,13 @@ func New(config ...Config) func(*fast.Ctx) {
 			cfg.Handler(c)
 			// Return response with Retry-After header
 			// https://tools.ietf.org/html/rfc6584
-			c.Set("Retry-After", strconv.FormatInt(resetTime, 10))
+			c.SetHeader("Retry-After", strconv.FormatInt(resetTime, 10))
 			return
 		}
 		// We can continue, update RateLimit headers
-		c.Set("X-RateLimit-Limit", strconv.FormatInt(cfg.Max, 10))
-		c.Set("X-RateLimit-Remaining", strconv.FormatInt(remaining, 10))
-		c.Set("X-RateLimit-Reset", strconv.FormatInt(resetTime, 10))
+		c.SetHeader("X-RateLimit-Limit", strconv.FormatInt(cfg.Max, 10))
+		c.SetHeader("X-RateLimit-Remaining", strconv.FormatInt(remaining, 10))
+		c.SetHeader("X-RateLimit-Reset", strconv.FormatInt(resetTime, 10))
 		c.Next()
 	}
 }

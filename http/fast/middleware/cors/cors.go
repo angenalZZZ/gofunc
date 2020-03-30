@@ -53,7 +53,7 @@ func New(config ...Config) func(*fast.Ctx) {
 			c.Next()
 			return
 		}
-		origin := c.Get("Origin")
+		origin := c.GetHeader("Origin")
 		allowOrigin := ""
 		// Check allowed origins
 		for _, o := range cfg.AllowOrigins {
@@ -73,13 +73,13 @@ func New(config ...Config) func(*fast.Ctx) {
 		// Simple request
 		if c.Method() != "OPTIONS" {
 			c.Vary("Origin")
-			c.Set("Access-Control-Allow-Origin", allowOrigin)
+			c.SetHeader("Access-Control-Allow-Origin", allowOrigin)
 
 			if cfg.AllowCredentials {
-				c.Set("Access-Control-Allow-Credentials", "true")
+				c.SetHeader("Access-Control-Allow-Credentials", "true")
 			}
 			if cfg.ExposeHeaders != "" {
-				c.Set("Access-Control-Expose-Headers", cfg.ExposeHeaders)
+				c.SetHeader("Access-Control-Expose-Headers", cfg.ExposeHeaders)
 			}
 			if cfg.X {
 				c.XSSProtection()
@@ -91,22 +91,22 @@ func New(config ...Config) func(*fast.Ctx) {
 		c.Vary("Origin")
 		c.Vary("Access-Control-Request-Method")
 		c.Vary("Access-Control-Request-Headers")
-		c.Set("Access-Control-Allow-Origin", allowOrigin)
-		c.Set("Access-Control-Allow-Methods", cfg.AllowMethods)
+		c.SetHeader("Access-Control-Allow-Origin", allowOrigin)
+		c.SetHeader("Access-Control-Allow-Methods", cfg.AllowMethods)
 
 		if cfg.AllowCredentials {
-			c.Set("Access-Control-Allow-Credentials", "true")
+			c.SetHeader("Access-Control-Allow-Credentials", "true")
 		}
 		if cfg.AllowHeaders != "" {
-			c.Set("Access-Control-Allow-Headers", cfg.AllowHeaders)
+			c.SetHeader("Access-Control-Allow-Headers", cfg.AllowHeaders)
 		} else {
-			h := c.Get("Access-Control-Request-Headers")
+			h := c.GetHeader("Access-Control-Request-Headers")
 			if h != "" {
-				c.Set("Access-Control-Allow-Headers", h)
+				c.SetHeader("Access-Control-Allow-Headers", h)
 			}
 		}
 		if cfg.MaxAge > 0 {
-			c.Set("Access-Control-Max-Age", strconv.FormatInt(cfg.MaxAge, 10))
+			c.SetHeader("Access-Control-Max-Age", strconv.FormatInt(cfg.MaxAge, 10))
 		}
 		if cfg.X {
 			c.XSSProtection()

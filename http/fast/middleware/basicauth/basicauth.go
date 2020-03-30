@@ -63,7 +63,7 @@ func New(config ...Config) func(*fast.Ctx) {
 	}
 	if cfg.Unauthorized == nil {
 		cfg.Unauthorized = func(c *fast.Ctx) {
-			c.Set("WWW-Authenticate", "basic realm="+cfg.Realm)
+			c.SetHeader("WWW-Authenticate", "basic realm="+cfg.Realm)
 			c.SendStatus(401)
 		}
 	}
@@ -74,8 +74,8 @@ func New(config ...Config) func(*fast.Ctx) {
 			c.Next()
 			return
 		}
-		// Get authorization header
-		auth := c.Get("Authorization")
+		// GetHeader authorization header
+		auth := c.GetHeader("Authorization")
 		// Check if header is valid
 		if len(auth) > 6 && strings.ToLower(auth[:5]) == "basic" {
 			// Try to decode

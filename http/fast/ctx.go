@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"github.com/angenalZZZ/gofunc/f"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -87,7 +88,7 @@ func (ctx *Ctx) Accepts(offers ...string) (offer string) {
 	if len(offers) == 0 {
 		return ""
 	}
-	h := ctx.Get("Accept")
+	h := ctx.GetHeader("Accept")
 	if h == "" {
 		return offers[0]
 	}
@@ -121,7 +122,7 @@ func (ctx *Ctx) AcceptsCharsets(offers ...string) (offer string) {
 		return ""
 	}
 
-	h := ctx.Get("Accept-Charset")
+	h := ctx.GetHeader("Accept-Charset")
 	if h == "" {
 		return offers[0]
 	}
@@ -148,7 +149,7 @@ func (ctx *Ctx) AcceptsEncodings(offers ...string) (offer string) {
 		return ""
 	}
 
-	h := ctx.Get("Accept-Encoding")
+	h := ctx.GetHeader("Accept-Encoding")
 	if h == "" {
 		return offers[0]
 	}
@@ -173,7 +174,7 @@ func (ctx *Ctx) AcceptsLanguages(offers ...string) (offer string) {
 	if len(offers) == 0 {
 		return ""
 	}
-	h := ctx.Get("Accept-Language")
+	h := ctx.GetHeader("Accept-Language")
 	if h == "" {
 		return offers[0]
 	}
@@ -207,7 +208,7 @@ func (ctx *Ctx) Append(field string, values ...string) {
 			h += ", " + values[i]
 		}
 	}
-	ctx.Set(field, h)
+	ctx.SetHeader(field, h)
 }
 
 // Attachment sets the HTTP response Content-Disposition header field to attachment.
@@ -215,10 +216,10 @@ func (ctx *Ctx) Attachment(name ...string) {
 	if len(name) > 0 {
 		filename := filepath.Base(name[0])
 		ctx.Type(filepath.Ext(filename))
-		ctx.Set("Content-Disposition", `attachment; filename="`+filename+`"`)
+		ctx.SetHeader("Content-Disposition", `attachment; filename="`+filename+`"`)
 		return
 	}
-	ctx.Set("Content-Disposition", "attachment")
+	ctx.SetHeader("Content-Disposition", "attachment")
 }
 
 // BaseURL returns (protocol + host).
@@ -320,7 +321,7 @@ func (ctx *Ctx) Cookie(cookie *Cookie) {
 // Cookies is used for getting a cookie value by key
 func (ctx *Ctx) Cookies(key ...string) (value string) {
 	if len(key) == 0 {
-		return ctx.Get("Cookie")
+		return ctx.GetHeader("Cookie")
 	}
 	return GetString(ctx.C.Request.Header.Cookie(key[0]))
 }
@@ -336,7 +337,7 @@ func (ctx *Ctx) Download(file string, name ...string) {
 		filename = name[0]
 	}
 
-	ctx.Set("Content-Disposition", "attachment; filename="+filename)
+	ctx.SetHeader("Content-Disposition", "attachment; filename="+filename)
 	ctx.SendFile(file)
 }
 
@@ -391,9 +392,15 @@ func (ctx *Ctx) Fresh() bool {
 	return false
 }
 
-// Get returns the HTTP request header specified by field.
+// Get makes it possible to pass interface{} values under string keys scoped to the request
+// and therefore available to all following routes that match the request.
+func (ctx *Ctx) Get(key string) (val interface{}) {
+	return ctx.C.UserValue(key)
+}
+
+// GetHeader returns the HTTP request header specified by field.
 // Field names are case-insensitive
-func (ctx *Ctx) Get(key string) (value string) {
+func (ctx *Ctx) GetHeader(key string) (value string) {
 	if key == "Referrer" {
 		key = "Referer"
 	}
@@ -412,7 +419,7 @@ func (ctx *Ctx) IP() string {
 
 // IPs returns an string slice of IP addresses specified in the X-Forwarded-For request header.
 func (ctx *Ctx) IPs() []string {
-	ips := strings.Split(ctx.Get("X-Forwarded-For"), ",")
+	ips := strings.Split(ctx.GetHeader("X-Forwarded-For"), ",")
 	for i := range ips {
 		ips[i] = strings.TrimSpace(ips[i])
 	}
@@ -426,7 +433,7 @@ func (ctx *Ctx) Is(extension string) (match bool) {
 		extension = "." + extension
 	}
 
-	items, _ := mime.ExtensionsByType(ctx.Get("Content-Type"))
+	items, _ := mime.ExtensionsByType(ctx.GetHeader("Content-Type"))
 	if len(items) > 0 {
 		for _, item := range items {
 			if item == extension {
@@ -440,7 +447,7 @@ func (ctx *Ctx) Is(extension string) (match bool) {
 // JSON converts any interface or string to JSON using Jsoniter.
 // This method also sets the content header to application/json.
 func (ctx *Ctx) JSON(json interface{}) error {
-	// Get stream from pool
+	// GetHeader stream from pool
 	stream := jsonParser.BorrowStream(nil)
 	defer jsonParser.ReturnStream(stream)
 	// Write struct to stream
@@ -449,18 +456,28 @@ func (ctx *Ctx) JSON(json interface{}) error {
 	if stream.Error != nil {
 		return stream.Error
 	}
-	// Set http headers
+	// SetHeader http headers
 	ctx.C.Response.Header.SetContentType("application/json")
 	ctx.C.Response.SetBodyString(GetString(stream.Buffer()))
 	// Success!
 	return nil
 }
 
+// Json get a json body request.
+func (ctx *Ctx) Json() f.Json {
+	if ctx.C.Request.IsBodyStream() {
+		if body := ctx.C.Request.Body(); body != nil {
+			return f.NewJson(string(body))
+		}
+	}
+	return ""
+}
+
 // JSONP sends a JSON response with JSONP support.
 // This method is identical to JSON, except that it opts-in to JSONP callback support.
 // By default, the callback name is simply callback.
 func (ctx *Ctx) JSONP(json interface{}, callback ...string) error {
-	// Get stream from pool
+	// GetHeader stream from pool
 	stream := jsonParser.BorrowStream(nil)
 	defer jsonParser.ReturnStream(stream)
 	// Write struct to stream
@@ -476,7 +493,7 @@ func (ctx *Ctx) JSONP(json interface{}, callback ...string) error {
 	}
 	str += GetString(stream.Buffer()) + ");"
 
-	ctx.Set("X-Content-Type-Options", "nosniff")
+	ctx.SetHeader("X-Content-Type-Options", "nosniff")
 	ctx.C.Response.Header.SetContentType("application/javascript")
 	ctx.C.Response.SetBodyString(str)
 	return nil
@@ -495,7 +512,7 @@ func (ctx *Ctx) Links(link ...string) {
 
 	if len(link) > 0 {
 		h = strings.TrimSuffix(h, ",")
-		ctx.Set("Link", h)
+		ctx.SetHeader("Link", h)
 	}
 }
 
@@ -511,7 +528,7 @@ func (ctx *Ctx) Locals(key string, value ...interface{}) (val interface{}) {
 
 // Location sets the response Location HTTP header to the specified path parameter.
 func (ctx *Ctx) Location(path string) {
-	ctx.Set("Location", path)
+	ctx.SetHeader("Location", path)
 }
 
 // Method contains a string corresponding to the HTTP method of the request: GET, POST, PUT and so on.
@@ -638,7 +655,7 @@ func (ctx *Ctx) Redirect(path string, status ...int) {
 		code = status[0]
 	}
 
-	ctx.Set("Location", path)
+	ctx.SetHeader("Location", path)
 	ctx.C.Response.SetStatusCode(code)
 }
 
@@ -678,7 +695,7 @@ func (ctx *Ctx) Render(file string, bind interface{}) error {
 		}
 		html = buf.String()
 	}
-	ctx.Set("Content-Type", "text/html")
+	ctx.SetHeader("Content-Type", "text/html")
 	ctx.SendString(html)
 	return err
 }
@@ -753,13 +770,33 @@ func (ctx *Ctx) SendString(body string) {
 	ctx.C.Response.SetBodyString(body)
 }
 
-// Set sets the response’s HTTP header field to the specified key, value.
-func (ctx *Ctx) Set(key string, val string) {
+// Set makes it possible to pass interface{} values under string keys scoped to the request
+// and therefore available to all following routes that match the request.
+func (ctx *Ctx) Set(key string, value interface{}) {
+	ctx.C.SetUserValue(key, value)
+	return
+}
+
+// SetCookie sets a cookie by passing a cookie struct
+func (ctx *Ctx) SetCookie(name, value string, expires time.Time, path, domain string, secure, httpOnly bool) {
+	ctx.Cookie(&Cookie{
+		Name:     name,
+		Value:    value,
+		Expires:  expires,
+		Path:     path,
+		Domain:   domain,
+		Secure:   secure,
+		HTTPOnly: httpOnly,
+	})
+}
+
+// SetHeader sets the response’s HTTP header field to the specified key, value.
+func (ctx *Ctx) SetHeader(key string, val string) {
 	ctx.C.Response.Header.Set(key, val)
 }
 
-// Subdomains returns a string slive of subdomains in the domain name of the request.
-// The subdomain offset, which defaults to 2, is used for determining the beginning of the subdomain segments.
+// Subdomains returns a string of subdomains in the domain name of the request.
+// The sub-domain offset, which defaults to 2, is used for determining the beginning of the sub-domain segments.
 func (ctx *Ctx) Subdomains(offset ...int) []string {
 	o := 2
 	if len(offset) > 0 {
@@ -776,7 +813,7 @@ func (ctx *Ctx) Stale() bool {
 }
 
 // Status sets the HTTP status for the response.
-// This method is chainable.
+// This method is chain.
 func (ctx *Ctx) Status(status int) *Ctx {
 	ctx.C.Response.SetStatusCode(status)
 	return ctx
@@ -784,22 +821,27 @@ func (ctx *Ctx) Status(status int) *Ctx {
 
 // Token gets token from request(query url, post args, header authorization).
 func (ctx *Ctx) Token(key ...string) string {
-	k := "token"
-	if len(key) > 0 {
+	k, j, l := "token", "Authorization", len(key)
+	if l > 0 {
 		k = key[0]
+		if l > 1 {
+			j = key[1]
+		}
+	}
+	if j != "" {
+		if token := ctx.C.Request.Header.Peek(j); token != nil {
+			t := strings.Split(GetString(token), " ")
+			return t[len(t)-1]
+		}
 	}
 	switch ctx.method {
 	case "POST", "PUT":
-		if ctx.C.Request.PostArgs().Has(k) {
-			return GetString(ctx.C.Request.PostArgs().Peek(k))
+		if token := ctx.C.Request.PostArgs().Peek(k); token != nil {
+			return GetString(token)
 		}
 	}
-	if token := ctx.C.Request.Header.Peek("Authorization"); token != nil && len(token) > 8 {
-		t := strings.Split(GetString(token), " ")
-		return t[len(t)-1]
-	}
-	if ctx.C.QueryArgs().Has(k) {
-		return GetString(ctx.C.QueryArgs().Peek(k))
+	if token := ctx.C.QueryArgs().Peek(k); token != nil {
+		return GetString(token)
 	}
 	return ""
 }
@@ -826,7 +868,7 @@ func (ctx *Ctx) Vary(fields ...string) {
 		}
 	}
 
-	ctx.Set("Vary", h)
+	ctx.SetHeader("Vary", h)
 }
 
 // Write appends any input to the HTTP body response.
@@ -850,16 +892,16 @@ func (ctx *Ctx) Write(bodies ...interface{}) {
 // XHR returns a Boolean property, that is true, if the request’s X-Requested-With header field is XMLHttpRequest,
 // indicating that the request was issued by a client library (such as jQuery).
 func (ctx *Ctx) XHR() bool {
-	return ctx.Get("X-Requested-With") == "XMLHttpRequest"
+	return ctx.GetHeader("X-Requested-With") == "XMLHttpRequest"
 }
 
 // XSSProtection X-XSS-Protection...
 func (ctx *Ctx) XSSProtection() {
-	ctx.Set("X-Content-Type-Options", "nosniff")
-	ctx.Set("X-Frame-Options", "SAMEORIGIN") // or DENY
-	ctx.Set("X-XSS-Protection", "1; mode=block")
+	ctx.SetHeader("X-Content-Type-Options", "nosniff")
+	ctx.SetHeader("X-Frame-Options", "SAMEORIGIN") // or DENY
+	ctx.SetHeader("X-XSS-Protection", "1; mode=block")
 	if ctx.C.IsTLS() {
-		ctx.Set("Strict-Transport-Security", "max-age=31536000")
+		ctx.SetHeader("Strict-Transport-Security", "max-age=31536000")
 	}
 	// Also consider adding Content-Security-Policy headers
 	// c.Header("Content-Security-Policy", "script-src 'self' https://cdnjs.cloudflare.com")

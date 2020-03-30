@@ -40,7 +40,7 @@ func (m CMap) MSet(data map[string]interface{}) {
 
 // Sets the given value under the specified key.
 func (m CMap) Set(key string, value interface{}) {
-	// Get map shard.
+	// GetHeader map shard.
 	shard := m.GetShard(key)
 	shard.Lock()
 	shard.items[key] = value
@@ -66,7 +66,7 @@ func (m CMap) Up(key string, value interface{}, cb CMapUpCb) (res interface{}) {
 
 // Sets the given value under the specified key if no value was associated with it.
 func (m CMap) SetIfAbsent(key string, value interface{}) bool {
-	// Get map shard.
+	// GetHeader map shard.
 	shard := m.GetShard(key)
 	shard.Lock()
 	_, ok := shard.items[key]
@@ -77,12 +77,12 @@ func (m CMap) SetIfAbsent(key string, value interface{}) bool {
 	return !ok
 }
 
-// Get retrieves an element from map under given key.
+// GetHeader retrieves an element from map under given key.
 func (m CMap) Get(key string) (interface{}, bool) {
-	// Get shard
+	// GetHeader shard
 	shard := m.GetShard(key)
 	shard.RLock()
-	// Get item from shard.
+	// GetHeader item from shard.
 	val, ok := shard.items[key]
 	shard.RUnlock()
 	return val, ok
@@ -102,7 +102,7 @@ func (m CMap) Count() int {
 
 // Looks up an item under specified key
 func (m CMap) Has(key string) bool {
-	// Get shard
+	// GetHeader shard
 	shard := m.GetShard(key)
 	shard.RLock()
 	// See if element is within shard.

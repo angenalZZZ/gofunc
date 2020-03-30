@@ -49,7 +49,7 @@ func OpenQueue(dataDir string) (*Queue, error) {
 		return q, ErrIncompatibleType
 	}
 
-	// Set isOpen and return.
+	// SetHeader isOpen and return.
 	q.isOpen = true
 	return q, q.init()
 }
@@ -301,7 +301,7 @@ func (q *Queue) getItemByID(id uint64) (*Item, error) {
 		return nil, ErrOutOfBounds
 	}
 
-	// Get item from database.
+	// GetHeader item from database.
 	var err error
 	item := &Item{ID: id, Key: idToKey(id)}
 	if item.Value, err = q.db.Get(item.Key, nil); err != nil {
@@ -317,12 +317,12 @@ func (q *Queue) init() error {
 	iter := q.db.NewIterator(nil, nil)
 	defer iter.Release()
 
-	// Set queue head to the first item.
+	// SetHeader queue head to the first item.
 	if iter.First() {
 		q.head = keyToID(iter.Key()) - 1
 	}
 
-	// Set queue tail to the last item.
+	// SetHeader queue tail to the last item.
 	if iter.Last() {
 		q.tail = keyToID(iter.Key())
 	}
