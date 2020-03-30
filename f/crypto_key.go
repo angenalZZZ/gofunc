@@ -3,8 +3,10 @@ package f
 import (
 	"bytes"
 	"crypto/hmac"
+	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/sha256"
+	"github.com/dgrijalva/jwt-go"
 	"hash"
 )
 
@@ -76,3 +78,18 @@ func CryptoPKCS5UnPadding(origData []byte) []byte {
 //func pkcs7UnPadding(origData []byte, blockSize int) []byte {
 //	return origData[:len(origData)-int(origData[len(origData)-1])]
 //}
+
+// Parse PEM encoded PKCS1 or PKCS8 private key
+func ParseRSAPrivateKeyFromPEM(key []byte) (*rsa.PrivateKey, error) {
+	return jwt.ParseRSAPrivateKeyFromPEM(key)
+}
+
+// Parse PEM encoded PKCS1 or PKCS8 private key protected with password
+func ParseRSAPrivateKeyFromPEMWithPassword(key []byte, password string) (*rsa.PrivateKey, error) {
+	return jwt.ParseRSAPrivateKeyFromPEMWithPassword(key, password)
+}
+
+// Parse PEM encoded PKCS1 or PKCS8 public key
+func ParseRSAPublicKeyFromPEM(key []byte) (*rsa.PublicKey, error) {
+	return jwt.ParseRSAPublicKeyFromPEM(key)
+}
