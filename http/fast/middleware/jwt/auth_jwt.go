@@ -138,8 +138,8 @@ type Config struct {
 
 // New middleware.
 /* demo:
-identityKey := "id"
-cfg := jwt.Config{
+  identityKey := "id"
+  cfg := jwt.Config{
 	Realm:       "api",
 	Key:         []byte("96E79218"),
 	Timeout:     time.Hour * 24,
@@ -211,9 +211,9 @@ cfg := jwt.Config{
 	// TimeFunc provides the current time. You can override it to use another time value. This is useful for testing or if your server uses a different time zone than your tokens.
 	TimeFunc: time.Now,
   }
-  app.POST("/login", cfg.LoginHandler)
-//app.Use(jwt.New(cfg))
-//app.Group("/auth").Use(jwt.New(cfg))
+  app.POST("/login", cfg.LoginHandler) // step: get the token
+  auth := app.Group("/auth").Use(jwt.New(cfg)) // step: app.Use(jwt.New(cfg))
+  auth.GET("/refresh_token", cfg.RefreshHandler) // refresh token
 */
 func New(config ...Config) func(*fast.Ctx) {
 	// Init config
