@@ -250,9 +250,10 @@ func (ctx *Ctx) Body(key ...string) string {
 
 // BodyJson get a json body request on the Content-Type header: application/json.
 func (ctx *Ctx) BodyJson() f.Json {
-	if ctx.C.Request.IsBodyStream() {
+	ct := GetString(ctx.C.Request.Header.ContentType())
+	if strings.HasPrefix(ct, "application/json") && ctx.C.Request.IsBodyStream() {
 		if body := ctx.C.Request.Body(); body != nil {
-			return f.NewJson(string(body))
+			return f.NewJson(GetString(body))
 		}
 	}
 	return ""
@@ -265,7 +266,7 @@ func (ctx *Ctx) BodyParser(out interface{}) error {
 	// Query Params
 	ct := GetString(ctx.C.Request.Header.ContentType())
 	// application/json
-	if strings.HasPrefix(ct, "application/json") {
+	if strings.HasPrefix(ct, "application/json") && ctx.C.Request.IsBodyStream() {
 		return jsoniter.Unmarshal(ctx.C.Request.Body(), out)
 	}
 	// application/xml text/xml
