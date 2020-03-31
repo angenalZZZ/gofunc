@@ -137,19 +137,21 @@ type Config struct {
 }
 
 // New middleware.
-/* cfg := jwt.Config{
+/* demo:
+identityKey := "id"
+cfg := jwt.Config{
 	Realm:       "api",
 	Key:         []byte("96E79218"),
 	Timeout:     time.Hour * 24,
 	MaxRefresh:  time.Hour * 24 * 7,
-	IdentityKey: "id",
+	IdentityKey: identityKey,
 	Filter: func(c *fast.Ctx) bool {
 		return c.Get("IsAnonymous") != nil
 	},
 	PayloadFunc: func(data interface{}) jwt.MapClaims {
 		if v, ok := data.(*User); ok {
 			return jwt.MapClaims{
-				"id": v.UserName,
+				identityKey: v.UserName,
 			}
 		}
 		return jwt.MapClaims{}
