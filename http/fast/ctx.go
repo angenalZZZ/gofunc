@@ -398,6 +398,34 @@ func (ctx *Ctx) Get(key string) (val interface{}) {
 	return ctx.C.UserValue(key)
 }
 
+// GetArg gets token from request(query url, post args, header authorization).
+// id := GetArg("id")
+func (ctx *Ctx) GetArg(key ...string) string {
+	k, j, l := "token", "Authorization", len(key)
+	if l > 0 {
+		k = key[0]
+		if l > 1 {
+			j = key[1]
+		}
+	}
+	if j != "" {
+		if token := ctx.C.Request.Header.Peek(j); token != nil {
+			t := strings.Split(GetString(token), " ")
+			return t[len(t)-1]
+		}
+	}
+	switch ctx.method {
+	case "POST", "PUT":
+		if token := ctx.C.Request.PostArgs().Peek(k); token != nil {
+			return GetString(token)
+		}
+	}
+	if token := ctx.C.QueryArgs().Peek(k); token != nil {
+		return GetString(token)
+	}
+	return ""
+}
+
 // GetHeader returns the HTTP request header specified by field.
 // Field names are case-insensitive
 func (ctx *Ctx) GetHeader(key string) (value string) {
@@ -543,6 +571,13 @@ func (ctx *Ctx) Method(override ...string) string {
 // This returns a map[string][]string, so given a key the value will be a string slice.
 func (ctx *Ctx) MultipartForm() (*multipart.Form, error) {
 	return ctx.C.MultipartForm()
+}
+
+// Abort skips the rest of the handlers associated with the current route.
+// Abort is normally used when a handler handles the request normally and wants to skip the rest of the handlers.
+// If a handler wants to indicate an error condition, it should simply return the error without calling Abort.
+func (ctx *Ctx) Abort() {
+	ctx.index = len(ctx.app.routes)
 }
 
 // Next executes the next method in the stack that matches the current route.
@@ -817,33 +852,6 @@ func (ctx *Ctx) Stale() bool {
 func (ctx *Ctx) Status(status int) *Ctx {
 	ctx.C.Response.SetStatusCode(status)
 	return ctx
-}
-
-// Token gets token from request(query url, post args, header authorization).
-func (ctx *Ctx) Token(key ...string) string {
-	k, j, l := "token", "Authorization", len(key)
-	if l > 0 {
-		k = key[0]
-		if l > 1 {
-			j = key[1]
-		}
-	}
-	if j != "" {
-		if token := ctx.C.Request.Header.Peek(j); token != nil {
-			t := strings.Split(GetString(token), " ")
-			return t[len(t)-1]
-		}
-	}
-	switch ctx.method {
-	case "POST", "PUT":
-		if token := ctx.C.Request.PostArgs().Peek(k); token != nil {
-			return GetString(token)
-		}
-	}
-	if token := ctx.C.QueryArgs().Peek(k); token != nil {
-		return GetString(token)
-	}
-	return ""
 }
 
 // Type sets the Content-Type HTTP header to the MIME type specified by the file extension.

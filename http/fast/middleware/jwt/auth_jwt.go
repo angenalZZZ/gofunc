@@ -704,7 +704,7 @@ func (mw *Config) ParseToken(c *fast.Ctx) (*jwt.Token, error) {
 			return mw.pubKey, nil
 		}
 
-		// save token string if vaild
+		// save token string if valid
 		c.Set("JWT_TOKEN", token)
 
 		return mw.Key, nil
@@ -728,7 +728,7 @@ func (mw *Config) ParseTokenString(token string) (*jwt.Token, error) {
 func (mw *Config) unauthorized(c *fast.Ctx, code int, message string) {
 	c.SetHeader("WWW-Authenticate", "JWT realm="+mw.Realm)
 	if !mw.DisabledAbort {
-		c.C.Deadline()
+		c.Abort()
 	}
 
 	mw.Unauthorized(c, code, message)
