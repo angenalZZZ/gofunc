@@ -83,6 +83,13 @@ func releaseCtx(ctx *Ctx) {
 	poolCtx.Put(ctx)
 }
 
+// Abort skips the rest of the handlers associated with the current route.
+// Abort is normally used when a handler handles the request normally and wants to skip the rest of the handlers.
+// If a handler wants to indicate an error condition, it should simply return the error without calling Abort.
+func (ctx *Ctx) Abort() {
+	ctx.index = len(ctx.app.routes)
+}
+
 // Accepts checks if the specified extensions or content types are acceptable.
 func (ctx *Ctx) Accepts(offers ...string) (offer string) {
 	if len(offers) == 0 {
@@ -237,6 +244,16 @@ func (ctx *Ctx) Body(key ...string) string {
 	// Return post value by key
 	if len(key) > 0 {
 		return GetString(ctx.C.Request.PostArgs().Peek(key[0]))
+	}
+	return ""
+}
+
+// BodyJson get a json body request on the Content-Type header: application/json.
+func (ctx *Ctx) BodyJson() f.Json {
+	if ctx.C.Request.IsBodyStream() {
+		if body := ctx.C.Request.Body(); body != nil {
+			return f.NewJson(string(body))
+		}
 	}
 	return ""
 }
@@ -427,7 +444,7 @@ func (ctx *Ctx) GetArg(key ...string) string {
 }
 
 // GetHeader returns the HTTP request header specified by field.
-// Field names are case-insensitive
+// Field names are case-insensitive.
 func (ctx *Ctx) GetHeader(key string) (value string) {
 	if key == "Referrer" {
 		key = "Referer"
@@ -489,16 +506,6 @@ func (ctx *Ctx) JSON(json interface{}) error {
 	ctx.C.Response.SetBodyString(GetString(stream.Buffer()))
 	// Success!
 	return nil
-}
-
-// Json get a json body request.
-func (ctx *Ctx) Json() f.Json {
-	if ctx.C.Request.IsBodyStream() {
-		if body := ctx.C.Request.Body(); body != nil {
-			return f.NewJson(string(body))
-		}
-	}
-	return ""
 }
 
 // JSONP sends a JSON response with JSONP support.
@@ -571,13 +578,6 @@ func (ctx *Ctx) Method(override ...string) string {
 // This returns a map[string][]string, so given a key the value will be a string slice.
 func (ctx *Ctx) MultipartForm() (*multipart.Form, error) {
 	return ctx.C.MultipartForm()
-}
-
-// Abort skips the rest of the handlers associated with the current route.
-// Abort is normally used when a handler handles the request normally and wants to skip the rest of the handlers.
-// If a handler wants to indicate an error condition, it should simply return the error without calling Abort.
-func (ctx *Ctx) Abort() {
-	ctx.index = len(ctx.app.routes)
 }
 
 // Next executes the next method in the stack that matches the current route.
