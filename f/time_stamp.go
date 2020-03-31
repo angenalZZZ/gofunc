@@ -245,8 +245,7 @@ func toTimeLayout(s string, layouts ...string) string {
 			layout = DateTimeFormatStringM
 		case 19:
 			layout = DateTimeFormatString
-		case 20:
-		case 25:
+		case 20, 25:
 			if strings.ContainsRune(s, '+') {
 				layout = "2006-01-02 15:04:05-07:00"
 			} else {
@@ -254,11 +253,9 @@ func toTimeLayout(s string, layouts ...string) string {
 			}
 		case 23:
 			layout = TimeFormatString
-		case 29:
-		case 34:
+		case 29, 34:
 			layout = "2006-01-02 15:04:05.999999999-07:00"
-		case 30:
-		case 35:
+		case 30, 35:
 			layout = time.RFC3339Nano
 		}
 	}

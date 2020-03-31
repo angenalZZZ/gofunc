@@ -1,11 +1,15 @@
 package limiter
 
 import (
+	"errors"
 	"github.com/angenalZZZ/gofunc/http/fast"
 	"github.com/angenalZZZ/gofunc/ratelimit"
 	"github.com/valyala/fasthttp"
 	"time"
 )
+
+// ErrTooManyRequests is returned when too many requests.
+var ErrTooManyRequests = errors.New("too many requests, please try again later.")
 
 // RateLimit holds the configuration for the RateLimit middleware handler.
 // For example, to allow 100 requests per second and a wait time of 50ms
@@ -42,7 +46,7 @@ func NewRateLimiter(rps int64, msg string) *RateLimit {
 		rps = 1
 	}
 	if msg == "" {
-		msg = "Too many requests, please try again later."
+		msg = ErrTooManyRequests.Error()
 	}
 	return &RateLimit{
 		RPS:        rps,
@@ -59,13 +63,17 @@ func NewRateLimiter(rps int64, msg string) *RateLimit {
 //
 // Each call to Wrap creates a new, distinct rate limiter bucket that controls
 // access to h.
-func (rl *RateLimit) Wrap(h func(*fast.Ctx)) func(*fast.Ctx) {
+func (rl *RateLimit) Wrap(allow func(*fast.Ctx), deny func(*fast.Ctx)) func(*fast.Ctx) {
 	bucket := ratelimit.NewBucketWithRate(float64(rl.RPS), rl.Capacity)
 	return func(c *fast.Ctx) {
 		if bucket.WaitMaxDuration(1, rl.MaxWait) {
-			h(c) // request to be allowed
+			allow(c) // request to be allowed
 			return
 		}
-		c.Status(rl.StatusCode).SendString(rl.Message)
+		if deny == nil {
+			c.Status(rl.StatusCode).SendString(rl.Message)
+		} else {
+			deny(c) // request to be deny
+		}
 	}
 }

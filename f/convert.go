@@ -1,7 +1,9 @@
 package f
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"reflect"
 	"strconv"
 	"strings"
@@ -41,18 +43,29 @@ func ToInt(v interface{}, strict bool) (i int64, err error) {
 		}
 		i, err = strconv.ParseInt(strings.TrimSpace(t), 10, 0)
 	case int:
+		i = int64(t)
 	case int8:
+		i = int64(t)
 	case int16:
+		i = int64(t)
 	case int32:
+		i = int64(t)
 	case int64:
 		i = t
 	case uint:
+		i = int64(t)
 	case uint8:
+		i = int64(t)
 	case uint16:
+		i = int64(t)
 	case uint32:
+		i = int64(t)
 	case uint64:
 		i = int64(t)
 	case float32:
+		if strict {
+			return 0, errConvertFail
+		}
 	case float64:
 		if strict {
 			return 0, errConvertFail
@@ -74,19 +87,26 @@ func String(b []byte) string {
 func ToString(val interface{}) (str string) {
 	switch tVal := val.(type) {
 	case int:
+		str = strconv.FormatInt(int64(tVal), 10)
 	case int8:
+		str = strconv.FormatInt(int64(tVal), 10)
 	case int16:
+		str = strconv.FormatInt(int64(tVal), 10)
 	case int32:
+		str = strconv.FormatInt(int64(tVal), 10)
 	case int64:
 		str = strconv.FormatInt(tVal, 10)
 	case uint:
+		str = strconv.FormatUint(uint64(tVal), 10)
 	case uint8:
+		str = strconv.FormatUint(uint64(tVal), 10)
 	case uint16:
+		str = strconv.FormatUint(uint64(tVal), 10)
 	case uint32:
+		str = strconv.FormatUint(uint64(tVal), 10)
 	case uint64:
 		str = strconv.FormatUint(tVal, 10)
-	case float32:
-	case float64:
+	case float32, float64:
 		str = fmt.Sprintf("%g", tVal)
 	case string:
 		str = tVal
@@ -97,6 +117,11 @@ func ToString(val interface{}) (str string) {
 	default:
 		if t, ok := tVal.(fmt.Stringer); ok {
 			str = t.String()
+		} else if t, ok := tVal.(io.Reader); ok {
+			buf := new(bytes.Buffer)
+			if n, _ := buf.ReadFrom(t); n > 0 {
+				return buf.String()
+			}
 		} else {
 			str = fmt.Sprintf("%v", tVal)
 		}
