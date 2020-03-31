@@ -3,6 +3,7 @@ package limiter
 import (
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/http/fast"
+	"github.com/valyala/fasthttp"
 	"strconv"
 	"time"
 )
@@ -58,7 +59,7 @@ func New(config ...Config) func(*fast.Ctx) {
 		cfg.Message = "Too many requests, please try again later."
 	}
 	if cfg.StatusCode == 0 {
-		cfg.StatusCode = 429
+		cfg.StatusCode = fasthttp.StatusTooManyRequests
 	}
 	if cfg.Key == nil {
 		cfg.Key = func(c *fast.Ctx) string {
