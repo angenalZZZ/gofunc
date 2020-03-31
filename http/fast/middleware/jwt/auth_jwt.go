@@ -3,6 +3,7 @@ package jwt
 import (
 	"crypto/rsa"
 	"errors"
+	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/http/fast"
 	"github.com/dgrijalva/jwt-go"
 	"io/ioutil"
@@ -130,31 +131,93 @@ type Config struct {
 }
 
 // New middleware.
-//  cfg := jwt.Config{
-//    AllowHeaders: "authorization, origin, content-type, accept",
-//    MaxAge: 86400,
-//    X: true,
-//  }
-// app.Use(jwt.New(cfg))
+/* cfg := jwt.Config{
+	Realm:       "api",
+	Key:         []byte("96E79218"),
+	Timeout:     time.Hour * 24,
+	MaxRefresh:  time.Hour * 24 * 7,
+	IdentityKey: "id",
+	PayloadFunc: func(data interface{}) jwt.MapClaims {
+		if v, ok := data.(*User); ok {
+			return jwt.MapClaims{
+				"id": v.UserName,
+			}
+		}
+		return jwt.MapClaims{}
+	},
+	IdentityHandler: func(c *fast.Ctx) interface{} {
+		claims := jwt.ExtractClaims(c)
+		return &User{
+			UserName: claims[identityKey].(string),
+		}
+	},
+	Authenticator: func(c *fast.Ctx) (interface{}, error) {
+		var loginVal login
+		if err := c.BodyParser(&loginVals); err != nil {
+			return "", jwt.ErrMissingLoginValues
+		}
+		userID := loginVal.Username
+		password := loginVal.Password
+
+		if (userID == "admin" && password == "admin") || (userID == "test" && password == "test") {
+			return &User{
+				UserName:  userID,
+				LastName:  "LastName",
+				FirstName: "FirstName",
+			}, nil
+		}
+
+		return nil, jwt.ErrFailedAuthentication
+	},
+	Authorizator: func(c *fast.Ctx, data interface{}) bool {
+		if v, ok := data.(*User); ok && v.UserName == "admin" {
+			return true
+		}
+
+		return false
+	},
+	Unauthorized: func(c *fast.Ctx, code int, message string) {
+		c.JSON(code, fast.H{
+			"code":    code,
+			"message": message,
+		})
+	},
+	// TokenLookup is a string in the form of "<source>:<name>" that is used
+	// to extract token from the request.
+	// Optional. Default value "header:Authorization".
+	// Possible values:
+	// - "header:<name>"
+	// - "query:<name>"
+	// - "cookie:<name>"
+	// - "param:<name>"
+	TokenLookup: "header: Authorization, query: token, cookie: jwt",
+	// TokenLookup: "query:token",
+	// TokenLookup: "cookie:token",
+
+	// TokenHeadName is a string in the header. Default value is "Bearer"
+	TokenHeadName: "Bearer",
+
+	// TimeFunc provides the current time. You can override it to use another time value. This is useful for testing or if your server uses a different time zone than your tokens.
+	TimeFunc: time.Now,
+  }
+  app.Use(jwt.New(cfg))
+*/
 func New(config ...Config) func(*fast.Ctx) {
 	// Init config
 	var cfg Config
 	if len(config) > 0 {
 		cfg = config[0]
 	}
-
-	_ = cfg.Init()
-
-	// Middleware function
+	f.Must(cfg.Init())
+	// implement function
 	return func(c *fast.Ctx) {
 		// Filter request to skip middleware
 		if cfg.Filter != nil && cfg.Filter(c) {
 			c.Next()
 			return
 		}
-
-		// TODO: jwt Middleware
-
+		// internal implement
+		cfg.middlewareImpl(c)
 	}
 }
 
@@ -350,7 +413,7 @@ func (mw *Config) Init() error {
 	}
 
 	if mw.Realm == "" {
-		mw.Realm = "gin jwt"
+		mw.Realm = "jwt"
 	}
 
 	if mw.CookieName == "" {
