@@ -9,7 +9,7 @@ import (
 )
 
 // ErrTooManyRequests is returned when too many requests.
-var ErrTooManyRequests = errors.New("too many requests, please try again later.")
+var ErrTooManyRequests = errors.New("Too many requests, please try again later.")
 
 // RateLimit holds the configuration for the RateLimit middleware handler.
 // For example, to allow 100 requests per second and a wait time of 50ms
@@ -19,11 +19,6 @@ type RateLimit struct {
 	// RPS is the number of requests per seconds. Tokens will fill at an
 	// interval that closely respects that RPS value.
 	RPS int64
-
-	// Capacity is the maximum number of tokens that can be available in
-	// the bucket. The bucket starts at full capacity. If the capacity is
-	// <= 0, it is set to the RPS.
-	Capacity int64
 
 	// MaxWait is the maximum time to wait for an available token for a
 	// request to be allowed. If no token is available, the request is
@@ -50,8 +45,7 @@ func NewRateLimiter(rps int64, msg string) *RateLimit {
 	}
 	return &RateLimit{
 		RPS:        rps,
-		Capacity:   rps,
-		MaxWait:    10 * time.Millisecond, // http request is blocking in 10 milli second
+		MaxWait:    time.Millisecond, // http request is blocking in milli second
 		Message:    msg,
 		StatusCode: fasthttp.StatusTooManyRequests,
 	}
@@ -64,11 +58,14 @@ func NewRateLimiter(rps int64, msg string) *RateLimit {
 // Each call to Wrap creates a new, distinct rate limiter bucket that controls
 // access to h.
 func (rl *RateLimit) Wrap(allow func(*fast.Ctx), deny func(*fast.Ctx)) func(*fast.Ctx) {
-	bucket := ratelimit.NewBucketWithRate(float64(rl.RPS), rl.Capacity)
+	rt := ratelimit.NewBucket(time.Second, rl.RPS)
 	return func(c *fast.Ctx) {
-		if bucket.WaitMaxDuration(1, rl.MaxWait) {
+		if _, ok := rt.TakeMaxDuration(1, rl.MaxWait); ok {
 			allow(c) // request to be allowed
 			return
+		}
+		if 0 == rt.Available() {
+			rt = ratelimit.NewBucket(time.Second, rl.RPS)
 		}
 		if deny == nil {
 			c.Status(rl.StatusCode).SendString(rl.Message)
