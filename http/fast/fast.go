@@ -73,7 +73,7 @@ type Group struct {
 func New(settings ...*Settings) *Fast {
 	// Parse arguments
 	for _, v := range os.Args[1:] {
-		if v == "-prefork" {
+		if v == "-prefork" || v == "-fork" {
 			isPrefork = true
 		} else if v == "-child" {
 			isChild = true

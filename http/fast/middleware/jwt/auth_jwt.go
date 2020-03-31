@@ -49,7 +49,7 @@ type Config struct {
 	// Callback function that should perform the authorization of the authenticated user. Called
 	// only after an authentication success. Must return true on success, false on failure.
 	// Optional, default to success.
-	Authorizator func(*fast.Ctx, interface{}) bool
+	Authorization func(*fast.Ctx, interface{}) bool
 
 	// Callback function that will be called during login.
 	// Using this function it is possible to add additional payload data to the webtoken.
@@ -97,36 +97,42 @@ type Config struct {
 	HTTPStatusMessageFunc func(c *fast.Ctx, e error) string
 
 	// Private key file for asymmetric algorithms
-	PrivKeyFile string
+	PriKeyFile string
 
 	// Public key file for asymmetric algorithms
 	PubKeyFile string
 
 	// Private key
-	privKey *rsa.PrivateKey
+	priKey *rsa.PrivateKey
 
 	// Public key
 	pubKey *rsa.PublicKey
 
 	// Optionally return the token as a cookie
+	// Optional Default: false
 	SendCookie bool
 
 	// Allow insecure cookies for development over http
+	// Optional Default: false :: HTTPS environments
 	SecureCookie bool
 
 	// Allow cookies to be accessed client side for development
+	// Optional Default: false :: JS can't modify
 	CookieHTTPOnly bool
 
 	// Allow cookie domain change for development
 	CookieDomain string
 
 	// SendAuthorization allow return authorization header for every request
+	// Optional Default: false
 	SendAuthorization bool
 
 	// Disable abort() of context.
+	// Optional Default: false
 	DisabledAbort bool
 
 	// CookieName allow cookie name change for development
+	// Optional Default: jwt
 	CookieName string
 }
 
@@ -137,6 +143,9 @@ type Config struct {
 	Timeout:     time.Hour * 24,
 	MaxRefresh:  time.Hour * 24 * 7,
 	IdentityKey: "id",
+	Filter: func(c *fast.Ctx) bool {
+		return c.Get("IsAnonymous") != nil
+	},
 	PayloadFunc: func(data interface{}) jwt.MapClaims {
 		if v, ok := data.(*User); ok {
 			return jwt.MapClaims{
@@ -169,7 +178,7 @@ type Config struct {
 
 		return nil, jwt.ErrFailedAuthentication
 	},
-	Authorizator: func(c *fast.Ctx, data interface{}) bool {
+	Authorization: func(c *fast.Ctx, data interface{}) bool {
 		if v, ok := data.(*User); ok && v.UserName == "admin" {
 			return true
 		}
@@ -200,7 +209,9 @@ type Config struct {
 	// TimeFunc provides the current time. You can override it to use another time value. This is useful for testing or if your server uses a different time zone than your tokens.
 	TimeFunc: time.Now,
   }
-  app.Use(jwt.New(cfg))
+  app.POST("/login", cfg.LoginHandler)
+//app.Use(jwt.New(cfg))
+//app.Group("/auth").Use(jwt.New(cfg))
 */
 func New(config ...Config) func(*fast.Ctx) {
 	// Init config
@@ -296,7 +307,7 @@ func (mw *Config) readKeys() error {
 }
 
 func (mw *Config) privateKey() error {
-	keyData, err := ioutil.ReadFile(mw.PrivKeyFile)
+	keyData, err := ioutil.ReadFile(mw.PriKeyFile)
 	if err != nil {
 		return ErrNoPrivKeyFile
 	}
@@ -304,7 +315,7 @@ func (mw *Config) privateKey() error {
 	if err != nil {
 		return ErrInvalidPrivKey
 	}
-	mw.privKey = key
+	mw.priKey = key
 	return nil
 }
 
@@ -352,8 +363,8 @@ func (mw *Config) Init() error {
 		mw.TokenHeadName = "Bearer"
 	}
 
-	if mw.Authorizator == nil {
-		mw.Authorizator = func(c *fast.Ctx, data interface{}) bool {
+	if mw.Authorization == nil {
+		mw.Authorization = func(c *fast.Ctx, data interface{}) bool {
 			return true
 		}
 	}
@@ -466,7 +477,7 @@ func (mw *Config) middlewareImpl(c *fast.Ctx) {
 		c.Set(mw.IdentityKey, identity)
 	}
 
-	if !mw.Authorizator(c, identity) {
+	if !mw.Authorization(c, identity) {
 		mw.unauthorized(c, http.StatusForbidden, mw.HTTPStatusMessageFunc(c, ErrForbidden))
 		return
 	}
@@ -571,7 +582,7 @@ func (mw *Config) signedString(token *jwt.Token) (string, error) {
 	var tokenString string
 	var err error
 	if mw.usingPublicKeyAlgo() {
-		tokenString, err = token.SignedString(mw.privKey)
+		tokenString, err = token.SignedString(mw.priKey)
 	} else {
 		tokenString, err = token.SignedString(mw.Key)
 	}
