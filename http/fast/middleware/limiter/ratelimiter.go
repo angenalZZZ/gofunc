@@ -39,7 +39,6 @@ type Config struct {
 
 // New middleware.
 //  cfg := limiter.Config{
-//    Timeout: 1,
 //    Max: 100,
 //  }
 // app.Use(limiter.New(cfg))
@@ -56,7 +55,7 @@ func New(config ...Config) func(*fast.Ctx) {
 		cfg.Max = 100
 	}
 	if cfg.Message == "" {
-		cfg.Message = "Too many requests, please try again later."
+		cfg.Message = ErrTooManyRequests.Error()
 	}
 	if cfg.StatusCode == 0 {
 		cfg.StatusCode = fasthttp.StatusTooManyRequests
@@ -84,19 +83,21 @@ func New(config ...Config) func(*fast.Ctx) {
 	}()
 	// Reset hits every cfg.Timeout
 	go func() {
+		var zero int64
+		sleep := time.Duration(cfg.Timeout) * time.Second
 		for {
 			// For every key in reset
 			for item := range reset.IterBuffered() {
 				// If resetTime exist and current time is equal or bigger
 				i := item.Val.(int64)
-				if i != 0 && timestamp >= i {
+				if i != zero && timestamp >= i {
 					// Reset hits and resetTime
-					hits.Set(item.Key, 0)
-					reset.Set(item.Key, 0)
+					hits.Set(item.Key, zero)
+					reset.Set(item.Key, zero)
 				}
 			}
 			// Wait cfg.Timeout
-			time.Sleep(time.Duration(cfg.Timeout) * time.Second)
+			time.Sleep(sleep)
 		}
 	}()
 	return func(c *fast.Ctx) {
@@ -107,14 +108,6 @@ func New(config ...Config) func(*fast.Ctx) {
 		}
 		// GetHeader key (default is the remote IP)
 		key := cfg.Key(c)
-		// Increment key hits
-		var hitCount int64
-		if hit, ok := hits.Get(key); ok {
-			hitCount = hit.(int64) + 1
-		} else {
-			hitCount = 1
-		}
-		hits.Set(key, hitCount)
 		// SetHeader unix timestamp if not exist
 		var hitReset int64
 		if hit, ok := reset.Get(key); ok {
@@ -123,12 +116,20 @@ func New(config ...Config) func(*fast.Ctx) {
 			hitReset = timestamp + cfg.Timeout
 			reset.Set(key, hitReset)
 		}
+		// Increment key hits
+		var hitCount int64
+		if hit, ok := hits.Get(key); ok && hitReset != 0 {
+			hitCount = hit.(int64) + 1
+		} else {
+			hitCount = 1
+		}
+		hits.Set(key, hitCount)
 		// SetHeader how many hits we have left
 		remaining := cfg.Max - hitCount
 		// Calculate when it resets in seconds
 		resetTime := hitReset - timestamp
 		// Check if hits exceed the cfg.Max
-		if remaining < 1 {
+		if remaining < 0 {
 			// Call Handler func
 			cfg.Handler(c)
 			// Return response with Retry-After header

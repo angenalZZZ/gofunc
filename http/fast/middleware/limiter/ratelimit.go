@@ -45,12 +45,13 @@ func NewRateLimiterPerSecond(rps int) *RateLimit {
 		MaxWait: time.Millisecond, // http request is blocking in a milli second.
 		Bucket:  ratelimit.NewBucket(time.Second, capacity),
 		RateLimitHeader: func(c *fast.Ctx, r *RateLimit, allowed bool) {
-			c.SetHeader("X-Rate-Limit-Duration", "1s")
+			//c.SetHeader("X-Rate-Limit-Duration", "1s")
 			c.SetHeader("X-Rate-Limit-Limit", strconv.FormatInt(r.Bucket.Capacity(), 10))
 			c.SetHeader("X-Rate-Limit-Remaining", strconv.FormatInt(r.Bucket.Available(), 10))
-			//if allowed == false {
-			//	c.SetHeader("X-Rate-Limit-Reset", "1s")
-			//}
+			c.SetHeader("X-Rate-Limit-Reset", "1s")
+			if allowed == false {
+				c.SetHeader("Retry-After", "1s")
+			}
 		},
 		DenyHandler: func(c *fast.Ctx, r *RateLimit) {
 			c.Status(fasthttp.StatusTooManyRequests).SendString(ErrTooManyRequests.Error())
@@ -86,9 +87,9 @@ func (rl *RateLimit) Wrap(handler func(*fast.Ctx)) func(*fast.Ctx) {
 
 // Renew refill, start new rate limit Bucket.
 func (rl *RateLimit) Refill() {
-	a, b := time.Second-rl.MaxWait, rl.MaxWait
+	a := time.Second - rl.MaxWait
 	for {
-		time.Sleep(b)
+		time.Sleep(time.Microsecond)
 		if rl.start == 0 {
 			continue
 		}
