@@ -83,6 +83,16 @@ func String(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
+// StringInSlice finds needle in a slice of strings.
+func StringInSlice(sliceString []string, needle string) bool {
+	for _, b := range sliceString {
+		if b == needle {
+			return true
+		}
+	}
+	return false
+}
+
 // ToString convert number to string
 func ToString(val interface{}) (str string) {
 	switch tVal := val.(type) {

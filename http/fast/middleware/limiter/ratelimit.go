@@ -5,6 +5,7 @@ import (
 	"github.com/angenalZZZ/gofunc/http/fast"
 	"github.com/angenalZZZ/gofunc/ratelimit"
 	"github.com/valyala/fasthttp"
+	"strconv"
 	"sync/atomic"
 	"time"
 )
@@ -23,8 +24,10 @@ type RateLimit struct {
 	// denied without waiting and a status code 429 is returned.
 	MaxWait time.Duration
 
+	// X-Rate-Limit response headers.
+	RateLimitHeader func(*fast.Ctx, *ratelimit.Bucket, bool)
 	// Http Handler when too many requests.
-	DenyHandler func(*fast.Ctx)
+	DenyHandler func(*fast.Ctx, *ratelimit.Bucket)
 }
 
 // NewRateLimiter new RateLimit.
@@ -35,8 +38,16 @@ func NewRateLimiterPerSecond(rps int) *RateLimit {
 	}
 	return &RateLimit{
 		RPS:     int64(rps),       // RPS is the number of requests per seconds.
-		MaxWait: time.Millisecond, // http request is blocking in a milli second
-		DenyHandler: func(c *fast.Ctx) {
+		MaxWait: time.Millisecond, // http request is blocking in a milli second.
+		RateLimitHeader: func(c *fast.Ctx, rt *ratelimit.Bucket, allowed bool) {
+			c.SetHeader("X-Rate-Limit-Duration", "1s")
+			c.SetHeader("X-Rate-Limit-Limit", strconv.FormatInt(rt.Capacity(), 10))
+			c.SetHeader("X-Rate-Limit-Remaining", strconv.FormatInt(rt.Available(), 10))
+			if allowed == false {
+				c.SetHeader("X-Rate-Limit-Reset", "1s")
+			}
+		},
+		DenyHandler: func(c *fast.Ctx, rt *ratelimit.Bucket) {
 			c.Status(fasthttp.StatusTooManyRequests).SendString(ErrTooManyRequests.Error())
 		},
 	}
@@ -59,17 +70,22 @@ func (rl *RateLimit) Wrap(handler func(*fast.Ctx)) func(*fast.Ctx) {
 		}
 	}()
 	return func(c *fast.Ctx) {
+		// request to be allowed
 		if _, ok := rt.TakeMaxDuration(1, rl.MaxWait); ok {
 			if ri == 0 {
 				atomic.AddInt64(&ri, 1)
 			}
-			handler(c) // request to be allowed
+			rl.RateLimitHeader(c, rt, true)
+			handler(c)
 			return
 		}
+		// request to be deny
 		if rl.DenyHandler == nil {
+			rl.RateLimitHeader(c, rt, false)
 			c.Status(fasthttp.StatusTooManyRequests)
 			return
 		}
-		rl.DenyHandler(c) // request to be deny
+		rl.RateLimitHeader(c, rt, false)
+		rl.DenyHandler(c, rt)
 	}
 }
