@@ -49,6 +49,7 @@ func (rl *RateLimit) Wrap(handler func(*fast.Ctx)) func(*fast.Ctx) {
 	ri, rt := int64(0), ratelimit.NewBucket(time.Second, rl.RPS)
 	go func() {
 		for {
+			time.Sleep(time.Millisecond)
 			if ri != 0 {
 				select {
 				case <-time.After(time.Second):
