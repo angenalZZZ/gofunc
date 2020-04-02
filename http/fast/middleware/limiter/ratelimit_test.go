@@ -11,7 +11,7 @@ import (
 
 func TestRateLimit(t *testing.T) {
 	// Request times
-	times, n := 10000, 0
+	times, n := 1000, 0
 	rl := NewRateLimiterPerSecond(times)
 	rq := make([]int, times)
 	for i, _ := range rq {
