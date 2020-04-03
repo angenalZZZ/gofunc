@@ -1,17 +1,12 @@
 package limiter
 
 import (
-	"errors"
 	"github.com/angenalZZZ/gofunc/http/fast"
 	"github.com/angenalZZZ/gofunc/ratelimit"
 	"github.com/valyala/fasthttp"
-	"strconv"
 	"sync/atomic"
 	"time"
 )
-
-// ErrTooManyRequests is returned when too many requests.
-var ErrTooManyRequests = errors.New("Too many requests, please try again later.")
 
 // RateLimit holds the configuration for the RateLimit middleware handler.
 type RateLimit struct {
@@ -45,13 +40,15 @@ func NewRateLimiterPerSecond(rps int) *RateLimit {
 		MaxWait: time.Millisecond, // http request is blocking in a milli second.
 		Bucket:  ratelimit.NewBucket(time.Second, capacity),
 		RateLimitHeader: func(c *fast.Ctx, r *RateLimit, allowed bool) {
-			//c.SetHeader("X-Rate-Limit-Duration", "1s")
-			c.SetHeader("X-Rate-Limit-Limit", strconv.FormatInt(r.Bucket.Capacity(), 10))
-			c.SetHeader("X-Rate-Limit-Remaining", strconv.FormatInt(r.Bucket.Available(), 10))
-			c.SetHeader("X-Rate-Limit-Reset", "1s")
-			if allowed == false {
-				c.SetHeader("Retry-After", "1s")
-			}
+			ResponseRateLimitHeader(c, &ErrRateLimitHeader{
+				Allowed: true,
+				Header: RateLimitHeader{
+					Limit:      r.Bucket.Capacity(),
+					Remaining:  r.Bucket.Available(),
+					Reset:      1,
+					RetryAfter: 1,
+				},
+			})
 		},
 		DenyHandler: func(c *fast.Ctx, r *RateLimit) {
 			c.Status(fasthttp.StatusTooManyRequests).SendString(ErrTooManyRequests.Error())

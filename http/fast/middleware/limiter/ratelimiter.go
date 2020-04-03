@@ -1,12 +1,39 @@
 package limiter
 
 import (
+	"errors"
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/http/fast"
 	"github.com/valyala/fasthttp"
 	"strconv"
 	"time"
 )
+
+// ErrTooManyRequests is returned when too many requests.
+var ErrTooManyRequests = errors.New("Too many requests, please try again later.")
+
+// ErrRateLimitHeader response when any requests.
+type ErrRateLimitHeader struct {
+	Allowed bool
+	Header  RateLimitHeader
+}
+type RateLimitHeader struct {
+	Limit, Remaining, Reset, RetryAfter int64
+}
+
+// ResponseRateLimitHeader response when any requests.
+func ResponseRateLimitHeader(c *fast.Ctx, opt *ErrRateLimitHeader) {
+	//c.SetHeader("X-Rate-Limit-Duration", "1")
+	if opt.Allowed {
+		c.SetHeader("X-RateLimit-Limit", strconv.FormatInt(opt.Header.Limit, 10))
+		c.SetHeader("X-RateLimit-Remaining", strconv.FormatInt(opt.Header.Remaining, 10))
+		c.SetHeader("X-RateLimit-Reset", strconv.FormatInt(opt.Header.Reset, 10))
+	} else {
+		// Return response with Retry-After header
+		// https://tools.ietf.org/html/rfc6584
+		c.SetHeader("Retry-After", strconv.FormatInt(opt.Header.RetryAfter, 10))
+	}
+}
 
 // Config defines the config for limiter middleware
 type Config struct {
@@ -133,14 +160,18 @@ func New(config ...Config) func(*fast.Ctx) {
 			// Call Handler func
 			cfg.Handler(c)
 			// Return response with Retry-After header
-			// https://tools.ietf.org/html/rfc6584
-			c.SetHeader("Retry-After", strconv.FormatInt(resetTime, 10))
+			ResponseRateLimitHeader(c, &ErrRateLimitHeader{Allowed: false, Header: RateLimitHeader{RetryAfter: resetTime}})
 			return
 		}
 		// We can continue, update RateLimit headers
-		c.SetHeader("X-RateLimit-Limit", strconv.FormatInt(cfg.Max, 10))
-		c.SetHeader("X-RateLimit-Remaining", strconv.FormatInt(remaining, 10))
-		c.SetHeader("X-RateLimit-Reset", strconv.FormatInt(resetTime, 10))
+		ResponseRateLimitHeader(c, &ErrRateLimitHeader{
+			Allowed: true,
+			Header: RateLimitHeader{
+				Limit:     cfg.Max,
+				Remaining: remaining,
+				Reset:     resetTime,
+			},
+		})
 		c.Next()
 	}
 }
