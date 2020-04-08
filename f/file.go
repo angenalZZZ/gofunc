@@ -30,6 +30,14 @@ func RelativePath(targetPath string) string {
 	return strings.Replace(rel, `\`, `/`, -1)
 }
 
+// IsSanePath it's sane path.
+func IsSanePath(path string) bool {
+	if path == ".." || strings.HasPrefix(path, "../") {
+		return false
+	}
+	return true
+}
+
 // FileExists reports whether the named file or directory exists.
 func FileExists(name string) (existed bool) {
 	existed, _ = FileExist(name)
