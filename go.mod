@@ -7,6 +7,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gorilla/schema v1.1.0
 	github.com/json-iterator/go v1.1.9
+	github.com/klauspost/pgzip v1.2.3 // indirect
 	github.com/panjf2000/ants/v2 v2.3.1
 	github.com/rs/zerolog v1.18.0
 	github.com/smartystreets/goconvey v1.6.4 // indirect
