@@ -39,7 +39,7 @@ func IsSanePath(path string) bool {
 	return true
 }
 
-// FileIsSymlink zipFileInfo Is Symlink.
+// FileIsSymlink file is symlink.
 func FileIsSymlink(fi os.FileInfo) bool {
 	return fi.Mode()&os.ModeSymlink != 0
 }
