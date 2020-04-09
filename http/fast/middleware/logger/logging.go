@@ -40,7 +40,7 @@ type Config struct {
 	Tag string
 }
 
-// LogConfig Defines Config File
+// LogConfig Defines Config zipFileInfo
 type LogConfig struct {
 	Log log.Config
 }

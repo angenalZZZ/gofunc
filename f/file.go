@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -38,6 +39,11 @@ func IsSanePath(path string) bool {
 	return true
 }
 
+// FileIsSymlink zipFileInfo Is Symlink.
+func FileIsSymlink(fi os.FileInfo) bool {
+	return fi.Mode()&os.ModeSymlink != 0
+}
+
 // FileExists reports whether the named file or directory exists.
 func FileExists(name string) (existed bool) {
 	existed, _ = FileExist(name)
@@ -51,6 +57,73 @@ func FileExist(name string) (existed bool, isDir bool) {
 		return !os.IsNotExist(err), false
 	}
 	return true, info.IsDir()
+}
+
+// FileExistMultipleTopLevels returns true if the paths do not
+// share a common top-level folder.
+func FileExistMultipleTopLevels(paths []string) bool {
+	if len(paths) < 2 {
+		return false
+	}
+	var lastTop string
+	for _, p := range paths {
+		p = strings.TrimPrefix(strings.Replace(p, `\`, "/", -1), "/")
+		for {
+			next := path.Dir(p)
+			if next == "." {
+				break
+			}
+			p = next
+		}
+		if lastTop == "" {
+			lastTop = p
+		}
+		if p != lastTop {
+			return true
+		}
+	}
+	return false
+}
+
+// FileWithin returns true if sub is within or equal to parent.
+func FileWithin(parent, sub string) bool {
+	rel, err := filepath.Rel(parent, sub)
+	if err != nil {
+		return false
+	}
+	return !strings.Contains(rel, "..")
+}
+
+// FolderNameFromFileName returns a name for a folder
+// that is suitable based on the filename, which will
+// be stripped of its extensions.
+func FolderNameFromFileName(filename string) string {
+	base := filepath.Base(filename)
+	firstDot := strings.Index(base, ".")
+	if firstDot > -1 {
+		return base[:firstDot]
+	}
+	return base
+}
+
+// MakeNameInArchive returns the filename for the file given by fpath to be used within
+// the archive. sourceInfo is the zipFileCustomInfo obtained by calling os.Stat on source, and baseDir
+// is an optional base directory that becomes the root of the archive. fpath should be the
+// unaltered file path of the file given to a filepath.WalkFunc.
+func MakeNameInArchive(sourceInfo os.FileInfo, source, baseDir, fpath string) (string, error) {
+	name := filepath.Base(fpath) // start with the file or dir name
+	if sourceInfo.IsDir() {
+		// preserve internal directory structure; that's the path components
+		// between the source directory's leaf and this file's leaf
+		dir, err := filepath.Rel(filepath.Dir(source), filepath.Dir(fpath))
+		if err != nil {
+			return "", err
+		}
+		// prepend the internal directory structure to the leaf name,
+		// and convert path separators to forward slashes as per spec
+		name = path.Join(filepath.ToSlash(dir), name)
+	}
+	return path.Join(baseDir, name), nil // prepend the base directory
 }
 
 // SearchFile Search a file in paths.
