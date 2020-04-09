@@ -8,7 +8,7 @@ require (
 	github.com/gorilla/schema v1.1.0
 	github.com/json-iterator/go v1.1.9
 	github.com/klauspost/compress v1.8.2
-	github.com/klauspost/crc32 v1.2.0 // indirect
+	github.com/klauspost/crc32 v1.2.0
 	github.com/klauspost/pgzip v1.2.3
 	github.com/panjf2000/ants/v2 v2.3.1
 	github.com/rs/zerolog v1.18.0

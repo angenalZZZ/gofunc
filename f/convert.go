@@ -3,6 +3,7 @@ package f
 import (
 	"bytes"
 	"fmt"
+	"github.com/klauspost/crc32"
 	"io"
 	"reflect"
 	"strconv"
@@ -95,6 +96,9 @@ func ToInt(v interface{}, strict bool) (i int64, err error) {
 	}
 	return
 }
+
+// ToIntCrc32IEEE returns the CRC-32 checksum of data using the IEEE polynomial.
+var ToIntCrc32IEEE = crc32.ChecksumIEEE
 
 // String converts byte slice to a string without memory allocation.
 // See https://groups.google.com/forum/#!msg/Golang-Nuts/ENgbUzYvCuU/90yGx7GUAgAJ .
