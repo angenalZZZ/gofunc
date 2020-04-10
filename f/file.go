@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,10 +14,29 @@ import (
 	"strings"
 )
 
+const (
+	MimeSniffLen = 512 // sniff Length, use for detect file mime type
+)
+
+var (
+	// IsImageFile: refer net/http package
+	ImageMimeTypes = map[string]string{
+		"bmp":  "image/bmp",
+		"gif":  "image/gif",
+		"ief":  "image/ief",
+		"jpg":  "image/jpeg",
+		"jpeg": "image/jpeg",
+		"png":  "image/png",
+		"svg":  "image/svg+xml",
+		"ico":  "image/x-icon",
+		"webp": "image/webp",
+	}
+)
+
 // CurrentPath gets compiled executable file absolute path.
-func CurrentPath() string {
-	path, _ := filepath.Abs(os.Args[0])
-	return path
+func CurrentPath() (p string) {
+	p, _ = filepath.Abs(os.Args[0])
+	return
 }
 
 // CurrentDir gets compiled executable file directory.
@@ -31,12 +51,41 @@ func RelativePath(targetPath string) string {
 	return strings.Replace(rel, `\`, `/`, -1)
 }
 
+// IsAbsPath is abs path.
+func IsAbsPath(filepath string) bool {
+	return path.IsAbs(filepath)
+}
+
 // IsSanePath it's sane path.
 func IsSanePath(path string) bool {
 	if path == ".." || strings.HasPrefix(path, "../") {
 		return false
 	}
 	return true
+}
+
+// IsDir reports whether the named directory exists.
+func IsDir(path string) bool {
+	if path == "" {
+		return false
+	}
+
+	if fi, err := os.Stat(path); err == nil {
+		return fi.IsDir()
+	}
+	return false
+}
+
+// IsFile reports whether the named file or directory exists.
+func IsFile(path string) bool {
+	if path == "" {
+		return false
+	}
+
+	if fi, err := os.Stat(path); err == nil {
+		return !fi.IsDir()
+	}
+	return false
 }
 
 // FileIsSymlink file is symlink.
@@ -494,4 +543,50 @@ func ReplaceFile(filename string, start, end int, newContent string) error {
 		}
 		return bytes.Replace(content, content[start:end], ToBytes(newContent), 1), nil
 	})
+}
+
+// MimeType get File Mime Type name. eg "image/png"
+func MimeType(path string) (mime string) {
+	if path == "" {
+		return
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return
+	}
+
+	return ReaderMimeType(file)
+}
+
+// ReaderMimeType get the io.Reader mimeType
+// Usage:
+// 	file, err := os.Open(filepath)
+// 	if err != nil {
+// 		return
+// 	}
+//	mime := ReaderMimeType(file)
+func ReaderMimeType(r io.Reader) (mime string) {
+	var buf [MimeSniffLen]byte
+	n, _ := io.ReadFull(r, buf[:])
+	if n == 0 {
+		return ""
+	}
+
+	return http.DetectContentType(buf[:n])
+}
+
+// IsImageFile check file is image file.
+func IsImageFile(path string) bool {
+	mime := MimeType(path)
+	if mime == "" {
+		return false
+	}
+
+	for _, imgMime := range ImageMimeTypes {
+		if imgMime == mime {
+			return true
+		}
+	}
+	return false
 }
