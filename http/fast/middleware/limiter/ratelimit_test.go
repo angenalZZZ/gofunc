@@ -12,8 +12,8 @@ import (
 func TestRateLimit(t *testing.T) {
 	// Request times
 	times, n := 10000, 0
-	rq := f.IntSliceRepeat(times, http.StatusOK)
-	f.IntSliceRepeatAppend(rq, 100, http.StatusTooManyRequests)
+	rq := f.TimesRepeat(times, http.StatusOK)
+	f.TimesRepeatAppend(rq, 100, http.StatusTooManyRequests)
 
 	app := fast.New()
 	rl := NewRateLimiterPerSecond(times)
@@ -43,13 +43,28 @@ func TestRateLimit(t *testing.T) {
 			t.Error(ErrTooManyRequests)
 		}
 	}
+
+	// many concurrent requests
+	rq = f.TimesRepeat(2000, http.StatusOK)
+	time.Sleep(time.Second)
+	for _, want := range rq {
+		n++
+		go func(n int, want int) {
+			req, _ := http.NewRequest("GET", fmt.Sprintf("http://google.com?x=%d", n), nil)
+			req.Header.Set("x", f.ToString(n))
+			res, _ := app.Test(req)
+			if res == nil || want != res.StatusCode {
+				t.Error(ErrTooManyRequests)
+			}
+		}(n, want.(int))
+	}
 }
 
 func TestRateLimiterMiddleware(t *testing.T) {
 	// Request times
 	times, n := 100000, 0
-	rq := f.IntSliceRepeat(times, http.StatusOK)
-	f.IntSliceRepeatAppend(rq, 100, http.StatusTooManyRequests)
+	rq := f.TimesRepeat(times, http.StatusOK)
+	f.TimesRepeatAppend(rq, 100, http.StatusTooManyRequests)
 
 	app := fast.New()
 	app.Use(New(Config{
@@ -82,8 +97,21 @@ func TestRateLimiterMiddleware(t *testing.T) {
 		res, _ := app.Test(req)
 		if want != res.StatusCode {
 			t.Error(ErrTooManyRequests)
-			t.Log(f.ToString(res.Body))
-			t.Log(want)
 		}
+	}
+
+	// many concurrent requests
+	rq = f.TimesRepeat(10000, http.StatusOK)
+	time.Sleep(time.Second)
+	for _, want := range rq {
+		n++
+		go func(n int, want int) {
+			req, _ := http.NewRequest("GET", fmt.Sprintf("http://google.com?x=%d", n), nil)
+			req.Header.Set("x", f.ToString(n))
+			res, _ := app.Test(req)
+			if res == nil || want != res.StatusCode {
+				t.Error(ErrTooManyRequests)
+			}
+		}(n, want.(int))
 	}
 }

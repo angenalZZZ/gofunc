@@ -19,13 +19,13 @@ func CryptoMD5(origData string) string {
 // encryptedBytes, err := CryptoHmac(origData, key, crypto.SHA384, EncodeBase64RawURL)
 // encryptedBytes, err := CryptoHmac(origData, key, crypto.SHA512, EncodeBase64URL)
 func CryptoHmac(origData, key string, hash crypto.Hash, encode func(src []byte) string) string {
-	hasher := hmac.New(hash.New, []byte(key))
-	_, err := hasher.Write([]byte(origData))
+	h := hmac.New(hash.New, []byte(key))
+	_, err := h.Write([]byte(origData))
 	if err == nil {
 		if encode == nil {
 			encode = EncodeBase64RawURL
 		}
-		return encode(hasher.Sum(nil))
+		return encode(h.Sum(nil))
 	}
 	return ""
 }

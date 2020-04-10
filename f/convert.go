@@ -35,25 +35,6 @@ func Int(v interface{}) (i int64) {
 	return
 }
 
-// IntSliceRepeat create times.
-func IntSliceRepeat(times int, value int) []int {
-	q := make([]int, times)
-	for i, _ := range q {
-		q[i] = value
-	}
-	return q
-}
-
-// IntSliceRepeatAppend append times.
-func IntSliceRepeatAppend(slice []int, times int, value int) {
-	if slice == nil {
-		slice = make([]int, 0, times)
-	}
-	q := IntSliceRepeat(times, value)
-	slice = append(slice, q...)
-	return
-}
-
 // ToInt parse string to int64
 func ToInt(v interface{}, strict bool) (i int64, err error) {
 	switch t := v.(type) {
