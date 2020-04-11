@@ -26,7 +26,7 @@ func ToBool(s string) (bool, error) {
 	case "0", "off", "no", "false":
 		return false, nil
 	}
-	return false, fmt.Errorf("'%s' cannot convert to bool", s)
+	return false, fmt.Errorf("%q cannot convert to bool", s)
 }
 
 // Int convert string to int64
@@ -34,6 +34,9 @@ func Int(v interface{}) (i int64) {
 	i, _ = ToInt(v, false)
 	return
 }
+
+// IntCrcSum returns the CRC-32 checksum of data using the IEEE polynomial.
+var IntCrcSum = crc32.ChecksumIEEE
 
 // ToInt parse string to int64
 func ToInt(v interface{}, strict bool) (i int64, err error) {
@@ -77,9 +80,6 @@ func ToInt(v interface{}, strict bool) (i int64, err error) {
 	}
 	return
 }
-
-// ToIntCrc32IEEE returns the CRC-32 checksum of data using the IEEE polynomial.
-var ToIntCrc32IEEE = crc32.ChecksumIEEE
 
 // String converts byte slice to a string without memory allocation.
 // See https://groups.google.com/forum/#!msg/Golang-Nuts/ENgbUzYvCuU/90yGx7GUAgAJ .

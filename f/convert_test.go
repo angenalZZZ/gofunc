@@ -10,7 +10,7 @@ func TestToInt(t *testing.T) {
 		t.Logf("ToInt: %d\n", i)
 	}
 
-	// ToIntCrc32IEEE returns the CRC-32 checksum of data using the IEEE polynomial.
-	i := ToIntCrc32IEEE([]byte("hello world"))
-	t.Logf("ToIntCrc32IEEE: %d\n", i)
+	// IntCrcSum returns the CRC-32 checksum of data using the IEEE polynomial.
+	i := IntCrcSum([]byte("hello world"))
+	t.Logf("IntCrcSum: %d\n", i)
 }
