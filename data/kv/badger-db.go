@@ -219,3 +219,29 @@ func (db *BadgerDB) Del(keys []string) error {
 		return nil
 	})
 }
+
+// Keys gets matched keys.
+func (db *BadgerDB) Keys(prefix ...string) []string {
+	opts := badger.DefaultIteratorOptions
+	opts.PrefetchValues = false
+	var prefixBytes []byte
+	var keys []string
+	if len(prefix) == 1 {
+		prefixBytes = f.Bytes(prefix[0])
+	}
+	_ = db.DB.View(func(txn *badger.Txn) error {
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		if len(prefix) == 0 {
+			for it.Rewind(); it.Valid(); it.Next() {
+				keys = append(keys, f.String(it.Item().Key()))
+			}
+		} else {
+			for it.Seek(prefixBytes); it.ValidForPrefix(prefixBytes); it.Next() {
+				keys = append(keys, f.String(it.Item().Key()))
+			}
+		}
+		return nil
+	})
+	return keys
+}
