@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/cespare/xxhash v1.1.0
-	github.com/dgraph-io/badger/v2 v2.0.3 // indirect
+	github.com/dgraph-io/badger/v2 v2.0.3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gorilla/schema v1.1.0
 	github.com/json-iterator/go v1.1.9
