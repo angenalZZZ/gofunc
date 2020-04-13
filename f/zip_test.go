@@ -1,6 +1,9 @@
 package f
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
 func TestZipCompress(t *testing.T) {
 	// Zip Compress
@@ -21,7 +24,12 @@ func TestZipCompress(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer reader.Close()
+
+	defer func() {
+		_ = reader.Close()
+		_ = os.Remove(destination)
+	}()
+
 	if err := ZipDecompress(&reader.Reader, "../test/"); err != nil {
 		t.Fatal(err)
 	}
