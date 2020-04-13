@@ -27,7 +27,7 @@ type BadgerDB struct {
 
 // Open BadgerDB represents a badger db implementation,
 // or no path, db save in memory.
-func Open(path ...string) (*BadgerDB, error) {
+func (db *BadgerDB) Open(path ...string) error {
 	var opt badger.Options
 	if len(path) == 1 {
 		opt = badger.DefaultOptions(path[0])
@@ -46,18 +46,20 @@ func Open(path ...string) (*BadgerDB, error) {
 
 	_db, err := badger.Open(opt)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	db := new(BadgerDB)
 	db.DB = _db
+	if opt.InMemory {
+		return nil
+	}
+
 	go (func() {
 		for db.DB.RunValueLogGC(0.5) == nil {
 			// cleaning ...
 		}
 	})()
-
-	return db, nil
+	return nil
 }
 
 // Size gets the size of the database (LSM + ValueLog) in bytes.
@@ -66,23 +68,11 @@ func (db *BadgerDB) Size() int64 {
 	return lsm + vLog
 }
 
-// GC runs the garbage collector.
-func (db *BadgerDB) GC() error {
-	var err error
-	for {
-		err = db.DB.RunValueLogGC(0.5)
-		if err != nil {
-			break
-		}
-	}
-	return err
-}
-
 // Incr - increment the key by the specified value.
 func (db *BadgerDB) Incr(k string, by int64) (int64, error) {
 	val, err := db.Get(k)
-	if err != nil {
-		val = ""
+	if err != nil || val == "" {
+		val = "0"
 	}
 
 	valFloat, _ := strconv.ParseInt(val, 10, 64)
@@ -220,19 +210,25 @@ func (db *BadgerDB) Del(keys []string) error {
 	})
 }
 
+// Close ...
+func (db *BadgerDB) Close() error {
+	return db.DB.Close()
+}
+
 // Keys gets matched keys.
 func (db *BadgerDB) Keys(prefix ...string) []string {
 	opts := badger.DefaultIteratorOptions
 	opts.PrefetchValues = false
 	var prefixBytes []byte
 	var keys []string
-	if len(prefix) == 1 {
+	l := len(prefix)
+	if l > 0 {
 		prefixBytes = f.Bytes(prefix[0])
 	}
 	_ = db.DB.View(func(txn *badger.Txn) error {
 		it := txn.NewIterator(opts)
 		defer it.Close()
-		if len(prefix) == 0 {
+		if l == 0 {
 			for it.Rewind(); it.Valid(); it.Next() {
 				keys = append(keys, f.String(it.Item().Key()))
 			}
@@ -244,4 +240,16 @@ func (db *BadgerDB) Keys(prefix ...string) []string {
 		return nil
 	})
 	return keys
+}
+
+// GC runs the garbage collector, not in memory.
+func (db *BadgerDB) GC() error {
+	var err error
+	for {
+		err = db.DB.RunValueLogGC(0.5)
+		if err != nil {
+			break
+		}
+	}
+	return err
 }

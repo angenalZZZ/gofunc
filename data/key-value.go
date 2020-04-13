@@ -3,8 +3,8 @@ package data
 // key value database interface
 // Feature github.com/angenalZZZ/gofunc/data/kv/...
 type KvDB interface {
+	Open(...string) error
 	Size() int64
-	GC() error
 	Incr(string, int64) (int64, error)
 	Set(string, string, int) error
 	SetBytes([]byte, []byte, int) error
@@ -13,4 +13,7 @@ type KvDB interface {
 	MGet([]string) []string
 	TTL(string) int64
 	Del([]string) error
+	Close() error
+	Keys(...string) []string
+	GC() error
 }

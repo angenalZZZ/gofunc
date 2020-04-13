@@ -4,7 +4,11 @@ import (
 	"errors"
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
+	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
+	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,18 +21,20 @@ type LevelDB struct {
 	sync.RWMutex
 }
 
-// OpenFile Opens the specified path.
-func OpenFile(path string) (*LevelDB, error) {
-	db, err := leveldb.OpenFile(path, nil)
-
-	if err != nil {
-		return nil, err
+// Open Opens the specified path.
+func (db *LevelDB) Open(path ...string) error {
+	filename := ""
+	if len(path) > 0 {
+		filename = path[0]
+	} else {
+		filename, _ = ioutil.TempDir(os.TempDir(), "")
 	}
-
-	ldb := new(LevelDB)
-	ldb.DB = db
-
-	return ldb, nil
+	var err error
+	db.DB, err = leveldb.OpenFile(filename, nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Size gets the size of the database in bytes.
@@ -44,19 +50,14 @@ func (db *LevelDB) Size() int64 {
 	return size
 }
 
-// GC runs the garbage collector.
-func (db *LevelDB) GC() error {
-	return db.DB.CompactRange(util.Range{})
-}
-
 // Incr increment the key by the specified value.
 func (db *LevelDB) Incr(k string, by int64) (int64, error) {
 	db.Lock()
 	defer db.Unlock()
 
 	val, err := db.get(k)
-	if err != nil {
-		val = ""
+	if err != nil || val == "" {
+		val = "0"
 	}
 
 	valFloat, _ := strconv.ParseInt(val, 10, 64)
@@ -142,6 +143,36 @@ func (db *LevelDB) Del(keys []string) error {
 // Close ...
 func (db *LevelDB) Close() error {
 	return db.DB.Close()
+}
+
+// Keys gets matched keys.
+func (db *LevelDB) Keys(prefix ...string) []string {
+	ro := &opt.ReadOptions{DontFillCache: true}
+	var prefixBytes []byte
+	var keys []string
+	l := len(prefix)
+	if l > 0 {
+		prefixBytes = f.Bytes(prefix[0])
+	}
+	var iter iterator.Iterator
+	if l == 0 {
+		iter = db.DB.NewIterator(nil, ro)
+	} else {
+		iter = db.DB.NewIterator(util.BytesPrefix(prefixBytes), ro)
+	}
+	defer iter.Release()
+	for iter.Next() {
+		if iter.Error() != nil {
+			continue
+		}
+		keys = append(keys, f.String(iter.Key()))
+	}
+	return keys
+}
+
+// GC runs the garbage collector.
+func (db *LevelDB) GC() error {
+	return db.DB.CompactRange(util.Range{})
 }
 
 func (db *LevelDB) get(k string) (string, error) {
