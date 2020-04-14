@@ -42,6 +42,8 @@ github.com/go-acme/lego/v3/lego
 github.com/go-acme/lego/v3/log
 github.com/go-acme/lego/v3/platform/wait
 github.com/go-acme/lego/v3/registration
+# github.com/go-resty/resty/v2 v2.2.0
+github.com/go-resty/resty/v2
 # github.com/golang/protobuf v1.3.2
 github.com/golang/protobuf/proto
 # github.com/golang/snappy v0.0.1
@@ -118,7 +120,7 @@ golang.org/x/crypto/ed25519
 golang.org/x/crypto/ed25519/internal/edwards25519
 golang.org/x/crypto/ocsp
 golang.org/x/crypto/pbkdf2
-# golang.org/x/net v0.0.0-20191027093000-83d349e8ac1a
+# golang.org/x/net v0.0.0-20200222125558-5a598a2470a0
 golang.org/x/net/bpf
 golang.org/x/net/idna
 golang.org/x/net/internal/iana
@@ -126,6 +128,7 @@ golang.org/x/net/internal/socket
 golang.org/x/net/internal/timeseries
 golang.org/x/net/ipv4
 golang.org/x/net/ipv6
+golang.org/x/net/publicsuffix
 golang.org/x/net/trace
 # golang.org/x/sys v0.0.0-20190801041406-cbf593c0f2f3
 golang.org/x/sys/unix

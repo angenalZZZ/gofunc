@@ -2,7 +2,15 @@ package f
 
 import (
 	"context"
+	"errors"
 	"github.com/cenkalti/backoff/v4"
+	"github.com/go-resty/resty/v2"
+	"time"
+)
+
+var (
+	// 重试多次后无法获得结果
+	ErrRetryTimesFailure = errors.New("unable to get results after multiple retries")
 )
 
 // Retry the operation o until it does not return error or BackOff stops.
@@ -55,4 +63,39 @@ func RetryTicker(operation func() error) (err error) {
 		break
 	}
 	return err
+}
+
+// NewRetryConditionRequest create a retry http request.
+// https://github.com/go-resty/resty#retries
+func NewRetryConditionRequest(condition func(*resty.Response, error) bool, settings ...func(client *resty.Client)) *resty.Request {
+	if condition == nil {
+		condition = func(response *resty.Response, err error) bool { return false }
+	}
+	client := resty.New()
+	if len(settings) > 0 {
+		settings[0](client)
+	}
+	return client.AddRetryCondition(condition).R()
+}
+
+// NewRetryTimesRequest create a retry http request.
+// https://github.com/go-resty/resty#retries
+func NewRetryTimesRequest(maxRetries int, waitTime, maxWaitTime time.Duration, settings ...func(client *resty.Client)) *resty.Request {
+	if maxRetries < 1 {
+		maxRetries = 1
+	}
+	if waitTime < time.Millisecond {
+		waitTime = 100 * time.Millisecond
+	}
+	if maxWaitTime < time.Second {
+		waitTime = 2 * time.Second
+	}
+	client := resty.New()
+	if len(settings) > 0 {
+		settings[0](client)
+	}
+	return client.SetRetryCount(maxRetries).SetRetryWaitTime(waitTime).SetRetryMaxWaitTime(maxWaitTime).R()
+	//return resty.Backoff(func() (*resty.Response, error) {
+	//	return nil, nil
+	//}, resty.Retries(maxRetries), resty.WaitTime(waitTime), resty.MaxWaitTime(maxWaitTime))
 }
