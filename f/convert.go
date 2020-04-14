@@ -3,7 +3,7 @@ package f
 import (
 	"bytes"
 	"fmt"
-	"github.com/cespare/xxhash"
+	xxhash "github.com/cespare/xxhash/v2"
 	"github.com/klauspost/crc32"
 	"io"
 	"reflect"
