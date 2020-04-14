@@ -3,7 +3,7 @@ package f
 import (
 	"bytes"
 	"fmt"
-	xxhash "github.com/cespare/xxhash/v2"
+	"github.com/cespare/xxhash/v2"
 	"github.com/klauspost/crc32"
 	"io"
 	"reflect"
@@ -39,8 +39,21 @@ func Int(v interface{}) (i int64) {
 // Int32Sum returns the CRC-32 checksum of data using the IEEE polynomial.
 var Int32Sum = crc32.ChecksumIEEE
 
+// Int32SumString returns the CRC-32 checksum of data using the IEEE polynomial.
+var Int32SumString = func(s string) uint32 {
+	var b []byte
+	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	bh.Data = (*reflect.StringHeader)(unsafe.Pointer(&s)).Data
+	bh.Len = len(s)
+	bh.Cap = len(s)
+	return crc32.ChecksumIEEE(b)
+}
+
 // Int64Sum xx.hash is a Go implementation of the 64-bit xxHash algorithm, XXH64.
 var Int64Sum = xxhash.Sum64
+
+// Int64SumString xx.hash is a Go implementation of the 64-bit xxHash algorithm, XXH64.
+var Int64SumString = xxhash.Sum64String
 
 // ToInt parse string to int64
 func ToInt(v interface{}, strict bool) (i int64, err error) {

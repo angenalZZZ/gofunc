@@ -6,6 +6,8 @@ github.com/caddyserver/certmagic
 github.com/cenkalti/backoff/v4
 # github.com/cespare/xxhash v1.1.0
 github.com/cespare/xxhash
+# github.com/cespare/xxhash/v2 v2.1.1
+github.com/cespare/xxhash/v2
 # github.com/dgraph-io/badger/v2 v2.0.3
 github.com/dgraph-io/badger/v2
 github.com/dgraph-io/badger/v2/options
