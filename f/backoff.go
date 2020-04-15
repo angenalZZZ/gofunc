@@ -22,8 +22,7 @@ type RetryOperation struct {
 
 // NewRetryOperation create a retryOperation with the context.
 func NewRetryOperation(operation func() error,
-	InitialInterval, MaxInterval, MaxElapsedTime time.Duration,
-	RandomizationFactor, Multiplier float64,
+	initialInterval, maxInterval, maxElapsedTime time.Duration, randomizationFactor, multiplier float64,
 	ctx ...context.Context) *RetryOperation {
 	var o backoff.Operation
 	if operation != nil {
@@ -31,27 +30,27 @@ func NewRetryOperation(operation func() error,
 	} else {
 		o = func() error { return nil }
 	}
-	if InitialInterval == 0 {
-		InitialInterval = backoff.DefaultInitialInterval
+	if initialInterval == 0 {
+		initialInterval = backoff.DefaultInitialInterval
 	}
-	if MaxInterval == 0 {
-		MaxInterval = backoff.DefaultMaxInterval
+	if maxInterval == 0 {
+		maxInterval = backoff.DefaultMaxInterval
 	}
-	if MaxElapsedTime == 0 {
-		MaxElapsedTime = backoff.DefaultMaxElapsedTime
+	if maxElapsedTime == 0 {
+		maxElapsedTime = backoff.DefaultMaxElapsedTime
 	}
-	if RandomizationFactor == 0 {
-		RandomizationFactor = backoff.DefaultRandomizationFactor
+	if randomizationFactor == 0 {
+		randomizationFactor = backoff.DefaultRandomizationFactor
 	}
-	if Multiplier == 0 {
-		Multiplier = backoff.DefaultMultiplier
+	if multiplier == 0 {
+		multiplier = backoff.DefaultMultiplier
 	}
 	b := &backoff.ExponentialBackOff{
-		InitialInterval:     InitialInterval,
-		RandomizationFactor: RandomizationFactor,
-		Multiplier:          Multiplier,
-		MaxInterval:         MaxInterval,
-		MaxElapsedTime:      MaxElapsedTime,
+		InitialInterval:     initialInterval,
+		RandomizationFactor: randomizationFactor,
+		Multiplier:          multiplier,
+		MaxInterval:         maxInterval,
+		MaxElapsedTime:      maxElapsedTime,
 		Stop:                backoff.Stop,
 		Clock:               backoff.SystemClock,
 	}
@@ -69,29 +68,22 @@ func (ro *RetryOperation) Context() context.Context {
 	return ro.ctx
 }
 
-// Retry the operation o until it does not return error or BackOff stops.
-func (ro *RetryOperation) Retry() error {
-	return backoff.Retry(ro.Operation, ro.ExponentialBackOff)
+func (ro *RetryOperation) NextBackOff() time.Duration {
+	select {
+	case <-ro.ctx.Done():
+		return backoff.Stop
+	default:
+	}
+	next := ro.ExponentialBackOff.NextBackOff()
+	if deadline, ok := ro.ctx.Deadline(); ok && deadline.Sub(time.Now()) < next {
+		return backoff.Stop
+	}
+	return next
 }
 
-// RetryTicker returns a new Ticker containing a channel that will send
-// the time at times specified by the BackOff argument. Ticker is
-// guaranteed to tick at least once.  The channel is closed when Stop
-// method is called or BackOff stops. It is not safe to manipulate the
-// provided backoff policy (notably calling NextBackOff or Reset)
-// while the ticker is running.
-func (ro *RetryOperation) RetryTicker() (err error) {
-	ticker := backoff.NewTicker(ro.ExponentialBackOff)
-	// Ticks will continue to arrive when the previous operation is still running,
-	// so operations that take a while to fail could run in quick succession.
-	for range ticker.C {
-		if err = ro.Operation(); err != nil {
-			continue // will retry...
-		}
-		ticker.Stop()
-		break
-	}
-	return
+// Retry the operation o until it does not return error or BackOff stops.
+func (ro *RetryOperation) Retry() error {
+	return backoff.Retry(ro.Operation, ro)
 }
 
 // NewRetryConditionRequest create a retry http request.
