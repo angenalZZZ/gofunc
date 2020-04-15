@@ -10,34 +10,68 @@ import (
 
 var (
 	// 重试多次后无法获得结果
-	ErrRetryTimesFailure = errors.New("unable to get results after multiple retries")
+	ErrRetryOperationFailure = errors.New("unable to get results after multiple retries")
 )
 
-// Retry the operation o until it does not return error or BackOff stops.
-// o is guaranteed to be run at least once.
-// If o returns a *PermanentError, the operation is not retried, and the
-// wrapped error is returned.
-// Retry sleeps the goroutine for the duration returned by BackOff after a
-// failed operation returns.
-//
-// Creates an instance of ExponentialBackOff using default values.
-//
-// operation must not be nil
-func Retry(operation func() error) error {
-	return backoff.Retry(operation, backoff.NewExponentialBackOff())
+// RetryOperation retry operation manager.
+type RetryOperation struct {
+	backoff.Operation
+	*backoff.ExponentialBackOff
+	ctx context.Context
 }
 
-// RetryContext the operation o until it does not return error or BackOff stops.
-// o is guaranteed to be run at least once. a BackOffContext with context ctx.
-//
-// operation must not be nil
-// ctx must not be nil, or equals context.Background()
-func RetryContext(operation func() error, ctx context.Context) error {
-	if ctx == nil {
-		ctx = context.Background()
+// NewRetryOperation create a retryOperation with the context.
+func NewRetryOperation(operation func() error,
+	InitialInterval, MaxInterval, MaxElapsedTime time.Duration,
+	RandomizationFactor, Multiplier float64,
+	ctx ...context.Context) *RetryOperation {
+	var o backoff.Operation
+	if operation != nil {
+		o = operation
+	} else {
+		o = func() error { return nil }
 	}
-	b := backoff.WithContext(backoff.NewExponentialBackOff(), ctx)
-	return backoff.Retry(operation, b)
+	if InitialInterval == 0 {
+		InitialInterval = backoff.DefaultInitialInterval
+	}
+	if MaxInterval == 0 {
+		MaxInterval = backoff.DefaultMaxInterval
+	}
+	if MaxElapsedTime == 0 {
+		MaxElapsedTime = backoff.DefaultMaxElapsedTime
+	}
+	if RandomizationFactor == 0 {
+		RandomizationFactor = backoff.DefaultRandomizationFactor
+	}
+	if Multiplier == 0 {
+		Multiplier = backoff.DefaultMultiplier
+	}
+	b := &backoff.ExponentialBackOff{
+		InitialInterval:     InitialInterval,
+		RandomizationFactor: RandomizationFactor,
+		Multiplier:          Multiplier,
+		MaxInterval:         MaxInterval,
+		MaxElapsedTime:      MaxElapsedTime,
+		Stop:                backoff.Stop,
+		Clock:               backoff.SystemClock,
+	}
+	var c context.Context
+	if len(ctx) == 1 {
+		c = ctx[0]
+	} else {
+		c = context.Background()
+	}
+	b.Reset()
+	return &RetryOperation{o, b, c}
+}
+
+func (ro *RetryOperation) Context() context.Context {
+	return ro.ctx
+}
+
+// Retry the operation o until it does not return error or BackOff stops.
+func (ro *RetryOperation) Retry() error {
+	return backoff.Retry(ro.Operation, ro.ExponentialBackOff)
 }
 
 // RetryTicker returns a new Ticker containing a channel that will send
@@ -46,23 +80,18 @@ func RetryContext(operation func() error, ctx context.Context) error {
 // method is called or BackOff stops. It is not safe to manipulate the
 // provided backoff policy (notably calling NextBackOff or Reset)
 // while the ticker is running.
-//
-// operation must not be nil
-func RetryTicker(operation func() error) (err error) {
-	ticker := backoff.NewTicker(backoff.NewExponentialBackOff())
-
+func (ro *RetryOperation) RetryTicker() (err error) {
+	ticker := backoff.NewTicker(ro.ExponentialBackOff)
 	// Ticks will continue to arrive when the previous operation is still running,
 	// so operations that take a while to fail could run in quick succession.
 	for range ticker.C {
-		if err = operation(); err != nil {
-			// will retry...
-			continue
+		if err = ro.Operation(); err != nil {
+			continue // will retry...
 		}
-
 		ticker.Stop()
 		break
 	}
-	return err
+	return
 }
 
 // NewRetryConditionRequest create a retry http request.
@@ -91,11 +120,8 @@ func NewRetryTimesRequest(maxRetries int, waitTime, maxWaitTime time.Duration, s
 		waitTime = 2 * time.Second
 	}
 	client := resty.New()
-	if len(settings) > 0 {
-		settings[0](client)
+	for _, setting := range settings {
+		setting(client)
 	}
 	return client.SetRetryCount(maxRetries).SetRetryWaitTime(waitTime).SetRetryMaxWaitTime(maxWaitTime).R()
-	//return resty.Backoff(func() (*resty.Response, error) {
-	//	return nil, nil
-	//}, resty.Retries(maxRetries), resty.WaitTime(waitTime), resty.MaxWaitTime(maxWaitTime))
 }
