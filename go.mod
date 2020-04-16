@@ -10,6 +10,7 @@ require (
 	github.com/dgraph-io/badger/v2 v2.0.3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-resty/resty/v2 v2.2.0
+	github.com/golang/snappy v0.0.1
 	github.com/gorilla/schema v1.1.0
 	github.com/json-iterator/go v1.1.9
 	github.com/klauspost/compress v1.8.2

@@ -55,17 +55,6 @@ var Int64Sum = xxhash.Sum64
 // Int64SumString xx.hash is a Go implementation of the 64-bit xxHash algorithm, XXH64.
 var Int64SumString = xxhash.Sum64String
 
-// DecodeUint64 decodes a hex string as a quantity.
-func DecodeUint64(input string) (uint64, error) {
-	return strconv.ParseUint(input, 16, 64)
-}
-
-// EncodeUint64 encodes i as a hex string.
-func EncodeUint64(i uint64) string {
-	enc := make([]byte, 8)
-	return string(strconv.AppendUint(enc, i, 16))
-}
-
 // ToInt parse string to int64
 func ToInt(v interface{}, strict bool) (i int64, err error) {
 	switch t := v.(type) {
