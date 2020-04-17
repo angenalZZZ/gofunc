@@ -25,45 +25,55 @@ func TestBadgerDB(t *testing.T) {
 		_ = os.RemoveAll(testDBPath)
 	}()
 
-	count, size, keys := int64(0), db.Size(), db.Keys()
-	t.Logf("db.Size = %d, db.Keys.Count = %d\n", size, len(keys))
+	var count int64
+	getSizeAndKeys(t, db)
 
 	count, err = db.Incr(testCountIncrKey, 1)
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 	t.Logf("db.Incr = %d\n", count)
 
 	someVal := "hello"
-	err = db.Set(testSomeKey, someVal, 10)
-	if err != nil {
-		t.Fatal(err)
-	} else {
-		t.Logf("db.Set = %s\n", someVal)
-	}
-	someVal, err = db.Get(testSomeKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("db.Get = %s\n", someVal)
+	genVal(t, db, testSomeKey, someVal)
+	getVal(t, db, testSomeKey, someVal)
 
-	size, keys = db.Size(), db.Keys()
-	t.Logf("db.Size = %d, db.Keys.Count = %d\n", size, len(keys))
+	getSizeAndKeys(t, db)
 
 	err = db.Del([]string{testCountIncrKey, testSomeKey})
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 
 	_, err = db.Get(testSomeKey)
 	if err == nil {
-		t.Fatal(fmt.Errorf("db.Del = %t\n", false))
+		t.Error(fmt.Errorf("db.Del = %t\n", false))
 	} else {
 		t.Logf("db.Del = %t\n", true)
 	}
 
-	size, keys = db.Size(), db.Keys()
-	t.Logf("db.Size = %d, db.Keys.Count = %d\n", size, len(keys))
-
+	getSizeAndKeys(t, db)
 	//_ = db.GC()
+}
+
+func getSizeAndKeys(t *testing.T, db KvDB) {
+	t.Helper()
+	size, keys := db.Size(), db.Keys()
+	t.Logf("db.Size = %d, db.Keys.Count = %d\n", size, len(keys))
+}
+
+func getVal(t *testing.T, db KvDB, key, expected string) {
+	t.Helper()
+	if get, err := db.Get(key); err != nil {
+		t.Error(err)
+	} else if get != expected {
+		t.Errorf("Expected value (%v) was not returned from db, instead got %v", expected, get)
+	}
+}
+
+func genVal(t *testing.T, db KvDB, key, expected string) {
+	t.Helper()
+	if err := db.Set(key, expected, 10); err != nil {
+		t.Error(err)
+	}
 }
