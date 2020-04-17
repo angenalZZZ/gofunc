@@ -303,7 +303,7 @@ func (b *bucket) Set(k, v []byte, h uint64) {
 		//if setCalls%(1<<14) == 0 {
 		b.Clean()
 	}
-
+	// key string is changed, larger than 256 bits are not accepted.
 	if len(k) >= 256 || len(v) >= 65536 {
 		//if len(k) >= (1<<16) || len(v) >= (1<<16) {
 		// Too big key or value - its length cannot be encoded
