@@ -30,6 +30,15 @@ func (j *JwtSign) Parse(tokenString string) (map[string]interface{}, error) {
 	})
 
 	if err != nil {
+		//if ve, ok := err.(*jwt.ValidationError); ok {
+		//	if ve.Errors&jwt.ValidationErrorMalformed != 0 {
+		//		// That's not even a token
+		//	} else if ve.Errors&(jwt.ValidationErrorExpired|jwt.ValidationErrorNotValidYet) != 0 {
+		//		// Token is either expired or not active yet
+		//	} else {
+		//		// Couldn't handle this token
+		//	}
+		//}
 		return nil, err
 	}
 
