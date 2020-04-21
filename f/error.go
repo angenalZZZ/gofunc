@@ -5,6 +5,16 @@ import (
 	"fmt"
 )
 
+var (
+	// backoff.go
+	// 重试多次后无法获得结果
+	ErrRetryOperationFailure = errors.New("unable to get results after multiple retries")
+
+	// validator.go
+	ErrConvertFail       = errors.New("convert value is failure")
+	ErrBadComparisonType = errors.New("invalid type for operation")
+)
+
 // Must not error, or panic.
 func Must(err error) {
 	if err != nil {

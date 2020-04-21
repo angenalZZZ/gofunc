@@ -2,15 +2,9 @@ package f
 
 import (
 	"context"
-	"errors"
 	"github.com/cenkalti/backoff/v4"
 	"github.com/go-resty/resty/v2"
 	"time"
-)
-
-var (
-	// 重试多次后无法获得结果
-	ErrRetryOperationFailure = errors.New("unable to get results after multiple retries")
 )
 
 // RetryOperation retry operation manager.

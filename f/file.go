@@ -8,30 +8,30 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/user"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 )
 
-const (
-	MimeSniffLen = 512 // sniff Length, use for detect file mime type
-)
-
-var (
-	// IsImageFile: refer net/http package
-	ImageMimeTypes = map[string]string{
-		"bmp":  "image/bmp",
-		"gif":  "image/gif",
-		"ief":  "image/ief",
-		"jpg":  "image/jpeg",
-		"jpeg": "image/jpeg",
-		"png":  "image/png",
-		"svg":  "image/svg+xml",
-		"ico":  "image/x-icon",
-		"webp": "image/webp",
+// CurrentUserName user.Current Username.
+func CurrentUserName() string {
+	currentUser, err := user.Current()
+	if err != nil {
+		return ""
 	}
-)
+	return currentUser.Username
+}
+
+// CurrentUserHomeDir user.Current HomeDir or $HOME.
+func CurrentUserHomeDir() string {
+	currentUser, err := user.Current()
+	if err != nil {
+		return os.Getenv("HOME")
+	}
+	return currentUser.HomeDir
+}
 
 // CurrentPath gets compiled executable file absolute path.
 func CurrentPath() (p string) {

@@ -7,16 +7,6 @@ import (
 	"time"
 )
 
-// TimeFormat https://programming.guide/go/format-parse-string-time-date-example.html
-const (
-	DateFormatStringG     string = "20060102"
-	DateFormatString      string = "2006-01-02"
-	DateTimeFormatStringH string = "2006-01-02 15"
-	DateTimeFormatStringM string = "2006-01-02 15:04"
-	DateTimeFormatString  string = "2006-01-02 15:04:05"
-	TimeFormatString      string = "2006-01-02 15:04:05.000"
-)
-
 // TimeStamp a time stamp and extended methods.
 type TimeStamp struct {
 	time.Time
@@ -211,7 +201,7 @@ func (t *TimeStamp) HourMinuteSecond() (hour, minute, second int) {
 func ToTime(s string, layouts ...string) (t time.Time, err error) {
 	layout := toTimeLayout(s, layouts...)
 	if layout == "" {
-		err = errConvertFail
+		err = ErrConvertFail
 		return
 	}
 	t, err = time.Parse(layout, s)
@@ -222,7 +212,7 @@ func ToTime(s string, layouts ...string) (t time.Time, err error) {
 func ToLocalTime(s string, layouts ...string) (t time.Time, err error) {
 	layout := toTimeLayout(s, layouts...)
 	if layout == "" {
-		err = errConvertFail
+		err = ErrConvertFail
 		return
 	}
 	t, err = time.ParseInLocation(layout, s, time.Local)

@@ -60,7 +60,7 @@ func ToInt(v interface{}, strict bool) (i int64, err error) {
 	switch t := v.(type) {
 	case string:
 		if strict {
-			return 0, errConvertFail
+			return 0, ErrConvertFail
 		}
 		i, err = strconv.ParseInt(strings.TrimSpace(t), 10, 0)
 	case int:
@@ -85,15 +85,15 @@ func ToInt(v interface{}, strict bool) (i int64, err error) {
 		i = int64(t)
 	case float32:
 		if strict {
-			return 0, errConvertFail
+			return 0, ErrConvertFail
 		}
 	case float64:
 		if strict {
-			return 0, errConvertFail
+			return 0, ErrConvertFail
 		}
 		i = int64(t)
 	default:
-		err = errConvertFail
+		err = ErrConvertFail
 	}
 	return
 }
