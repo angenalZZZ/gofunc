@@ -34,9 +34,9 @@ func init() {
 // Init the zero logger.
 func Init(c Config) Logger {
 	// sets the global override for log level and time format.
-	if level, err := zerolog.ParseLevel(c.Level); err == nil {
-		zerolog.SetGlobalLevel(level)
-	}
+	//if level, err := zerolog.ParseLevel(c.Level); err == nil {
+	//	zerolog.SetGlobalLevel(level)
+	//}
 	if c.TimeFormat != "" {
 		zerolog.TimeFieldFormat = c.TimeFormat
 	}
@@ -60,6 +60,9 @@ func Init(c Config) Logger {
 	w := io.MultiWriter(writers...)
 	z := zerolog.New(w).With().Timestamp()
 	l := z.Logger()
+	if level, err := zerolog.ParseLevel(c.Level); err == nil {
+		l.Level(level)
+	}
 	return &l
 }
 

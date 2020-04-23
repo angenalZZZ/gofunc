@@ -26,7 +26,7 @@ go get github.com/angenalZZZ/gofunc
 Import to your project:
 
 ```go
-import "github.com/angenalZZZ/gofunc/queue"
+import "github.com/angenalZZZ/gofunc/data/queue"
 ```
 
 ## Usage
