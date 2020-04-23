@@ -16,7 +16,7 @@ require (
 	github.com/klauspost/compress v1.8.2
 	github.com/klauspost/crc32 v1.2.0
 	github.com/klauspost/pgzip v1.2.3
-	github.com/nsqio/go-nsq v1.0.8 // indirect
+	github.com/nsqio/go-nsq v1.0.8
 	github.com/panjf2000/ants/v2 v2.3.1
 	github.com/rs/xid v1.2.1
 	github.com/rs/zerolog v1.18.0

@@ -20,7 +20,7 @@ func TestYamlFileConfig(t *testing.T) {
 	}
 
 	// 初始化配置
-	Log = Init(appConfig.Log)
+	Log = Init(&appConfig.Log)
 
 	// 写日志
 	Log.Debug().Msgf("Yaml File: %s", filename)

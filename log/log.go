@@ -11,10 +11,10 @@ import (
 )
 
 // Log default logger, or use log of import "github.com/rs/zerolog/log"
-var Log Logger
+var Log *Logger
 
 // Logger *zerolog.Logger
-type Logger = *zerolog.Logger
+type Logger = zerolog.Logger
 
 // Init the global zero logger.
 func init() {
@@ -32,7 +32,7 @@ func init() {
 }
 
 // Init the zero logger.
-func Init(c Config) Logger {
+func Init(c *Config) *Logger {
 	// sets the global override for log level and time format.
 	//if level, err := zerolog.ParseLevel(c.Level); err == nil {
 	//	zerolog.SetGlobalLevel(level)
@@ -67,7 +67,7 @@ func Init(c Config) Logger {
 }
 
 // InitConsole zero console logger.
-func InitConsole(timeFormat string, jsonWriter bool) Logger {
+func InitConsole(timeFormat string, jsonWriter bool) *Logger {
 	w := newConsole(timeFormat, jsonWriter)
 	l := zerolog.New(w).With().Timestamp().Logger()
 	return &l
