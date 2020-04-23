@@ -14,7 +14,7 @@ type NsqConsumer struct {
 	C        chan struct{}
 	Log      *log.Logger
 	Config   *nsq.Config
-	handlers map[message.Message]*message.Queue
+	handlers map[message.TMessage]*message.Queue
 }
 
 func NewNsqConsumer() *NsqConsumer {
@@ -35,14 +35,14 @@ func NewNsqConsumer() *NsqConsumer {
 		C:        make(chan struct{}),
 		Log:      l,
 		Config:   nil,
-		handlers: make(map[message.Message]*message.Queue),
+		handlers: make(map[message.TMessage]*message.Queue),
 	}
 }
 
 // Register create topic/channel handler for messages,
 // This function creates a new nsq Reader.
 func (c *NsqConsumer) Register(topic, channel string, maxInFlight int, handler message.Handler) error {
-	tch := message.Message{Topic: topic, Channel: channel}
+	tch := message.TMessage{Topic: topic, Channel: channel}
 
 	var config *nsq.Config
 	if c.Config == nil {
@@ -66,7 +66,7 @@ func (c *NsqConsumer) Register(topic, channel string, maxInFlight int, handler m
 	return nil
 }
 
-// Connect - Connects all readers to NSQ
+// Connect - Connects all readers to NSQ.
 func (c *NsqConsumer) Connect(addr ...string) error {
 	for _, q := range c.handlers {
 		for _, add := range addr {

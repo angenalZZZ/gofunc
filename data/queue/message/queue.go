@@ -10,5 +10,5 @@ type Queue struct {
 }
 
 func (q *Queue) HandleMessage(message *nsq.Message) error {
-	return q.H(message)
+	return q.H(&NsqMessage{message})
 }
