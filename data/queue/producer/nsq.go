@@ -10,7 +10,7 @@ import (
 )
 
 type NsqProducer struct {
-	*log.Logger
+	Log *log.Logger
 	*nsq.Producer
 }
 
@@ -44,7 +44,7 @@ func NewNsqProducer(addr string, config ...*nsq.Config) (p *NsqProducer, err err
 
 	np.SetLogger(p, nsq.LogLevel(int(ll)))
 	p = &NsqProducer{
-		Logger:   l,
+		Log:      l,
 		Producer: np,
 	}
 	return
@@ -71,7 +71,7 @@ func (p *NsqProducer) PublishJSON(topic string, v interface{}) error {
 
 // Output log.
 func (p *NsqProducer) Output(calldepth int, s string) error {
-	if p.Logger.GetLevel() == zerolog.DebugLevel {
+	if p.Log.GetLevel() == zerolog.DebugLevel {
 		_, file, line, ok := runtime.Caller(calldepth)
 		if !ok {
 			file = "???"
@@ -79,6 +79,6 @@ func (p *NsqProducer) Output(calldepth int, s string) error {
 		}
 		s = fmt.Sprintf("%s %04d: %s", file, line, s)
 	}
-	p.Logger.Print(s)
+	p.Log.Print(s)
 	return nil
 }
