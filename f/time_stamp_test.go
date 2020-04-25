@@ -9,13 +9,17 @@ func TestTimeStamp(t *testing.T) {
 	// Input: f.Now()
 	ts := Now() // equals f.TimeFrom(time.Now())
 	ts = TimeFrom(time.Now())
-	t.Log(ts.LocalTimeString())
+	t.Log(ts.LocalString())
+	ts, _ = TimeFromLocalString("2020-03-08 11:19:42")
+	t.Log(ts.UTCTimeString(), ts.LocalTimeString())
+	ts, _ = TimeFromUTCString("2020-03-08 03:19:42")
+	t.Log(ts.UTCTimeString(), ts.LocalTimeString())
 	ts = TimeStampFrom("1583637582")
 	ts = TimeStampFrom("1583637582780")
 	ts = TimeStampFrom("1583637582780102")
 	ts = TimeStampFrom("1583637582780102300")
 	// Output: 2020-03-08 11:19:42.7801023 +0800 CST
-	t.Log(ts)
+	t.Log(ts.String())
 	// Output: 1583637582
 	t.Log(ts.UnixSecondTimeStampString())
 	// Output: 1583637582780

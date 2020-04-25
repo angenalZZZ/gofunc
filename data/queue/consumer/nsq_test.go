@@ -12,11 +12,11 @@ var (
 	channel     = "consumerTestChannel"
 	maxInFlight = 3
 
-	lookupdHTTPAddr = "127.0.0.1:4161"
-	//lookupdHTTPAddrs = []string{"127.0.0.2:4161"}
+	lookupDHTTPAddr = "127.0.0.1:4161"
+	//lookupDHTTPAdds = []string{"127.0.0.2:4161"}
 
-	destNsqdTCPAddr = "127.0.0.1:4150"
-	//destNsqdTCPAddrs = []string{"127.0.0.2:4150"}
+	destNsqDTCPAddr = "127.0.0.1:4150"
+	//destNsqDTCPAdds = []string{"127.0.0.2:4150"}
 )
 
 func mgsHandle(_ *message.NsqMessage) error { return nil }
@@ -39,16 +39,16 @@ func TestRegister(t *testing.T) {
 	})
 }
 
-func TestConnectLookupd(t *testing.T) {
-	Convey("Given lookupd address", t, func() {
+func TestConnectLookupD(t *testing.T) {
+	Convey("Given lookupD address", t, func() {
 		Convey("It should not produce any error", func() {
 			c := NewNsqConsumer()
-			err := c.ConnectLookupD(lookupdHTTPAddr)
+			err := c.ConnectLookupD(lookupDHTTPAddr)
 			So(err, ShouldEqual, nil)
 		})
 	})
 
-	Convey("Given wrong lookupd address", t, func() {
+	Convey("Given wrong lookupD address", t, func() {
 		Convey("It should produce an error", func() {
 			c := NewNsqConsumer()
 			err := c.ConnectLookupD("127.0.0.1")
@@ -58,15 +58,15 @@ func TestConnectLookupd(t *testing.T) {
 }
 
 func TestConnect(t *testing.T) {
-	Convey("Given nsqd address", t, func() {
+	Convey("Given nsqD address", t, func() {
 		Convey("It should not produce any error", func() {
 			c := NewNsqConsumer()
-			err := c.Connect(destNsqdTCPAddr)
+			err := c.Connect(destNsqDTCPAddr)
 			So(err, ShouldEqual, nil)
 		})
 	})
 
-	Convey("Given wrong nsqd address", t, func() {
+	Convey("Given wrong nsqD address", t, func() {
 		Convey("It should produce an error", func() {
 			c := NewNsqConsumer()
 			err := c.Connect("127.0.0.1")
