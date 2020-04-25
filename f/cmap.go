@@ -5,11 +5,11 @@ import "sync"
 // Map Shard Count
 var CMapShardCount = 32
 
-// A "thread" safe map of type string:Anything.
+// thread safe map of type string:Anything.
 // To avoid lock bottlenecks this map is dived to several (SHARD_COUNT) map shards.
 type CMap []*CMapShared
 
-// A "thread" safe string to anything map.
+// thread safe string to anything map.
 type CMapShared struct {
 	items        map[string]interface{}
 	sync.RWMutex // Read Write mutex, guards access to internal map.

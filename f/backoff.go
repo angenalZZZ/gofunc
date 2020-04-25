@@ -14,6 +14,29 @@ type RetryOperation struct {
 	ctx context.Context
 }
 
+var (
+	// Call Periods: 1s,2s,4s,8s,16s,32s,1m,1m,1m... 24h=1day
+	RetryPeriodOf1s1m1d = &RetryPeriodDuration{
+		InitialInterval: time.Second,
+		MaxInterval:     time.Minute,
+		MaxElapsedTime:  24 * time.Hour,
+		RandomFactor:    0.02,
+		Multiplier:      2.0,
+	}
+)
+
+// RetryPeriodDuration With Periods.
+type RetryPeriodDuration struct {
+	InitialInterval             time.Duration
+	MaxInterval, MaxElapsedTime time.Duration
+	RandomFactor, Multiplier    float64
+}
+
+// NewRetryOperationWithPeriod create a retryOperation with the context.
+func NewRetryOperationWithPeriod(operation func() error, period *RetryPeriodDuration, ctx ...context.Context) *RetryOperation {
+	return NewRetryOperation(operation, period.InitialInterval, period.MaxInterval, period.MaxElapsedTime, period.RandomFactor, period.Multiplier, ctx...)
+}
+
 // NewRetryOperation create a retryOperation with the context.
 func NewRetryOperation(operation func() error,
 	initialInterval, maxInterval, maxElapsedTime time.Duration, randomizationFactor, multiplier float64,

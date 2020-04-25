@@ -8,6 +8,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.0.2
 	github.com/cespare/xxhash/v2 v2.1.1
 	github.com/dgraph-io/badger/v2 v2.0.3
+	github.com/dgraph-io/ristretto v0.0.2-0.20200115201040-8f368f2f2ab3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-resty/resty/v2 v2.2.0
 	github.com/golang/snappy v0.0.1
@@ -20,7 +21,7 @@ require (
 	github.com/panjf2000/ants/v2 v2.3.1
 	github.com/rs/xid v1.2.1
 	github.com/rs/zerolog v1.18.0
-	github.com/smartystreets/goconvey v1.6.4 // indirect
+	github.com/smartystreets/goconvey v1.6.4
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/tidwall/gjson v1.6.0
 	github.com/tidwall/sjson v1.0.4

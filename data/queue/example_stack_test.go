@@ -3,7 +3,7 @@ package queue_test
 import (
 	"fmt"
 
-	"github.com/angenalZZZ/gofunc/queue"
+	"github.com/angenalZZZ/gofunc/data/queue"
 )
 
 // ExampleStack demonstrates the implementation of a queue stack.
