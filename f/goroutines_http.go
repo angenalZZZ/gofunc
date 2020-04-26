@@ -90,12 +90,3 @@ func NewHttpHandleRequestBody(body []byte) *GoHttpHandleRequest {
 		_result:    make(chan interface{}, 1),
 	}
 }
-
-// GoWithFunc Create a ants.PoolWithFunc.
-func GoWithFunc(size int, pf func(interface{}), options ...ants.Option) (*GoPoolWithFunc, error) {
-	pool, err := ants.NewPoolWithFunc(size, pf, options...)
-	if err != nil {
-		return nil, err
-	}
-	return &GoPoolWithFunc{PoolWithFunc: pool}, nil
-}

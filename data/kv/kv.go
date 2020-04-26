@@ -1,8 +1,8 @@
-package data
+package kv
 
-// key value database interface
+// KV key value database interface
 // Feature github.com/angenalZZZ/gofunc/data/kv/...
-type KvDB interface {
+type KV interface {
 	Open(...string) error
 	Size() int64
 	Incr(string, int64) (int64, error)

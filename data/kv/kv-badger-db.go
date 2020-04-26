@@ -5,6 +5,7 @@ import (
 	"github.com/dgraph-io/badger/v2"
 	"github.com/dgraph-io/badger/v2/options"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -22,12 +23,14 @@ import (
  * 3D access (key-value-version)	3D访问（键值版本）Yes
  */
 type BadgerDB struct {
-	DB *badger.DB
+	DB   *badger.DB
+	LOCK *sync.RWMutex
 }
 
 // Open BadgerDB represents a badger db implementation,
 // or no path, db save in memory.
 func (db *BadgerDB) Open(path ...string) error {
+	db.LOCK = &sync.RWMutex{}
 	var opt badger.Options
 	if len(path) == 1 {
 		opt = badger.DefaultOptions(path[0])
@@ -70,6 +73,8 @@ func (db *BadgerDB) Size() int64 {
 
 // Incr - increment the key by the specified value.
 func (db *BadgerDB) Incr(k string, by int64) (int64, error) {
+	db.LOCK.Lock()
+	defer db.LOCK.Unlock()
 	val, err := db.Get(k)
 	if err != nil || val == "" {
 		val = "0"
@@ -100,7 +105,6 @@ func (db *BadgerDB) SetBytes(k, v []byte, ttl int) error {
 			err = txn.SetEntry(&badger.Entry{
 				Key:       k,
 				Value:     v,
-				UserMeta:  0,
 				ExpiresAt: uint64(time.Now().Add(time.Duration(ttl) * time.Second).Unix()),
 			})
 		}
@@ -110,9 +114,11 @@ func (db *BadgerDB) SetBytes(k, v []byte, ttl int) error {
 
 // MSet sets multiple key-value pairs.
 func (db *BadgerDB) MSet(data map[string]string) error {
-	return db.DB.Update(func(txn *badger.Txn) (err error) {
+	return db.DB.Update(func(txn *badger.Txn) error {
 		for k, v := range data {
-			_ = txn.Set(f.Bytes(k), f.Bytes(v))
+			if err := txn.Set(f.Bytes(k), f.Bytes(v)); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
@@ -179,7 +185,6 @@ func (db *BadgerDB) TTL(key string) int64 {
 		}
 
 		expires = int64(exp)
-
 		return nil
 	})
 
@@ -204,7 +209,9 @@ func (db *BadgerDB) TTL(key string) int64 {
 func (db *BadgerDB) Del(keys []string) error {
 	return db.DB.Update(func(txn *badger.Txn) error {
 		for _, key := range keys {
-			_ = txn.Delete(f.Bytes(key))
+			if err := txn.Delete(f.Bytes(key)); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
