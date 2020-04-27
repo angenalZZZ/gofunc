@@ -34,7 +34,6 @@ func NewNsqConsumer() *NsqConsumer {
 	return &NsqConsumer{
 		C:        make(chan struct{}),
 		Log:      l,
-		Config:   nil,
 		handlers: make(map[message.TMessage]*message.Queue),
 	}
 }

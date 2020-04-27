@@ -3,38 +3,47 @@ package consumer
 import (
 	"github.com/angenalZZZ/gofunc/data/queue/message"
 	"github.com/angenalZZZ/gofunc/data/queue/nsq"
-	"testing"
-	"time"
-
 	. "github.com/smartystreets/goconvey/convey"
+	"testing"
 )
 
-func mgsHandle(m *message.NsqMessage) error {
+func testNSQMsgHandle(m *message.NsqMessage) error {
 	println(m.Message)
 	return nil // handle message finish
 }
 
-func TestRegister(t *testing.T) {
+func TestNSQRegister(t *testing.T) {
 	Convey("Given topic, channel, maxInflight and message handler method", t, func() {
 		Convey("It should not produce any error", func() {
 			c := NewNsqConsumer()
-			err := c.Register(nsq.TestTopic, nsq.TestChannel, 2, mgsHandle)
+			err := c.Register(nsq.TestTopic, nsq.TestChannel, 2, testNSQMsgHandle)
 			So(err, ShouldEqual, nil)
-			time.Sleep(time.Second)
-			c.Stop()
 		})
 	})
 
 	//Convey("Given wrong topic, channel", t, func() {
 	//	Convey("It should produce an error", func() {
 	//		c := NewNsqConsumer()
-	//		err := c.Register("", "", maxInFlight, mgsHandle)
+	//		err := c.Register("", "", maxInFlight, testNSQMsgHandle)
 	//		So(err, ShouldNotEqual, nil)
 	//	})
 	//})
 }
 
-func TestConnectLookupD(t *testing.T) {
+func TestNSQMessageHandler(t *testing.T) {
+	Convey("Given topic, channel, maxInflight and message handler method", t, func() {
+		Convey("It should not produce any error", func() {
+			c := NewNsqConsumer()
+			err := c.Register(nsq.TestTopic, nsq.TestChannel, 2, testNSQMsgHandle)
+			So(err, ShouldEqual, nil)
+			err = c.Connect(nsq.NSQdTCPAddr)
+			So(err, ShouldEqual, nil)
+			c.Stop()
+		})
+	})
+}
+
+func TestNSQConnectLookupD(t *testing.T) {
 	Convey("Given lookupD address", t, func() {
 		Convey("It should not produce any error", func() {
 			c := NewNsqConsumer()
@@ -52,7 +61,7 @@ func TestConnectLookupD(t *testing.T) {
 	//})
 }
 
-func TestConnect(t *testing.T) {
+func TestNSQConnect(t *testing.T) {
 	Convey("Given nsqD address", t, func() {
 		Convey("It should not produce any error", func() {
 			c := NewNsqConsumer()
