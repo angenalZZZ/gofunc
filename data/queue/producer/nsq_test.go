@@ -6,6 +6,12 @@ import (
 	"testing"
 )
 
+// nsq:publish:messages(max:60/second)
+// to_nsq -nsqd-tcp-address 127.0.0.1:4150 -race 60 -topic TestTopic
+
+// nsq:stats
+// nsq_stat -nsqd-http-address 127.0.0.1:4151 -topic TestTopic -channel TestChannel
+
 func TestNSQPublish(t *testing.T) {
 	Convey("Given a json message to publish", t, func() {
 		Convey("It should not produce any error", func() {
