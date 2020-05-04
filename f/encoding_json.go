@@ -104,14 +104,42 @@ func (j Json) Deletes(path string) Json {
 	return j
 }
 
+// Map unmarshal to a map.
+func (j Json) Map() map[string]interface{} {
+	if m, ok := gjson.Parse(string(j)).Value().(map[string]interface{}); ok {
+		return m
+	}
+	return nil
+}
+
+// Each to ForEachLine will iterate through JSON lines.
+func (j Json) Each(iterator func(m map[string]interface{})) {
+	gjson.ForEachLine(string(j), func(line gjson.Result) bool {
+		if m, ok := line.Value().(map[string]interface{}); ok {
+			iterator(m)
+		}
+		return true
+	})
+}
+
 // String gets string from Json.
 func (j Json) String() string {
 	return string(j)
 }
 
-// HasValue gets json not equals "".
+// HasValue gets json not equals empty.
 func (j Json) HasValue() bool {
 	return j != ""
+}
+
+// IsValid Check json string.
+func (j Json) IsValid() bool {
+	return gjson.Valid(string(j))
+}
+
+// Exists Check for the existence of a value.
+func (j Json) Exists(path string) bool {
+	return gjson.Get(string(j), path).Exists()
 }
 
 // EncodeJson encode a object v to json data.

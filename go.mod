@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/DataDog/zstd v1.4.5 // indirect
+	github.com/buger/jsonparser v0.0.0-20200322175846-f7e751efca13 // indirect
 	github.com/caddyserver/certmagic v0.10.11
 	github.com/cenkalti/backoff/v4 v4.0.2
 	github.com/cespare/xxhash/v2 v2.1.1
