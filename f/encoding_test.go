@@ -1,6 +1,31 @@
 package f
 
-import "testing"
+import (
+	"net/http"
+	"testing"
+)
+
+func TestHtml_Decode(t *testing.T) {
+	type example struct {
+		Title string   `html:"h1"`
+		Files []string `html:"table.files tbody tr.js-navigation-item td.content,text"`
+	}
+
+	res, err := http.Get("https://github.com/andrewstuart/goq")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = res.Body.Close() }()
+
+	var ex example
+
+	err = NewHtmlDecoder(res.Body).Decode(&ex)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(ex.Files[:6])
+}
 
 func TestJson_Get(t *testing.T) {
 	json := Json(` {

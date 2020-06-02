@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/DataDog/zstd v1.4.5 // indirect
+	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/buger/jsonparser v0.0.0-20200322175846-f7e751efca13 // indirect
 	github.com/caddyserver/certmagic v0.10.11
 	github.com/cenkalti/backoff/v4 v4.0.2
@@ -29,6 +30,7 @@ require (
 	github.com/valyala/fasthttp v1.9.0
 	github.com/valyala/fasttemplate v1.1.0
 	golang.org/x/crypto v0.0.0-20200320181102-891825fb96df
+	golang.org/x/net v0.0.0-20200222125558-5a598a2470a0
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
