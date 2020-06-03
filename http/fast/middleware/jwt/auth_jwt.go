@@ -3,6 +3,7 @@ package jwt
 import (
 	"crypto/rsa"
 	"errors"
+	"github.com/angenalZZZ/gofunc/data"
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/http/fast"
 	"github.com/dgrijalva/jwt-go"
@@ -57,7 +58,7 @@ type Config struct {
 	// Note that the payload is not encrypted.
 	// The attributes mentioned on jwt.io can't be used as keys for the map.
 	// Optional, by default no additional data will be set.
-	PayloadFunc func(data interface{}) fast.H
+	PayloadFunc func(data interface{}) data.Map
 
 	// User can define own Unauthorized func.
 	Unauthorized func(*fast.Ctx, int, string)
@@ -188,7 +189,7 @@ type Config struct {
 		return false
 	},
 	Unauthorized: func(c *fast.Ctx, code int, message string) {
-		c.JSON(code, fast.H{
+		c.JSON(code, data.Map{
 			"code":    code,
 			"message": message,
 		})
@@ -373,7 +374,7 @@ func (mw *Config) Init() error {
 
 	if mw.Unauthorized == nil {
 		mw.Unauthorized = func(c *fast.Ctx, code int, message string) {
-			_ = c.JSON(fast.H{
+			_ = c.JSON(data.Map{
 				"code":    code,
 				"message": message,
 			})
@@ -382,7 +383,7 @@ func (mw *Config) Init() error {
 
 	if mw.LoginResponse == nil {
 		mw.LoginResponse = func(c *fast.Ctx, code int, token string, expire time.Time) {
-			_ = c.JSON(fast.H{
+			_ = c.JSON(data.Map{
 				"code":   http.StatusOK,
 				"token":  token,
 				"expire": expire.Format(time.RFC3339),
@@ -392,7 +393,7 @@ func (mw *Config) Init() error {
 
 	if mw.LogoutResponse == nil {
 		mw.LogoutResponse = func(c *fast.Ctx, code int) {
-			_ = c.JSON(fast.H{
+			_ = c.JSON(data.Map{
 				"code": http.StatusOK,
 			})
 		}
@@ -400,7 +401,7 @@ func (mw *Config) Init() error {
 
 	if mw.RefreshResponse == nil {
 		mw.RefreshResponse = func(c *fast.Ctx, code int, token string, expire time.Time) {
-			_ = c.JSON(fast.H{
+			_ = c.JSON(data.Map{
 				"code":   http.StatusOK,
 				"token":  token,
 				"expire": expire.Format(time.RFC3339),
@@ -488,7 +489,7 @@ func (mw *Config) middlewareImpl(c *fast.Ctx) {
 }
 
 // GetClaimsFromJWT get claims from JWT token
-func (mw *Config) GetClaimsFromJWT(c *fast.Ctx) (fast.H, error) {
+func (mw *Config) GetClaimsFromJWT(c *fast.Ctx) (data.Map, error) {
 	token, err := mw.ParseToken(c)
 
 	if err != nil {
@@ -501,7 +502,7 @@ func (mw *Config) GetClaimsFromJWT(c *fast.Ctx) (fast.H, error) {
 		}
 	}
 
-	claims := fast.H{}
+	claims := data.Map{}
 	for key, value := range token.Claims.(jwt.MapClaims) {
 		claims[key] = value
 	}
@@ -811,22 +812,22 @@ func (mw *Config) unauthorized(c *fast.Ctx, code int, message string) {
 }
 
 // ExtractClaims help to extract the JWT claims
-func ExtractClaims(c *fast.Ctx) fast.H {
+func ExtractClaims(c *fast.Ctx) data.Map {
 	claims := c.Get("JWT_PAYLOAD")
 	if claims == nil {
-		return make(fast.H)
+		return make(data.Map)
 	}
 
-	return claims.(fast.H)
+	return claims.(data.Map)
 }
 
 // ExtractClaimsFromToken help to extract the JWT claims from token
-func ExtractClaimsFromToken(token *jwt.Token) fast.H {
+func ExtractClaimsFromToken(token *jwt.Token) data.Map {
 	if token == nil {
-		return make(fast.H)
+		return make(data.Map)
 	}
 
-	claims := fast.H{}
+	claims := data.Map{}
 	for key, value := range token.Claims.(jwt.MapClaims) {
 		claims[key] = value
 	}

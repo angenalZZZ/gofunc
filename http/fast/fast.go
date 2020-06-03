@@ -24,9 +24,6 @@ import (
 // Version of current package
 const Version = "1.0.0"
 
-// Map is a shortcut for map[string]interface{}
-type Map map[string]interface{}
-
 // Fast denotes the Fast application.
 type Fast struct {
 	server   *fasthttp.Server // FastHTTP server

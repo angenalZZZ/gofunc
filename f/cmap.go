@@ -24,6 +24,17 @@ func NewConcurrentMap() CMap {
 	return m
 }
 
+// NewConcurrentMap Creates a new concurrent map.
+func NewConcurrentMapFromJSON(json []byte) (m CMap, err error) {
+	tmp := make(map[string]interface{})
+	err = DecodeJson(json, &tmp)
+	if err == nil {
+		m = NewConcurrentMap()
+		m.MSet(tmp)
+	}
+	return
+}
+
 // GetShard returns shard under given key
 func (m CMap) GetShard(key string) *CMapShared {
 	return m[uint(fnv32(key))%uint(CMapShardCount)]
@@ -288,9 +299,8 @@ func (m CMap) Keys() []string {
 	return keys
 }
 
-//Reviles CMap "private" variables to json marshal.
+// Reviles CMap "private" variables to json marshal.
 func (m CMap) JSON() ([]byte, error) {
-	// Create a temporary map, which will hold all item spread across shards.
 	tmp := make(map[string]interface{})
 
 	// Insert items to temporary map.
