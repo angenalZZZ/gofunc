@@ -329,6 +329,8 @@ func toTimeLayout(s string, layouts ...string) string {
 			layout = DateFormatString
 		case 13:
 			layout = DateTimeFormatStringH
+		case 14:
+			layout = DateTimeFormatStringN
 		case 16:
 			layout = DateTimeFormatStringM
 		case 19:

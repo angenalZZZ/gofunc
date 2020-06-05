@@ -16,6 +16,7 @@ const (
 const (
 	DateFormatStringG     string = "20060102"
 	DateFormatString      string = "2006-01-02"
+	DateTimeFormatStringN string = "20060102150405"
 	DateTimeFormatStringH string = "2006-01-02 15"
 	DateTimeFormatStringM string = "2006-01-02 15:04"
 	DateTimeFormatString  string = "2006-01-02 15:04:05"
