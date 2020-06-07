@@ -172,15 +172,23 @@ func TimeStampFromSeconds(seconds int64, nanoSeconds int64) *TimeStamp {
 }
 
 // UTCTimeStampString get UTC time string,
-// 精确到毫秒 17位数: 20200202042647003  the number of second.
-func (t *TimeStamp) UTCTimeStampString() string {
+// 精确到毫秒 17位数: 20200202042647003
+// 或精确到秒 14位数: 20200202042647 (upToSecond=true)
+func (t *TimeStamp) UTCTimeStampString(upToSecond ...bool) string {
+	if len(upToSecond) > 0 && upToSecond[0] == true {
+		return t.AsUTCTime().Format("20060102150405")
+	}
 	s := t.AsUTCTime().Format("20060102150405.000")
 	return strings.Replace(s, ".", "", 1)
 }
 
 // LocalTimeStampString get Local time string,
-// 精确到毫秒 17位数: 20200202122647003  the number of second.
-func (t *TimeStamp) LocalTimeStampString() string {
+// 精确到毫秒 17位数: 20200202122647003
+// 或精确到秒 14位数: 20200202042647 (upToSecond=true)
+func (t *TimeStamp) LocalTimeStampString(upToSecond ...bool) string {
+	if len(upToSecond) > 0 && upToSecond[0] == true {
+		return t.Time.Format("20060102150405")
+	}
 	s := t.Time.Format("20060102150405.000")
 	return strings.Replace(s, ".", "", 1)
 }
