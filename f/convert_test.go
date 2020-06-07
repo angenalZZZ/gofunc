@@ -26,4 +26,22 @@ func TestToInt(t *testing.T) {
 	t.Logf("Int64MemHash: %d\n", int64x)
 	int64x = Int64MemHashString(raw)
 	t.Logf("Int64MemHashString: %d\n", int64x)
+
+	buf1 := BytesUint16(65535)
+	i16 := Uint16Bytes(buf1)
+	if i16 != 1<<16-1 {
+		t.Fatal()
+	}
+
+	buf2 := BytesUint32(4294967295)
+	i32 := Uint32Bytes(buf2)
+	if i32 != 1<<32-1 {
+		t.Fatal()
+	}
+
+	buf3 := BytesUint64(18446744073709551615)
+	i64 := Uint64Bytes(buf3)
+	if i64 != 1<<64-1 {
+		t.Fatal()
+	}
 }

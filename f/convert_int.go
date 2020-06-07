@@ -1,6 +1,7 @@
 package f
 
 import (
+	"encoding/binary"
 	"github.com/cespare/xxhash/v2"
 	"github.com/dgraph-io/ristretto/z"
 	"github.com/klauspost/crc32"
@@ -38,6 +39,28 @@ var Int64MemHash = z.MemHash
 // it utilizes available hardware instructions (behaves as aes.hash if aes instruction is available).
 // NOTE: The hash seed changes for every process. So, this cannot be used as a persistent hash.
 var Int64MemHashString = z.MemHashString
+
+var Uint16Bytes = binary.BigEndian.Uint16
+var Uint32Bytes = binary.BigEndian.Uint32
+var Uint64Bytes = binary.BigEndian.Uint64
+
+func BytesUint16(v uint16) []byte {
+	b := make([]byte, 2)
+	binary.BigEndian.PutUint16(b, v)
+	return b
+}
+
+func BytesUint32(v uint32) []byte {
+	b := make([]byte, 4)
+	binary.BigEndian.PutUint32(b, v)
+	return b
+}
+
+func BytesUint64(v uint64) []byte {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, v)
+	return b
+}
 
 // Int convert string to int64, or return 0.
 func Int(v interface{}) (i int64) {
