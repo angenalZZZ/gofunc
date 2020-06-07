@@ -8,12 +8,14 @@ import (
 )
 
 var (
-	ZoneName   string
-	ZoneOffset int
+	ZoneName         string
+	ZoneOffset       int
+	ZoneOffsetSecond time.Duration
 )
 
 func init() {
 	ZoneName, ZoneOffset = time.Now().Zone()
+	ZoneOffsetSecond = time.Duration(ZoneOffset) * time.Second
 }
 
 // TimeStamp a time stamp and extended methods.
@@ -29,12 +31,20 @@ func (t *TimeStamp) UnixSecondTimeStampString() string {
 	return strconv.FormatInt(t.Time.Unix(), 10)
 }
 
+func (t *TimeStamp) UnixSecondTimeStamp() int64 {
+	return t.Time.Unix()
+}
+
 // MilliSecondTimeStampString 时间戳 unix time stamp,
 // 精确到毫秒 13位数: 1582950407018
 // the number of milliseconds elapsed since January 1, 1970 UTC. The result does not depend on the
 // location associated with t.
 func (t *TimeStamp) MilliSecondTimeStampString() string {
 	return t.UnixSecondTimeStampString() + fmt.Sprintf("%03d", t.Time.Nanosecond()/1e6)
+}
+
+func (t *TimeStamp) MilliSecondTimeStamp() int64 {
+	return t.Time.UnixNano() / 1e6
 }
 
 // MicroSecondTimeStampString 时间戳 unix time stamp,
@@ -45,12 +55,20 @@ func (t *TimeStamp) MicroSecondTimeStampString() string {
 	return t.UnixSecondTimeStampString() + fmt.Sprintf("%06d", t.Time.Nanosecond()/1e3)
 }
 
+func (t *TimeStamp) MicroSecondTimeStamp() int64 {
+	return t.Time.UnixNano() / 1e3
+}
+
 // NanoSecondTimeStampString 时间戳 unix time stamp,
 // 精确到纳秒 19位数: 1582950407018018100
 // the number of nanoseconds elapsed since January 1, 1970 UTC. The result does not depend on the
 // location associated with t.
 func (t *TimeStamp) NanoSecondTimeStampString() string {
 	return t.UnixSecondTimeStampString() + fmt.Sprintf("%09d", t.Time.Nanosecond())
+}
+
+func (t *TimeStamp) NanoSecondTimeStamp() int64 {
+	return t.Time.UnixNano()
 }
 
 // Now get now timestamp in Local time.
@@ -90,6 +108,23 @@ func TimeFromBytes(data []byte) (*TimeStamp, error) {
 	}
 	ts := &TimeStamp{*t}
 	return ts, nil
+}
+
+// NewTimeStamp convert a timestamp to Local time.
+// the timestamp length equals(10/13/16/19) since January 1, 1970 UTC.
+func NewTimeStamp(i int64) *TimeStamp {
+	t, _ := time.Parse(DateTimeFormatString, "1970-01-01 00:00:00")
+	if i < 1e12 {
+		t = t.Add(time.Duration(i) * time.Second)
+	} else if i < 1e15 {
+		t = t.Add(time.Duration(i/1e3) * time.Second).Add(time.Duration(i%1e3) * time.Millisecond)
+	} else if i < 1e18 {
+		t = t.Add(time.Duration(i/1e6) * time.Second).Add(time.Duration(i%1e6) * time.Microsecond)
+	} else {
+		t = t.Add(time.Duration(i/1e9) * time.Second).Add(time.Duration(i%1e9) * time.Nanosecond)
+	}
+	ts := &TimeStamp{t.Local()}
+	return ts
 }
 
 // TimeStampFrom get a timestamp in Local time.
@@ -208,12 +243,24 @@ func (t *TimeStamp) AsTimeIn(local *time.Location) time.Time {
 	return time.Unix(t.Unix(), int64(t.Nanosecond())).In(local)
 }
 
-// AsLocalTime Convert timestamp as time in Local locale.
+// AsLocal Convert timestamp as time for Local locale.
+func (t *TimeStamp) AsLocal() *TimeStamp {
+	t.Time = toLocalTime(t.Time)
+	return t
+}
+
+// AsLocalTime Convert timestamp as time for Local locale.
 func (t *TimeStamp) AsLocalTime() time.Time {
 	return t.Time.Local()
 }
 
-// AsUTCTime Convert timestamp as time in UTC locale.
+// AsUTC Convert timestamp as time for UTC locale.
+func (t *TimeStamp) AsUTC() *TimeStamp {
+	t.Time = toUTCTime(t.Time)
+	return t
+}
+
+// AsUTCTime Convert timestamp as time for UTC locale.
 func (t *TimeStamp) AsUTCTime() time.Time {
 	return t.Time.UTC()
 }
@@ -366,12 +413,12 @@ func toTimeLayout(s string, layouts ...string) string {
 
 // toLocalTime Convert time, add +8 hours.
 func toLocalTime(t time.Time) time.Time {
-	return t.Add(time.Duration(ZoneOffset) * time.Second)
+	return t.Add(ZoneOffsetSecond)
 }
 
 // toUTCTime Convert time, add -8 hours.
 func toUTCTime(t time.Time) time.Time {
-	return t.Add(-1 * time.Duration(ZoneOffset) * time.Second)
+	return t.Add(-1 * ZoneOffsetSecond)
 }
 
 // IsDate check value is an date string.
