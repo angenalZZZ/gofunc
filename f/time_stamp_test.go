@@ -12,6 +12,7 @@ func TestTimeStamp(t *testing.T) {
 	t.Log(NewTimeStamp(0))       // 1970-01-01 08:00:00 +0800 CST
 	t.Log(NewTimeStamp(0).UTC()) // 1970-01-01 00:00:00 +0000 UTC
 	ts, _ = TimeFromLocalString("2020-03-08 11:19:42")
+	ts, _ = TimeFromLocalString("20200308111942000")
 	t.Log(ts.UTCTimeString(), ts.LocalTimeString())
 	ts, _ = TimeFromUTCString("2020-03-08 03:19:42")
 	t.Log(ts.UTCTimeString(), ts.LocalTimeString())

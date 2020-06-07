@@ -176,9 +176,9 @@ func TimeStampFromSeconds(seconds int64, nanoSeconds int64) *TimeStamp {
 // 或精确到秒 14位数: 20200202042647 (upToSecond=true)
 func (t *TimeStamp) UTCTimeStampString(upToSecond ...bool) string {
 	if len(upToSecond) > 0 && upToSecond[0] == true {
-		return t.AsUTCTime().Format("20060102150405")
+		return t.AsUTCTime().Format(TimeFormatStringS)
 	}
-	s := t.AsUTCTime().Format("20060102150405.000")
+	s := t.AsUTCTime().Format(TimeFormatStringM)
 	return strings.Replace(s, ".", "", 1)
 }
 
@@ -187,58 +187,82 @@ func (t *TimeStamp) UTCTimeStampString(upToSecond ...bool) string {
 // 或精确到秒 14位数: 20200202042647 (upToSecond=true)
 func (t *TimeStamp) LocalTimeStampString(upToSecond ...bool) string {
 	if len(upToSecond) > 0 && upToSecond[0] == true {
-		return t.Time.Format("20060102150405")
+		return t.Time.Format(TimeFormatStringS)
 	}
-	s := t.Time.Format("20060102150405.000")
+	s := t.Time.Format(TimeFormatStringM)
 	return strings.Replace(s, ".", "", 1)
 }
 
 // UTCString get UTC time string,
 // 精确到秒: 2020-02-02 04:26:47  the time of second.
-func (t *TimeStamp) UTCString() string {
-	if name, _ := t.Time.Zone(); name == ZoneName {
-		return toUTCTime(t.Time).Format(DateTimeFormatString)
+func (t *TimeStamp) UTCString(layouts ...string) string {
+	layout := DateTimeFormatString
+	if len(layouts) > 0 {
+		layout = layouts[0]
 	}
-	return t.AsUTCTime().Format(DateTimeFormatString)
+	if name, _ := t.Time.Zone(); name == ZoneName {
+		return toUTCTime(t.Time).Format(layout)
+	}
+	return t.AsUTCTime().Format(layout)
 }
 
 // LocalString get Local time string,
 // 精确到秒: 2020-02-02 12:26:47  the time of second.
-func (t *TimeStamp) LocalString() string {
-	if name, _ := t.Time.Zone(); name != ZoneName {
-		return toLocalTime(t.Time).Format(DateTimeFormatString)
+func (t *TimeStamp) LocalString(layouts ...string) string {
+	layout := DateTimeFormatString
+	if len(layouts) > 0 {
+		layout = layouts[0]
 	}
-	return t.Time.Format(DateTimeFormatString)
+	if name, _ := t.Time.Zone(); name != ZoneName {
+		return toLocalTime(t.Time).Format(layout)
+	}
+	return t.Time.Format(layout)
 }
 
 // UTCTimeString get UTC time string,
 // 精确到毫秒: 2020-02-02 04:26:47.003  the time of millisecond.
-func (t *TimeStamp) UTCTimeString() string {
-	if name, _ := t.Time.Zone(); name == ZoneName {
-		return toUTCTime(t.Time).Format(TimeFormatString)
+func (t *TimeStamp) UTCTimeString(layouts ...string) string {
+	layout := TimeFormatString
+	if len(layouts) > 0 {
+		layout = layouts[0]
 	}
-	return t.AsUTCTime().Format(TimeFormatString)
+	if name, _ := t.Time.Zone(); name == ZoneName {
+		return toUTCTime(t.Time).Format(layout)
+	}
+	return t.AsUTCTime().Format(layout)
 }
 
 // LocalTimeString get Local time string,
 // 精确到毫秒: 2020-02-02 12:26:47.003  the time of millisecond.
-func (t *TimeStamp) LocalTimeString() string {
-	if name, _ := t.Time.Zone(); name != ZoneName {
-		return toLocalTime(t.Time).Format(TimeFormatString)
+func (t *TimeStamp) LocalTimeString(layouts ...string) string {
+	layout := TimeFormatString
+	if len(layouts) > 0 {
+		layout = layouts[0]
 	}
-	return t.Time.Format(TimeFormatString)
+	if name, _ := t.Time.Zone(); name != ZoneName {
+		return toLocalTime(t.Time).Format(layout)
+	}
+	return t.Time.Format(layout)
 }
 
 // UTCDateString get UTC date string,
 // 精确到天: 2020-02-02  the date.
-func (t *TimeStamp) UTCDateString() string {
-	return t.AsUTCTime().Format(DateFormatString)
+func (t *TimeStamp) UTCDateString(layouts ...string) string {
+	layout := DateFormatString
+	if len(layouts) > 0 {
+		layout = layouts[0]
+	}
+	return t.AsUTCTime().Format(layout)
 }
 
 // LocalDateString get Local date string,
 // 精确到天: 2020-02-02  the date.
-func (t *TimeStamp) LocalDateString() string {
-	return t.Time.Format(DateFormatString)
+func (t *TimeStamp) LocalDateString(layouts ...string) string {
+	layout := DateFormatString
+	if len(layouts) > 0 {
+		layout = layouts[0]
+	}
+	return t.Time.Format(layout)
 }
 
 // AsTime get a time in Local locale.
@@ -345,12 +369,12 @@ func (t *TimeStamp) ToText() []byte {
 
 // ToTime convert string to time.Time
 func ToTime(s string, layouts ...string) (t time.Time, err error) {
-	layout := toTimeLayout(s, layouts...)
+	value, layout := toTimeLayout(s, layouts...)
 	if layout == "" {
 		err = ErrConvertFail
 		return
 	}
-	t, err = time.Parse(layout, s)
+	t, err = time.Parse(layout, value)
 	return
 }
 
@@ -372,8 +396,8 @@ func ToUTCTime(s string, layouts ...string) (t time.Time, err error) {
 	return
 }
 
-func toTimeLayout(s string, layouts ...string) string {
-	var layout string
+func toTimeLayout(s string, layouts ...string) (value string, layout string) {
+	value = s
 	if len(layouts) > 0 {
 		layout = layouts[0]
 	} else {
@@ -385,9 +409,14 @@ func toTimeLayout(s string, layouts ...string) string {
 		case 13:
 			layout = DateTimeFormatStringH
 		case 14:
-			layout = DateTimeFormatStringN
+			layout = TimeFormatStringS
 		case 16:
 			layout = DateTimeFormatStringM
+		case 17:
+			value = value[0:14] + "." + value[14:]
+			layout = TimeFormatStringM
+		case 18:
+			layout = TimeFormatStringM
 		case 19:
 			layout = DateTimeFormatString
 		case 20, 25:
@@ -415,8 +444,7 @@ func toTimeLayout(s string, layouts ...string) string {
 			layout = strings.Replace(layout, "-", "/", -1)
 		}
 	}
-
-	return layout
+	return
 }
 
 // toLocalTime Convert time, add +8 hours.
