@@ -5,7 +5,6 @@ import (
 	"github.com/dgraph-io/badger/v2"
 	"github.com/dgraph-io/badger/v2/options"
 	"strconv"
-	"sync"
 	"time"
 )
 
@@ -23,14 +22,13 @@ import (
  * 3D access (key-value-version)	3D访问（键值版本）Yes
  */
 type BadgerDB struct {
-	DB   *badger.DB
-	LOCK *sync.RWMutex
+	DB     *badger.DB
+	locker *f.Locker
 }
 
 // Open BadgerDB represents a badger db implementation,
 // or no path, db save in memory.
 func (db *BadgerDB) Open(path ...string) error {
-	db.LOCK = &sync.RWMutex{}
 	var opt badger.Options
 	if len(path) == 1 {
 		opt = badger.DefaultOptions(path[0])
@@ -53,6 +51,7 @@ func (db *BadgerDB) Open(path ...string) error {
 	}
 
 	db.DB = _db
+	db.locker = f.NewLocker()
 	if opt.InMemory {
 		return nil
 	}
@@ -73,8 +72,9 @@ func (db *BadgerDB) Size() int64 {
 
 // Incr - increment the key by the specified value.
 func (db *BadgerDB) Incr(k string, by int64) (int64, error) {
-	db.LOCK.Lock()
-	defer db.LOCK.Unlock()
+	db.locker.Lock(k)
+	defer db.locker.Unlock(k)
+
 	val, err := db.Get(k)
 	if err != nil || val == "" {
 		val = "0"

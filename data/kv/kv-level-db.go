@@ -11,14 +11,13 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
 // LevelDB represents a leveldb db implementation.
 type LevelDB struct {
-	DB *leveldb.DB
-	sync.RWMutex
+	DB     *leveldb.DB
+	locker *f.Locker
 }
 
 // Open Opens the specified path.
@@ -34,6 +33,7 @@ func (db *LevelDB) Open(path ...string) error {
 	if err != nil {
 		return err
 	}
+	db.locker = f.NewLocker()
 	return nil
 }
 
@@ -52,8 +52,8 @@ func (db *LevelDB) Size() int64 {
 
 // Incr increment the key by the specified value.
 func (db *LevelDB) Incr(k string, by int64) (int64, error) {
-	db.Lock()
-	defer db.Unlock()
+	db.locker.Lock(k)
+	defer db.locker.Unlock(k)
 
 	val, err := db.get(k)
 	if err != nil || val == "" {
