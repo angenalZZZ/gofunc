@@ -21,6 +21,8 @@ func init() {
 // TimeStamp a time stamp and extended methods.
 type TimeStamp struct {
 	time.Time
+	UnixSecondTimeStamp     int64
+	UnixNanoSecondTimeStamp int64
 }
 
 // UnixSecondTimeStampString 时间戳 unix time stamp,
@@ -28,11 +30,7 @@ type TimeStamp struct {
 // the number of seconds elapsed since January 1, 1970 UTC. The result does not depend on the
 // location associated with t.
 func (t *TimeStamp) UnixSecondTimeStampString() string {
-	return strconv.FormatInt(t.Time.Unix(), 10)
-}
-
-func (t *TimeStamp) UnixSecondTimeStamp() int64 {
-	return t.Time.Unix()
+	return strconv.FormatInt(t.UnixSecondTimeStamp, 10)
 }
 
 // MilliSecondTimeStampString 时间戳 unix time stamp,
@@ -44,7 +42,7 @@ func (t *TimeStamp) MilliSecondTimeStampString() string {
 }
 
 func (t *TimeStamp) MilliSecondTimeStamp() int64 {
-	return t.Time.UnixNano() / 1e6
+	return t.UnixNanoSecondTimeStamp / 1e6
 }
 
 // MicroSecondTimeStampString 时间戳 unix time stamp,
@@ -56,7 +54,7 @@ func (t *TimeStamp) MicroSecondTimeStampString() string {
 }
 
 func (t *TimeStamp) MicroSecondTimeStamp() int64 {
-	return t.Time.UnixNano() / 1e3
+	return t.UnixNanoSecondTimeStamp / 1e3
 }
 
 // NanoSecondTimeStampString 时间戳 unix time stamp,
@@ -67,18 +65,22 @@ func (t *TimeStamp) NanoSecondTimeStampString() string {
 	return t.UnixSecondTimeStampString() + fmt.Sprintf("%09d", t.Time.Nanosecond())
 }
 
-func (t *TimeStamp) NanoSecondTimeStamp() int64 {
-	return t.Time.UnixNano()
-}
-
 // Now get now timestamp in Local time.
-func Now() *TimeStamp {
-	return TimeFrom(time.Now())
+// upToSecond is used to remove milliseconds.
+func Now(upToSecond ...bool) *TimeStamp {
+	return TimeFrom(time.Now(), upToSecond...)
 }
 
 // TimeFrom get a timestamp in Local time.
-func TimeFrom(t time.Time) *TimeStamp {
-	ts := &TimeStamp{t}
+// upToSecond is used to remove milliseconds.
+func TimeFrom(t time.Time, upToSecond ...bool) *TimeStamp {
+	ts := &TimeStamp{t, t.Unix(), 0}
+	if len(upToSecond) > 0 && upToSecond[0] == true {
+		ts.Time = time.Unix(ts.UnixSecondTimeStamp, 0).Local()
+		ts.UnixNanoSecondTimeStamp = ts.UnixSecondTimeStamp * 1e9
+	} else {
+		ts.UnixNanoSecondTimeStamp = t.UnixNano()
+	}
 	return ts
 }
 
@@ -87,7 +89,8 @@ func TimeFromLocalString(s string, layouts ...string) (*TimeStamp, error) {
 	if t, err := ToUTCTime(s, layouts...); err != nil {
 		return nil, err
 	} else {
-		return &TimeStamp{t.Local()}, nil
+		t = t.Local()
+		return &TimeStamp{t, t.Unix(), t.UnixNano()}, nil
 	}
 }
 
@@ -96,17 +99,18 @@ func TimeFromUTCString(s string, layouts ...string) (*TimeStamp, error) {
 	if t, err := ToTime(s, layouts...); err != nil {
 		return nil, err
 	} else {
-		return &TimeStamp{t.Local()}, nil
+		t = t.Local()
+		return &TimeStamp{t, t.Unix(), t.UnixNano()}, nil
 	}
 }
 
 // TimeFrom get a timestamp in Time bytes.
 func TimeFromBytes(data []byte) (*TimeStamp, error) {
-	t := &time.Time{}
+	t := time.Time{}
 	if err := t.UnmarshalBinary(data); err != nil {
 		return nil, err
 	}
-	ts := &TimeStamp{*t}
+	ts := &TimeStamp{t, t.Unix(), t.UnixNano()}
 	return ts, nil
 }
 
@@ -123,7 +127,8 @@ func NewTimeStamp(i int64) *TimeStamp {
 	} else {
 		t = t.Add(time.Duration(i/1e9) * time.Second).Add(time.Duration(i%1e9) * time.Nanosecond)
 	}
-	ts := &TimeStamp{t.Local()}
+	t = t.Local()
+	ts := &TimeStamp{t, t.Unix(), t.UnixNano()}
 	return ts
 }
 
@@ -166,8 +171,8 @@ func TimeStampFrom(timestamp string) *TimeStamp {
 // TimeStampFromSeconds get a timestamp in Local time.
 // the number of seconds and nanoSeconds since January 1, 1970 UTC.
 func TimeStampFromSeconds(seconds int64, nanoSeconds int64) *TimeStamp {
-	t := time.Unix(seconds, nanoSeconds).In(time.Local)
-	ts := &TimeStamp{t}
+	t := time.Unix(seconds, nanoSeconds).Local()
+	ts := &TimeStamp{t, t.Unix(), t.UnixNano()}
 	return ts
 }
 
@@ -272,7 +277,7 @@ func (t *TimeStamp) AsTime() time.Time {
 
 // AsTimeIn Convert timestamp as time in a locale, equals t.In(local).
 func (t *TimeStamp) AsTimeIn(local *time.Location) time.Time {
-	return time.Unix(t.Unix(), int64(t.Nanosecond())).In(local)
+	return time.Unix(t.UnixSecondTimeStamp, int64(t.Nanosecond())).In(local)
 }
 
 // AsLocal Convert timestamp as time for Local locale.

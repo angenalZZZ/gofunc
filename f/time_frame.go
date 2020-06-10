@@ -11,14 +11,15 @@ type TimeFrame struct {
 
 func NewTimeFrame(since, until time.Time) *TimeFrame {
 	t := &TimeFrame{
-		Since: TimeFrom(since),
-		Until: TimeFrom(until),
+		Since: TimeFrom(since, true),
+		Until: TimeFrom(until, true),
 		Data:  make([]byte, 0),
 	}
 	return t
 }
 
 func NewTimeFrames(since, until time.Time, duration time.Duration) []*TimeFrame {
+	since, until = time.Unix(since.Unix(), 0).Local(), time.Unix(until.Unix(), 0).Local()
 	a, s := since, make([]*TimeFrame, 0)
 	for a.Before(until) {
 		// set to date = from + duration
@@ -33,9 +34,10 @@ func NewTimeFrames(since, until time.Time, duration time.Duration) []*TimeFrame 
 		// increment from date with 1
 		a = t
 	}
+	return s
 }
 
 func (t *TimeFrame) Now() bool {
-	u := time.Now()
-	return t.Since.Time.Before(u) && u.Before(t.Until.Time)
+	u := time.Now().Unix()
+	return t.Since.UnixSecondTimeStamp <= u && u < t.Until.UnixSecondTimeStamp
 }
