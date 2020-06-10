@@ -4,8 +4,9 @@ import (
 	"time"
 )
 
+// TimeFrame - [Since ~ Until) eg. [1, 15) Excluding 15
 type TimeFrame struct {
-	Since, Until *TimeStamp
+	Since, Until *TimeStamp // Excluding Until Time
 	Data         []byte
 }
 
@@ -37,7 +38,16 @@ func NewTimeFrames(since, until time.Time, duration time.Duration) []*TimeFrame 
 	return s
 }
 
-func (t *TimeFrame) Now() bool {
-	u := time.Now().Unix()
-	return t.Since.UnixSecondTimeStamp <= u && u < t.Until.UnixSecondTimeStamp
+func (t *TimeFrame) In(t2 time.Time) bool {
+	u := t2.Unix()
+	return t.Since.UnixSecondTimeStamp <= u && u < t.Until.UnixSecondTimeStamp // Excluding Until Time
+}
+
+func (t *TimeFrame) String() string {
+	p, _ := EncodeJson(map[string]string{
+		"Since": t.Since.LocalString(),
+		"Until": t.Until.LocalString(),
+		"Data":  string(t.Data),
+	})
+	return String(p)
 }
