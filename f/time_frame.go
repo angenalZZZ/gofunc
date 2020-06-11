@@ -4,9 +4,9 @@ import (
 	"time"
 )
 
-// TimeFrame - [Since ~ Until) eg. [1, 15) Excluding 15
+// TimeFrame - [Since ~ Until) eg. [1, 15) included 1, not included 15
 type TimeFrame struct {
-	Since, Until *TimeStamp // Excluding Until Time
+	Since, Until *TimeStamp
 	Data         []byte
 }
 
