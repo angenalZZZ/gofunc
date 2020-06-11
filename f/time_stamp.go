@@ -21,8 +21,8 @@ func init() {
 // TimeStamp a time stamp and extended methods.
 type TimeStamp struct {
 	time.Time
-	UnixSecondTimeStamp     int64
-	UnixNanoSecondTimeStamp int64
+	UnixSecond     int64
+	UnixNanoSecond int64
 }
 
 // UnixSecondTimeStampString 时间戳 unix time stamp,
@@ -30,7 +30,7 @@ type TimeStamp struct {
 // the number of seconds elapsed since January 1, 1970 UTC. The result does not depend on the
 // location associated with t.
 func (t *TimeStamp) UnixSecondTimeStampString() string {
-	return strconv.FormatInt(t.UnixSecondTimeStamp, 10)
+	return strconv.FormatInt(t.UnixSecond, 10)
 }
 
 // MilliSecondTimeStampString 时间戳 unix time stamp,
@@ -42,7 +42,7 @@ func (t *TimeStamp) MilliSecondTimeStampString() string {
 }
 
 func (t *TimeStamp) MilliSecondTimeStamp() int64 {
-	return t.UnixNanoSecondTimeStamp / 1e6
+	return t.UnixNanoSecond / 1e6
 }
 
 // MicroSecondTimeStampString 时间戳 unix time stamp,
@@ -54,7 +54,7 @@ func (t *TimeStamp) MicroSecondTimeStampString() string {
 }
 
 func (t *TimeStamp) MicroSecondTimeStamp() int64 {
-	return t.UnixNanoSecondTimeStamp / 1e3
+	return t.UnixNanoSecond / 1e3
 }
 
 // NanoSecondTimeStampString 时间戳 unix time stamp,
@@ -76,10 +76,10 @@ func Now(upToSecond ...bool) *TimeStamp {
 func TimeFrom(t time.Time, upToSecond ...bool) *TimeStamp {
 	ts := &TimeStamp{t, t.Unix(), 0}
 	if len(upToSecond) > 0 && upToSecond[0] == true {
-		ts.Time = time.Unix(ts.UnixSecondTimeStamp, 0).Local()
-		ts.UnixNanoSecondTimeStamp = ts.UnixSecondTimeStamp * 1e9
+		ts.Time = time.Unix(ts.UnixSecond, 0).Local()
+		ts.UnixNanoSecond = ts.UnixSecond * 1e9
 	} else {
-		ts.UnixNanoSecondTimeStamp = t.UnixNano()
+		ts.UnixNanoSecond = t.UnixNano()
 	}
 	return ts
 }
@@ -277,7 +277,7 @@ func (t *TimeStamp) AsTime() time.Time {
 
 // AsTimeIn Convert timestamp as time in a locale, equals t.In(local).
 func (t *TimeStamp) AsTimeIn(local *time.Location) time.Time {
-	return time.Unix(t.UnixSecondTimeStamp, int64(t.Nanosecond())).In(local)
+	return time.Unix(t.UnixSecond, int64(t.Nanosecond())).In(local)
 }
 
 // AsLocal Convert timestamp as time for Local locale.

@@ -36,7 +36,7 @@ func NewTimeFrames(since, until time.Time, duration time.Duration) []*TimeFrame 
 
 func (t *TimeFrame) In(t2 time.Time) bool {
 	u := t2.Unix()
-	return t.Since.UnixSecondTimeStamp <= u && u < t.Until.UnixSecondTimeStamp
+	return t.Since.UnixSecond <= u && u < t.Until.UnixSecond
 }
 
 func (t *TimeFrame) String() string {

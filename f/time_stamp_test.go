@@ -23,13 +23,13 @@ func TestTimeStamp(t *testing.T) {
 	ts = TimeStampFrom("1583637582780102300")
 	t.Log(ts.String())                     // Output: 2020-03-08 11:19:42.7801023 +0800 CST
 	t.Log(ts.UnixSecondTimeStampString())  // Output: 1583637582
-	t.Log(ts.UnixSecondTimeStamp)          // Output: 1583637582
+	t.Log(ts.UnixSecond)                   // Output: 1583637582
 	t.Log(ts.MilliSecondTimeStampString()) // Output: 1583637582780
 	t.Log(ts.MilliSecondTimeStamp())       // Output: 1583637582780
 	t.Log(ts.MicroSecondTimeStampString()) // Output: 1583637582780102
 	t.Log(ts.MicroSecondTimeStamp())       // Output: 1583637582780102
 	t.Log(ts.NanoSecondTimeStampString())  // Output: 1583637582780102300
-	t.Log(ts.UnixNanoSecondTimeStamp)      // Output: 1583637582780102300
+	t.Log(ts.UnixNanoSecond)               // Output: 1583637582780102300
 	t.Log(ts.UTCTimeStampString())         // Output: 20200308031942780
 	t.Log(ts.LocalTimeStampString())       // Output: 20200308111942780
 	t.Log(ts.UTCString())                  // Output: 2020-03-08 03:19:42
