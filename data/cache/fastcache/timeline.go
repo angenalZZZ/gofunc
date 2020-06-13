@@ -37,6 +37,12 @@ func (t *Timeline) Write(p []byte) (n int, err error) {
 	return int(i), nil
 }
 
+func (t *Timeline) Save() {
+	for _, frame := range t.frames {
+		frame.save(t.CacheDir)
+	}
+}
+
 func (c *timeFrame) dirname() string {
 	return fmt.Sprintf("%s.%d", c.frame.Since.LocalTimeStampString(true), c.index)
 }

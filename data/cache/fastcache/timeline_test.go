@@ -1,6 +1,7 @@
 package fastcache
 
 import (
+	"github.com/angenalZZZ/gofunc/data"
 	"github.com/angenalZZZ/gofunc/data/random"
 	"github.com/angenalZZZ/gofunc/f"
 	"path/filepath"
@@ -10,10 +11,8 @@ import (
 	"time"
 )
 
-const testTimelineCacheDir string = `A:\test` // or set f.CurrentDir()
-
 func TestTimelineInit(t *testing.T) {
-	tl := NewTimeline(time.Now(), time.Now().Add(50*time.Second), 5*time.Second, testTimelineCacheDir, 1024)
+	tl := NewTimeline(time.Now(), time.Now().Add(50*time.Second), 5*time.Second, data.RootDir, 1024)
 	t.Logf("%3d: %s", tl.index, f.NowLocalString(true))
 	for index := int64(0); tl.index != -1; {
 		for index == tl.index {
@@ -29,7 +28,7 @@ func TestTimelineInit(t *testing.T) {
 }
 
 func TestTimelineReader(t *testing.T) {
-	oldFiles, _ := filepath.Glob(filepath.Join(testTimelineCacheDir, "*"))
+	oldFiles, _ := filepath.Glob(filepath.Join(data.RootDir, "*"))
 	sort.Strings(oldFiles)
 	for _, oldFile := range oldFiles {
 		_, f := filepath.Split(oldFile)
@@ -56,7 +55,7 @@ func TestTimelineReader(t *testing.T) {
 // go test -c -o %TEMP%\t01.exe github.com/angenalZZZ/gofunc/data/cache/fastcache && %TEMP%\t01.exe -test.v -test.bench ^BenchmarkTimelineWriter -test.run ^none$
 func BenchmarkTimelineWriter(b *testing.B) {
 	b.StopTimer()
-	tl := NewTimeline(time.Now(), time.Now().Add(50*time.Second), 5*time.Second, testTimelineCacheDir, 1024)
+	tl := NewTimeline(time.Now(), time.Now().Add(50*time.Second), 5*time.Second, data.RootDir, 1024)
 	//l := 5120 // every time 5kB data request: cpu=4 1200k/qps 0.8ms/op
 	//l := 2018 // every time 2kB data request: cpu=4 1800k/qps 0.5ms/op
 	//l := 1024 // every time 1kB data request: cpu=4 2400k/qps 0.4ms/op
