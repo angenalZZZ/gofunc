@@ -3,6 +3,7 @@ package fastcache
 import (
 	"fmt"
 	"github.com/angenalZZZ/gofunc/f"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -36,19 +37,32 @@ func (t *Timeline) Write(p []byte) (n int, err error) {
 	return int(i), nil
 }
 
-func (c *timeFrame) filename() string {
+func (c *timeFrame) dirname() string {
 	return fmt.Sprintf("%s.%d", c.frame.Since.LocalTimeStampString(true), c.index)
 }
 
 func (c *timeFrame) save(cacheDir string) {
-	time.Sleep(time.Second)
+	time.Sleep(time.Microsecond)
 	if c.index == 0 {
 		return
 	}
 
-	filePath := filepath.Join(cacheDir, c.filename())
-	if err := c.cache.SaveToFileConcurrent(filePath, 0); err != nil {
-		log.New(os.Stderr, "", 0).Print(err)
+	fileStat := new(Stats)
+	c.cache.UpdateStats(fileStat)
+	data, err := f.EncodeJson(fileStat)
+	logErr := log.New(os.Stderr, "", 0)
+	if err != nil {
+		logErr.Print(err)
+	}
+
+	filePath := filepath.Join(cacheDir, c.dirname())
+	err = ioutil.WriteFile(filePath+".json", data, 0644)
+	if err != nil {
+		logErr.Print(err)
+	}
+
+	if err = c.cache.SaveToFileConcurrent(filePath, 0); err != nil {
+		logErr.Print(err)
 	} else {
 		c.cache.Reset() // Reset removes all the items from the cache.
 	}

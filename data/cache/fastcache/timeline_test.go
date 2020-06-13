@@ -57,7 +57,6 @@ func TestTimelineReader(t *testing.T) {
 func BenchmarkTimelineWriter(b *testing.B) {
 	b.StopTimer()
 	tl := NewTimeline(time.Now(), time.Now().Add(50*time.Second), 5*time.Second, testTimelineCacheDir, 1024)
-	time.Sleep(time.Microsecond)
 	//l := 5120 // every time 5kB data request: cpu=4 1200k/qps 0.8ms/op
 	//l := 2018 // every time 2kB data request: cpu=4 1800k/qps 0.5ms/op
 	//l := 1024 // every time 1kB data request: cpu=4 2400k/qps 0.4ms/op
