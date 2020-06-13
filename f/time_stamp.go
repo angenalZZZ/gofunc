@@ -71,6 +71,11 @@ func Now(upToSecond ...bool) *TimeStamp {
 	return TimeFrom(time.Now(), upToSecond...)
 }
 
+// NowLocalString get a time at now.
+func NowLocalString(upToSecond ...bool) string {
+	return Now(upToSecond...).LocalString()
+}
+
 // TimeFrom get a timestamp in Local time.
 // upToSecond is used to remove milliseconds.
 func TimeFrom(t time.Time, upToSecond ...bool) *TimeStamp {

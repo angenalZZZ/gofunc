@@ -21,7 +21,6 @@ type timeFrame struct {
 	cache *Cache
 	frame *f.TimeFrame
 	index uint32
-	//done  chan struct{}
 }
 
 func (t *Timeline) Write(p []byte) (n int, err error) {
@@ -40,6 +39,9 @@ func (c *timeFrame) filename() string {
 
 func (c *timeFrame) save(cacheDir string) {
 	time.Sleep(time.Second)
+	if c.index == 0 {
+		return
+	}
 	filePath := filepath.Join(cacheDir, c.filename())
 	_ = c.cache.SaveToFileConcurrent(filePath, 0)
 }
@@ -53,15 +55,14 @@ func (t *Timeline) init() {
 	p := int64(t.duration.Seconds())
 	m, n := t.frames[l-1].frame.Until.UnixSecond, t.frames[0].frame.Since.UnixSecond
 	for u := time.Now().Unix(); u < m; u++ {
-		time.Sleep(time.Second)
 		index := (u - n) / p
 		if index >= 0 && index != t.index {
 			if t.index != -1 {
 				go t.frames[t.index].save(t.CacheDir)
-				//t.frames[t.index].done <- struct{}{}
 			}
 			atomic.StoreInt64(&t.index, index)
 		}
+		time.Sleep(time.Second)
 	}
 	t.index = -1
 }
@@ -80,7 +81,6 @@ func NewTimeline(since, until time.Time, duration time.Duration, cacheDir string
 		t.frames[i] = &timeFrame{
 			cache: New(maxBytes),
 			frame: frame,
-			//done:  make(chan struct{}),
 		}
 	}
 
