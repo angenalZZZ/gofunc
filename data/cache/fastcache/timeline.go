@@ -3,6 +3,8 @@ package fastcache
 import (
 	"fmt"
 	"github.com/angenalZZZ/gofunc/f"
+	"log"
+	"os"
 	"path/filepath"
 	"sync/atomic"
 	"time"
@@ -18,7 +20,7 @@ type Timeline struct {
 
 // timeFrame time bounds on which data to retrieve.
 type timeFrame struct {
-	cache *Cache
+	cache *Cache // a fast thread-safe inmemory cache optimized for big number of entries.
 	frame *f.TimeFrame
 	index uint32
 }
@@ -27,6 +29,7 @@ func (t *Timeline) Write(p []byte) (n int, err error) {
 	if t.index == -1 {
 		return
 	}
+
 	c := t.frames[t.index]
 	i := atomic.AddUint32(&c.index, 1)
 	c.cache.Set(f.BytesUint32(i), p)
@@ -42,18 +45,19 @@ func (c *timeFrame) save(cacheDir string) {
 	if c.index == 0 {
 		return
 	}
+
 	filePath := filepath.Join(cacheDir, c.filename())
-	_ = c.cache.SaveToFileConcurrent(filePath, 0)
+	if err := c.cache.SaveToFileConcurrent(filePath, 0); err != nil {
+		log.New(os.Stderr, "", 0).Print(err)
+	} else {
+		c.cache.Reset() // Reset removes all the items from the cache.
+	}
 }
 
 func (t *Timeline) init() {
-	l := len(t.frames)
-	if l == 0 {
-		return
-	}
-
 	p := int64(t.duration.Seconds())
-	m, n := t.frames[l-1].frame.Until.UnixSecond, t.frames[0].frame.Since.UnixSecond
+	n := t.frames[0].frame.Since.UnixSecond
+	m := t.frames[len(t.frames)-1].frame.Until.UnixSecond
 	for u := time.Now().Unix(); u < m; u++ {
 		index := (u - n) / p
 		if index >= 0 && index != t.index {
@@ -84,6 +88,13 @@ func NewTimeline(since, until time.Time, duration time.Duration, cacheDir string
 		}
 	}
 
-	go t.init()
+	if len(t.frames) > 0 {
+		go t.init()
+		// wait init step
+		if since.Before(time.Now()) {
+			time.Sleep(time.Microsecond)
+		}
+	}
+
 	return t
 }

@@ -14,17 +14,16 @@ const testTimelineCacheDir string = `A:\test` // or set f.CurrentDir()
 
 func TestTimelineInit(t *testing.T) {
 	tl := NewTimeline(time.Now(), time.Now().Add(50*time.Second), 5*time.Second, testTimelineCacheDir, 1024)
-	time.Sleep(time.Microsecond)
-	t.Logf("%d: %s", tl.index, f.NowLocalString(true))
+	t.Logf("%3d: %s", tl.index, f.NowLocalString(true))
 	for index := int64(0); tl.index != -1; {
 		for index == tl.index {
 			time.Sleep(time.Microsecond)
 		}
 		if tl.index != -1 {
-			t.Logf("%d: %s", tl.index, f.NowLocalString(true))
+			t.Logf("%3d: %s", tl.index, f.NowLocalString(true))
 			index = tl.index
 		} else {
-			t.Logf("end:%s", f.NowLocalString(true))
+			t.Logf("end: %s", f.NowLocalString(true))
 		}
 	}
 }
