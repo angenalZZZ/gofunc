@@ -15,6 +15,15 @@ var (
 	ErrBadComparisonType = errors.New("invalid type for operation")
 )
 
+var (
+	// goroutine.go
+	// Errors that are used throughout the Tunny API.
+	ErrPoolNotRunning = errors.New("the pool is not running")
+	ErrJobNotFunc     = errors.New("generic worker not given a func()")
+	ErrWorkerClosed   = errors.New("worker was closed")
+	ErrJobTimedOut    = errors.New("job request timed out")
+)
+
 // Must not error, or panic.
 func Must(err error) {
 	if err != nil {
