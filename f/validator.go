@@ -3,6 +3,7 @@ package f
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/asaskevich/govalidator"
 	"net"
 	"net/url"
 	"os"
@@ -12,6 +13,16 @@ import (
 	"strings"
 	"unicode/utf8"
 )
+
+// ---------------------- List of functions -----------------------
+
+var Abs = govalidator.Abs
+var BlackList = govalidator.BlackList
+
+//var ByteLength = govalidator.ByteLength
+var CamelCaseToUnderscore = govalidator.CamelCaseToUnderscore
+
+// ---------------------- List of functions -----------------------
 
 // Contains asserts that the specified string, list(array, slice...) or map contains the
 // specified substring or element.
