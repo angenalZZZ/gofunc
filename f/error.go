@@ -5,19 +5,21 @@ import (
 	"fmt"
 )
 
+// backoff.go
+// Cannot get results after retrying many times
 var (
-	// backoff.go
-	// 重试多次后无法获得结果
 	ErrRetryOperationFailure = errors.New("unable to get results after multiple retries")
+)
 
-	// validator.go
+// validator.go
+var (
 	ErrConvertFail       = errors.New("convert value is failure")
 	ErrBadComparisonType = errors.New("invalid type for operation")
 )
 
+// goroutine.go
+// Errors that are used throughout the Tunny API.
 var (
-	// goroutine.go
-	// Errors that are used throughout the Tunny API.
 	ErrPoolNotRunning = errors.New("the pool is not running")
 	ErrJobNotFunc     = errors.New("generic worker not given a func()")
 	ErrWorkerClosed   = errors.New("worker was closed")

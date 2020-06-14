@@ -6,13 +6,9 @@ import (
 	"time"
 )
 
-// PoolWorker is an interface representing a working agent. It will be used to
-// block a calling goroutine until ready to process a job, process that job
-// synchronously, interrupt its own process call when jobs are abandoned, and
-// clean up its resources when being removed from the pool.
-//
-// Each of these duties are implemented as a single method and can be averted
-// when not needed by simply implementing an empty func.
+// PoolWorker is spawning and managing a goroutine pool, allowing you
+// to limit work coming from any number of goroutines with a synchronous API.
+// an interface representing a working agent.
 type PoolWorker interface {
 	// Process will synchronously perform a job and return the result.
 	Process(interface{}) interface{}
