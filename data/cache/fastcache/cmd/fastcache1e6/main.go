@@ -7,6 +7,7 @@ import (
 	"github.com/angenalZZZ/gofunc/data/random"
 	"github.com/angenalZZZ/gofunc/f"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -15,10 +16,10 @@ import (
 // cd A:/test/ && fastcache1e6 -d 128 -t 10000000
 
 var (
-	flagCont   = flag.Int("c", 1, "total %d threads")
-	flagData   = flag.Int("d", 128, "every time %d bytes data request")
-	flagTimes  = flag.Int("t", 1000000, "total %d times")
-	flagRemove = flag.Bool("r", true, "delete all data files")
+	flagCont   = flag.Int("c", 1, "total threads")
+	flagData   = flag.Int("d", 128, "every time request bytes")
+	flagTimes  = flag.Int("t", 1000000, "total times")
+	flagRemove = flag.Bool("r", true, "delete data files")
 )
 
 func init() {
@@ -36,21 +37,24 @@ func main() {
 	}
 
 	fmt.Println()
-	l, m := *flagData, *flagTimes
+	c, l, m := *flagCont, *flagData, *flagTimes
 
 	p := []byte(random.AlphaNumberLower(l))
 	tl := fastcache.NewTimeline(time.Now(), time.Now().Add(time.Hour), time.Hour, f.CurrentDir(), 2048)
 
+	wg := new(sync.WaitGroup)
+	wg.Add(c)
 	t1 := time.Now()
-	for x := 0; x < *flagCont; x++ {
+	for x := 0; x < c; x++ {
 		n := m / (x + 1)
 		go func(n int) {
 			for i := 0; i < n; i++ {
 				_, _ = tl.Write(p)
 			}
+			wg.Done()
 		}(n)
 	}
-
+	wg.Wait()
 	t2 := time.Now()
 	tl.Save()
 
