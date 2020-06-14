@@ -6,14 +6,16 @@ import (
 	"github.com/angenalZZZ/gofunc/data/cache/fastcache"
 	"github.com/angenalZZZ/gofunc/data/random"
 	"github.com/angenalZZZ/gofunc/f"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 )
 
 // go get github.com/angenalZZZ/gofunc/data/cache/fastcache/cmd/fastcache1e6
 // go build -ldflags "-s -w" -o A:/test/ .
-// cd A:/test/ && fastcache1e6 -d 128 -t 10000000
+// cd A:/test/ && fastcache1e6 -c 2 -d 128 -t 10000000
 
 var (
 	flagCont   = flag.Int("c", 1, "total threads")
@@ -58,9 +60,10 @@ func main() {
 	t2 := time.Now()
 	tl.Save()
 
-	fmt.Printf(" every time %d bytes data request, total %d times \n", l, m)
+	fmt.Printf(" every time %d bytes data request \n", l)
 	fmt.Printf(" take requested time %s \n", t2.Sub(t1))
 	fmt.Printf(" take saved time %s \n", time.Now().Sub(t2))
+	fmt.Println(ioutil.ReadFile(filepath.Join(tl.CacheDir, tl.Frames[0].Filename())))
 	if *flagRemove {
 		tl.RemoveAll()
 	}

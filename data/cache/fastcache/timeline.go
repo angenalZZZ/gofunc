@@ -14,13 +14,13 @@ import (
 // Timeline time data
 type Timeline struct {
 	CacheDir string // cache persist to disk directory
-	Frames   []*timeFrame
+	Frames   []*TimeFrame
 	Duration time.Duration
 	Index    int64
 }
 
-// timeFrame time bounds on which data to retrieve.
-type timeFrame struct {
+// TimeFrame time bounds on which data to retrieve.
+type TimeFrame struct {
 	Cache *Cache // a fast thread-safe inmemory cache optimized for big number of entries.
 	Frame *f.TimeFrame
 	Index uint32
@@ -55,11 +55,15 @@ func (t *Timeline) RemoveAll() {
 	}
 }
 
-func (c *timeFrame) Dirname() string {
+func (c *TimeFrame) Dirname() string {
 	return fmt.Sprintf("%s.%d", c.Frame.Since.LocalTimeStampString(true), c.Index)
 }
 
-func (c *timeFrame) Save(cacheDir string) {
+func (c *TimeFrame) Filename() string {
+	return fmt.Sprintf("%s.%d.json", c.Frame.Since.LocalTimeStampString(true), c.Index)
+}
+
+func (c *TimeFrame) Save(cacheDir string) {
 	time.Sleep(time.Microsecond)
 	if c.Index == 0 {
 		return
@@ -73,20 +77,21 @@ func (c *timeFrame) Save(cacheDir string) {
 		logErr.Print(err)
 	}
 
-	filePath := filepath.Join(cacheDir, c.Dirname())
-	err = ioutil.WriteFile(filePath+".json", data, 0644)
+	filePath := filepath.Join(cacheDir, c.Filename())
+	err = ioutil.WriteFile(filePath, data, 0644)
 	if err != nil {
 		logErr.Print(err)
 	}
 
-	if err = c.Cache.SaveToFileConcurrent(filePath, 0); err != nil {
+	dirPath := filepath.Join(cacheDir, c.Dirname())
+	if err = c.Cache.SaveToFileConcurrent(dirPath, 0); err != nil {
 		logErr.Print(err)
 	} else {
 		c.Cache.Reset() // Reset removes all the items from the cache.
 	}
 }
 
-func (c *timeFrame) Remove(cacheDir string) {
+func (c *TimeFrame) Remove(cacheDir string) {
 	if c.Index == 0 {
 		return
 	}
@@ -126,13 +131,13 @@ func NewTimeline(since, until time.Time, duration time.Duration, cacheDir string
 
 	t := &Timeline{
 		CacheDir: cacheDir,
-		Frames:   make([]*timeFrame, len(frames)),
+		Frames:   make([]*TimeFrame, len(frames)),
 		Duration: duration,
 		Index:    -1,
 	}
 
 	for i, frame := range frames {
-		t.Frames[i] = &timeFrame{
+		t.Frames[i] = &TimeFrame{
 			Cache: New(maxBytes),
 			Frame: frame,
 		}
