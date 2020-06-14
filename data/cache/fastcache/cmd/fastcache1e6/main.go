@@ -63,7 +63,8 @@ func main() {
 	fmt.Printf(" every time %d bytes data request \n", l)
 	fmt.Printf(" take requested time %s \n", t2.Sub(t1))
 	fmt.Printf(" take saved time %s \n", time.Now().Sub(t2))
-	fmt.Println(ioutil.ReadFile(filepath.Join(tl.CacheDir, tl.Frames[0].Filename())))
+	s, e := ioutil.ReadFile(filepath.Join(tl.CacheDir, tl.Frames[0].Filename()))
+	fmt.Printf(" %s %v \n", s, e)
 	if *flagRemove {
 		tl.RemoveAll()
 	}
