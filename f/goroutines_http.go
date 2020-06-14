@@ -13,31 +13,8 @@ type GoPoolWithFunc struct {
 // GoHttpHandle a Http Handle Goroutines Pool.
 var GoHttpHandle *GoPoolWithFunc
 
-// InitHttpHandleRequest Init the GoHttpHandle.
-// @throttleLimitNumber 1000: More than it, return HTTP code 429 Too Many Requests.
-// @poolTotalSize 100000: SetHeader total goroutines and tasks.
-func InitHttpHandleRequest(throttleLimitNumber, poolTotalSize int) {
-	defaultHttpHandlePool, _ := ants.NewPoolWithFunc(poolTotalSize, func(payload interface{}) {
-		if GoHttpHandle == nil {
-			return
-		}
-
-		request, ok := payload.(*GoHttpHandleRequest)
-		if !ok {
-			return
-		}
-
-		request.HandleFunc()
-	}, ants.WithOptions(ants.Options{
-		ExpiryDuration:   ants.DefaultCleanIntervalTime,
-		PreAlloc:         true,
-		Nonblocking:      false,
-		MaxBlockingTasks: throttleLimitNumber,
-		PanicHandler: func(err interface{}) {
-			_ = fmt.Errorf(" GoHttpHandle/worker: %s\n %v", Now().LocalTimeString(), err)
-		},
-	}))
-	GoHttpHandle = &GoPoolWithFunc{PoolWithFunc: defaultHttpHandlePool}
+func init() {
+	GoHttpHandle = NewHttpHandlePool(100000)
 }
 
 // GoHttpHandleRequest Handling input and output.
@@ -67,8 +44,8 @@ func (g *GoHttpHandleRequest) GetResult() interface{} {
 // Invoke Handling logic, return throttle limit error.
 // Throttle the requests traffic with ants pool. This process is asynchronous and
 // you can receive a result from the channel defined outside.
-func (g *GoHttpHandleRequest) Invoke() error {
-	return GoHttpHandle.Invoke(g)
+func (g *GoHttpHandleRequest) Invoke(pool *GoPoolWithFunc) error {
+	return pool.Invoke(g)
 }
 
 // NewHttpHandleRequest Create a http request handler.
@@ -89,4 +66,63 @@ func NewHttpHandleRequestBody(body []byte) *GoHttpHandleRequest {
 		HandleFunc: nil,
 		_result:    make(chan interface{}, 1),
 	}
+}
+
+// NewHttpHandlePool Create a Http Handle Goroutines Pool.
+// @poolTotalSize 100000: SetHeader total goroutines and tasks.
+func NewHttpHandlePool(poolTotalSize int, options ...ants.Options) *GoPoolWithFunc {
+	var option ants.Options
+	if len(options) > 0 {
+		option = options[0]
+	} else {
+		option = ants.Options{
+			ExpiryDuration:   ants.DefaultCleanIntervalTime,
+			PreAlloc:         true,
+			Nonblocking:      true,
+			MaxBlockingTasks: 0,
+			PanicHandler: func(err interface{}) {
+				_ = fmt.Errorf(" GoHttpHandle/worker: %s\n %v", Now().LocalTimeString(), err)
+			},
+		}
+	}
+
+	poolWithFunc, _ := ants.NewPoolWithFunc(poolTotalSize, func(payload interface{}) {
+		request, ok := payload.(*GoHttpHandleRequest)
+		if !ok {
+			return
+		}
+
+		request.HandleFunc()
+	}, ants.WithOptions(option))
+	return &GoPoolWithFunc{PoolWithFunc: poolWithFunc}
+}
+
+// NewHttpHandlePoolWithThrottle Create a Http Handle Goroutines Pool.
+// @throttleLimitNumber 1000: More than it, return HTTP code 429 Too Many Requests.
+// @poolTotalSize 100000: SetHeader total goroutines and tasks.
+func NewHttpHandlePoolWithThrottle(throttleLimitNumber, poolTotalSize int, options ...ants.Options) *GoPoolWithFunc {
+	var option ants.Options
+	if len(options) > 0 {
+		option = options[0]
+	} else {
+		option = ants.Options{
+			ExpiryDuration:   ants.DefaultCleanIntervalTime,
+			PreAlloc:         true,
+			Nonblocking:      false,
+			MaxBlockingTasks: throttleLimitNumber,
+			PanicHandler: func(err interface{}) {
+				_ = fmt.Errorf(" GoHttpHandle/worker: %s\n %v", Now().LocalTimeString(), err)
+			},
+		}
+	}
+
+	poolWithFunc, _ := ants.NewPoolWithFunc(poolTotalSize, func(payload interface{}) {
+		request, ok := payload.(*GoHttpHandleRequest)
+		if !ok {
+			return
+		}
+
+		request.HandleFunc()
+	}, ants.WithOptions(option))
+	return &GoPoolWithFunc{PoolWithFunc: poolWithFunc}
 }
