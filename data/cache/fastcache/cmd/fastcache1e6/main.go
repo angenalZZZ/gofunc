@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/angenalZZZ/gofunc/data/cache/fastcache"
 	"github.com/angenalZZZ/gofunc/data/random"
@@ -10,30 +11,44 @@ import (
 )
 
 // go get github.com/angenalZZZ/gofunc/data/cache/fastcache/cmd/fastcache1e6
-func main() {
-	l := 128 // every time 128B data request
-	if len(os.Args) > 1 && f.IsInt(os.Args[1]) {
-		n, _ := f.ToInt(os.Args[1], false)
-		if n > 0 {
-			l = int(n)
-		}
-	}
+// go build -ldflags "-s -w" -o A:/test/ .
+// cd A:/test/ && fastcache1e6 -d 128 -t 10000000
 
-	m := 1000000 // request times
-	if len(os.Args) > 2 && f.IsInt(os.Args[2]) {
-		n, _ := f.ToInt(os.Args[2], false)
-		if n > 0 {
-			m = int(n)
-		}
+var (
+	flagCont   = flag.Int("c", 1, "total %d threads")
+	flagData   = flag.Int("d", 128, "every time %d bytes data request")
+	flagTimes  = flag.Int("t", 1000000, "total %d times")
+	flagRemove = flag.Bool("r", true, "delete all data files")
+)
+
+func init() {
+	flag.Usage = func() {
+		fmt.Printf(" Usage of %s:\n", os.Args[0])
+		flag.PrintDefaults()
+	}
+	flag.Parse()
+}
+
+func main() {
+	if len(os.Args) < 3 {
+		flag.Usage()
+		return
 	}
 
 	fmt.Println()
-	tl := fastcache.NewTimeline(time.Now(), time.Now().Add(time.Hour), time.Hour, f.CurrentDir(), 2048)
+	l, m := *flagData, *flagTimes
+
 	p := []byte(random.AlphaNumberLower(l))
+	tl := fastcache.NewTimeline(time.Now(), time.Now().Add(time.Hour), time.Hour, f.CurrentDir(), 2048)
 
 	t1 := time.Now()
-	for i := 0; i < m; i++ {
-		_, _ = tl.Write(p)
+	for x := 0; x < *flagCont; x++ {
+		n := m / (x + 1)
+		go func(n int) {
+			for i := 0; i < n; i++ {
+				_, _ = tl.Write(p)
+			}
+		}(n)
 	}
 
 	t2 := time.Now()
@@ -41,6 +56,8 @@ func main() {
 
 	fmt.Printf(" every time %d bytes data request, total %d times \n", l, m)
 	fmt.Printf(" take requested time %s \n", t2.Sub(t1))
-	fmt.Printf(" take saved time %s \n\n", time.Now().Sub(t2))
-	tl.RemoveAll()
+	fmt.Printf(" take saved time %s \n", time.Now().Sub(t2))
+	if *flagRemove {
+		tl.RemoveAll()
+	}
 }
