@@ -6,14 +6,14 @@ import (
 	"time"
 )
 
-// Worker is an interface representing a Tunny working agent. It will be used to
+// PoolWorker is an interface representing a working agent. It will be used to
 // block a calling goroutine until ready to process a job, process that job
 // synchronously, interrupt its own process call when jobs are abandoned, and
 // clean up its resources when being removed from the pool.
 //
 // Each of these duties are implemented as a single method and can be averted
 // when not needed by simply implementing an empty func.
-type Worker interface {
+type PoolWorker interface {
 	// Process will synchronously perform a job and return the result.
 	Process(interface{}) interface{}
 
@@ -30,26 +30,26 @@ type Worker interface {
 	Terminate()
 }
 
-// closureWorker is a minimal Worker implementation that simply wraps a
+// closurePoolWorker is a minimal Worker implementation that simply wraps a
 // func(interface{}) interface{}
-type closureWorker struct {
+type closurePoolWorker struct {
 	processor func(interface{}) interface{}
 }
 
-func (w *closureWorker) Process(payload interface{}) interface{} {
+func (w *closurePoolWorker) Process(payload interface{}) interface{} {
 	return w.processor(payload)
 }
 
-func (w *closureWorker) BlockUntilReady() {}
-func (w *closureWorker) Interrupt()       {}
-func (w *closureWorker) Terminate()       {}
+func (w *closurePoolWorker) BlockUntilReady() {}
+func (w *closurePoolWorker) Interrupt()       {}
+func (w *closurePoolWorker) Terminate()       {}
 
-// callbackWorker is a minimal Worker implementation that attempts to cast
+// callbackPoolWorker is a minimal Worker implementation that attempts to cast
 // each job into func() and either calls it if successful or returns
 // ErrJobNotFunc.
-type callbackWorker struct{}
+type callbackPoolWorker struct{}
 
-func (w *callbackWorker) Process(payload interface{}) interface{} {
+func (w *callbackPoolWorker) Process(payload interface{}) interface{} {
 	f, ok := payload.(func())
 	if !ok {
 		return ErrJobNotFunc
@@ -58,9 +58,9 @@ func (w *callbackWorker) Process(payload interface{}) interface{} {
 	return nil
 }
 
-func (w *callbackWorker) BlockUntilReady() {}
-func (w *callbackWorker) Interrupt()       {}
-func (w *callbackWorker) Terminate()       {}
+func (w *callbackPoolWorker) BlockUntilReady() {}
+func (w *callbackPoolWorker) Interrupt()       {}
+func (w *callbackPoolWorker) Terminate()       {}
 
 // Pool is a struct that manages a collection of workers, each with their own
 // goroutine. The Pool can initialize, expand, compress and close the workers,
@@ -68,9 +68,9 @@ func (w *callbackWorker) Terminate()       {}
 type Pool struct {
 	queuedJobs int64
 
-	ctor    func() Worker
-	workers []*workerWrapper
-	reqChan chan workRequest
+	ctor    func() PoolWorker
+	workers []*poolWorkerWrapper
+	reqChan chan poolWorkRequest
 
 	workerMut sync.Mutex
 }
@@ -79,31 +79,31 @@ type Pool struct {
 // provide a constructor function that creates new Worker types and when you
 // change the size of the pool the constructor will be called to create each new
 // Worker.
-func New(n int, ctor func() Worker) *Pool {
+func NewPool(n int, ctor func() PoolWorker) *Pool {
 	p := &Pool{
 		ctor:    ctor,
-		reqChan: make(chan workRequest),
+		reqChan: make(chan poolWorkRequest),
 	}
 	p.SetSize(n)
 
 	return p
 }
 
-// NewFunc creates a new Pool of workers where each worker will process using
+// NewPoolFunc creates a new Pool of workers where each worker will process using
 // the provided func.
-func NewFunc(n int, f func(interface{}) interface{}) *Pool {
-	return New(n, func() Worker {
-		return &closureWorker{
+func NewPoolFunc(n int, f func(interface{}) interface{}) *Pool {
+	return NewPool(n, func() PoolWorker {
+		return &closurePoolWorker{
 			processor: f,
 		}
 	})
 }
 
-// NewCallback creates a new Pool of workers where workers cast the job payload
+// NewPoolCallback creates a new Pool of workers where workers cast the job payload
 // into a func() and runs it, or returns ErrNotFunc if the cast failed.
-func NewCallback(n int) *Pool {
-	return New(n, func() Worker {
-		return &callbackWorker{}
+func NewPoolCallback(n int) *Pool {
+	return NewPool(n, func() PoolWorker {
+		return &callbackPoolWorker{}
 	})
 }
 
@@ -142,7 +142,7 @@ func (p *Pool) ProcessTimed(
 
 	tout := time.NewTimer(timeout)
 
-	var request workRequest
+	var request poolWorkRequest
 	var open bool
 
 	select {
@@ -194,7 +194,7 @@ func (p *Pool) SetSize(n int) {
 
 	// Add extra workers if N > len(workers)
 	for i := lWorkers; i < n; i++ {
-		p.workers = append(p.workers, newWorkerWrapper(p.reqChan, p.ctor()))
+		p.workers = append(p.workers, newPoolWorkerWrapper(p.reqChan, p.ctor()))
 	}
 
 	// Asynchronously stop all workers > N
@@ -225,9 +225,9 @@ func (p *Pool) Close() {
 	close(p.reqChan)
 }
 
-// workRequest is a struct containing context representing a workers intention
+// poolWorkRequest is a struct containing context representing a workers intention
 // to receive a work payload.
-type workRequest struct {
+type poolWorkRequest struct {
 	// jobChan is used to send the payload to this worker.
 	jobChan chan<- interface{}
 
@@ -239,15 +239,15 @@ type workRequest struct {
 	interruptFunc func()
 }
 
-// workerWrapper takes a Worker implementation and wraps it within a goroutine
-// and channel arrangement. The workerWrapper is responsible for managing the
+// poolWorkerWrapper takes a Worker implementation and wraps it within a goroutine
+// and channel arrangement. The poolWorkerWrapper is responsible for managing the
 // lifetime of both the Worker and the goroutine.
-type workerWrapper struct {
-	worker        Worker
+type poolWorkerWrapper struct {
+	worker        PoolWorker
 	interruptChan chan struct{}
 
 	// reqChan is NOT owned by this type, it is used to send requests for work.
-	reqChan chan<- workRequest
+	reqChan chan<- poolWorkRequest
 
 	// closeChan can be closed in order to cleanly shutdown this worker.
 	closeChan chan struct{}
@@ -256,11 +256,11 @@ type workerWrapper struct {
 	closedChan chan struct{}
 }
 
-func newWorkerWrapper(
-	reqChan chan<- workRequest,
-	worker Worker,
-) *workerWrapper {
-	w := workerWrapper{
+func newPoolWorkerWrapper(
+	reqChan chan<- poolWorkRequest,
+	worker PoolWorker,
+) *poolWorkerWrapper {
+	w := poolWorkerWrapper{
 		worker:        worker,
 		interruptChan: make(chan struct{}),
 		reqChan:       reqChan,
@@ -273,12 +273,12 @@ func newWorkerWrapper(
 	return &w
 }
 
-func (w *workerWrapper) interrupt() {
+func (w *poolWorkerWrapper) interrupt() {
 	close(w.interruptChan)
 	w.worker.Interrupt()
 }
 
-func (w *workerWrapper) run() {
+func (w *poolWorkerWrapper) run() {
 	jobChan, retChan := make(chan interface{}), make(chan interface{})
 	defer func() {
 		w.worker.Terminate()
@@ -290,7 +290,7 @@ func (w *workerWrapper) run() {
 		// NOTE: Blocking here will prevent the worker from closing down.
 		w.worker.BlockUntilReady()
 		select {
-		case w.reqChan <- workRequest{
+		case w.reqChan <- poolWorkRequest{
 			jobChan:       jobChan,
 			retChan:       retChan,
 			interruptFunc: w.interrupt,
@@ -312,10 +312,10 @@ func (w *workerWrapper) run() {
 	}
 }
 
-func (w *workerWrapper) stop() {
+func (w *poolWorkerWrapper) stop() {
 	close(w.closeChan)
 }
 
-func (w *workerWrapper) join() {
+func (w *poolWorkerWrapper) join() {
 	<-w.closedChan
 }
