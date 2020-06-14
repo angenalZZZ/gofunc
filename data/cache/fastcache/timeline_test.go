@@ -13,14 +13,14 @@ import (
 
 func TestTimelineInit(t *testing.T) {
 	tl := NewTimeline(time.Now(), time.Now().Add(50*time.Second), 5*time.Second, data.RootDir, 1024)
-	t.Logf("%3d: %s", tl.index, f.NowLocalString(true))
-	for index := int64(0); tl.index != -1; {
-		for index == tl.index {
+	t.Logf("%3d: %s", tl.Index, f.NowLocalString(true))
+	for index := int64(0); tl.Index != -1; {
+		for index == tl.Index {
 			time.Sleep(time.Microsecond)
 		}
-		if tl.index != -1 {
-			t.Logf("%3d: %s", tl.index, f.NowLocalString(true))
-			index = tl.index
+		if tl.Index != -1 {
+			t.Logf("%3d: %s", tl.Index, f.NowLocalString(true))
+			index = tl.Index
 		} else {
 			t.Logf("end: %s", f.NowLocalString(true))
 		}
@@ -63,6 +63,6 @@ func BenchmarkTimelineWriter(b *testing.B) {
 	p := []byte(random.AlphaNumberLower(l))
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		tl.Write(p)
+		_, _ = tl.Write(p)
 	}
 }

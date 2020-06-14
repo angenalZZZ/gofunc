@@ -27,15 +27,20 @@ func main() {
 		}
 	}
 
+	fmt.Println()
 	tl := fastcache.NewTimeline(time.Now(), time.Now().Add(time.Hour), time.Hour, f.CurrentDir(), 2048)
 	p := []byte(random.AlphaNumberLower(l))
-	start := time.Now()
 
+	t1 := time.Now()
 	for i := 0; i < m; i++ {
 		_, _ = tl.Write(p)
 	}
 
+	t2 := time.Now()
 	tl.Save()
 
-	fmt.Printf("every time %d bytes data request, request times: %d, take time %s", l, m, time.Now().Sub(start))
+	fmt.Printf(" every time %d bytes data request, total %d times \n", l, m)
+	fmt.Printf(" take requested time %s \n", t2.Sub(t1))
+	fmt.Printf(" take saved time %s \n\n", time.Now().Sub(t2))
+	tl.RemoveAll()
 }

@@ -14,81 +14,111 @@ import (
 // Timeline time data
 type Timeline struct {
 	CacheDir string // cache persist to disk directory
-	frames   []*timeFrame
-	duration time.Duration
-	index    int64
+	Frames   []*timeFrame
+	Duration time.Duration
+	Index    int64
 }
 
 // timeFrame time bounds on which data to retrieve.
 type timeFrame struct {
-	cache *Cache // a fast thread-safe inmemory cache optimized for big number of entries.
-	frame *f.TimeFrame
-	index uint32
+	Cache *Cache // a fast thread-safe inmemory cache optimized for big number of entries.
+	Frame *f.TimeFrame
+	Index uint32
 }
 
 func (t *Timeline) Write(p []byte) (n int, err error) {
-	if t.index == -1 {
+	if t.Index == -1 {
 		return
 	}
 
-	c := t.frames[t.index]
-	i := atomic.AddUint32(&c.index, 1)
-	c.cache.Set(f.BytesUint32(i), p)
+	c := t.Frames[t.Index]
+	i := atomic.AddUint32(&c.Index, 1)
+	c.Cache.Set(f.BytesUint32(i), p)
 	return int(i), nil
 }
 
 func (t *Timeline) Save() {
-	for _, frame := range t.frames {
-		frame.save(t.CacheDir)
+	for _, frame := range t.Frames {
+		frame.Save(t.CacheDir)
 	}
 }
 
-func (c *timeFrame) dirname() string {
-	return fmt.Sprintf("%s.%d", c.frame.Since.LocalTimeStampString(true), c.index)
+func (t *Timeline) Remove(index int) {
+	if index >= 0 && index < len(t.Frames) {
+		t.Frames[index].Remove(t.CacheDir)
+	}
 }
 
-func (c *timeFrame) save(cacheDir string) {
+func (t *Timeline) RemoveAll() {
+	for _, frame := range t.Frames {
+		frame.Remove(t.CacheDir)
+	}
+}
+
+func (c *timeFrame) Dirname() string {
+	return fmt.Sprintf("%s.%d", c.Frame.Since.LocalTimeStampString(true), c.Index)
+}
+
+func (c *timeFrame) Save(cacheDir string) {
 	time.Sleep(time.Microsecond)
-	if c.index == 0 {
+	if c.Index == 0 {
 		return
 	}
 
 	fileStat := new(Stats)
-	c.cache.UpdateStats(fileStat)
+	c.Cache.UpdateStats(fileStat)
 	data, err := f.EncodeJson(fileStat)
 	logErr := log.New(os.Stderr, "", 0)
 	if err != nil {
 		logErr.Print(err)
 	}
 
-	filePath := filepath.Join(cacheDir, c.dirname())
+	filePath := filepath.Join(cacheDir, c.Dirname())
 	err = ioutil.WriteFile(filePath+".json", data, 0644)
 	if err != nil {
 		logErr.Print(err)
 	}
 
-	if err = c.cache.SaveToFileConcurrent(filePath, 0); err != nil {
+	if err = c.Cache.SaveToFileConcurrent(filePath, 0); err != nil {
 		logErr.Print(err)
 	} else {
-		c.cache.Reset() // Reset removes all the items from the cache.
+		c.Cache.Reset() // Reset removes all the items from the cache.
+	}
+}
+
+func (c *timeFrame) Remove(cacheDir string) {
+	if c.Index == 0 {
+		return
+	}
+
+	filePath := filepath.Join(cacheDir, c.Dirname())
+	err := os.Remove(filePath + ".json")
+	logErr := log.New(os.Stderr, "", 0)
+	if err != nil {
+		logErr.Print(err)
+	}
+
+	err = os.RemoveAll(filePath)
+	if err != nil {
+		logErr.Print(err)
 	}
 }
 
 func (t *Timeline) init() {
-	p := int64(t.duration.Seconds())
-	n := t.frames[0].frame.Since.UnixSecond
-	m := t.frames[len(t.frames)-1].frame.Until.UnixSecond
+	p := int64(t.Duration.Seconds())
+	n := t.Frames[0].Frame.Since.UnixSecond
+	m := t.Frames[len(t.Frames)-1].Frame.Until.UnixSecond
 	for u := time.Now().Unix(); u < m; u++ {
 		index := (u - n) / p
-		if index >= 0 && index != t.index {
-			if t.index != -1 {
-				go t.frames[t.index].save(t.CacheDir)
+		if index >= 0 && index != t.Index {
+			if t.Index != -1 {
+				go t.Frames[t.Index].Save(t.CacheDir)
 			}
-			atomic.StoreInt64(&t.index, index)
+			atomic.StoreInt64(&t.Index, index)
 		}
 		time.Sleep(time.Second)
 	}
-	t.index = -1
+	t.Index = -1
 }
 
 func NewTimeline(since, until time.Time, duration time.Duration, cacheDir string, maxBytes int) *Timeline {
@@ -96,19 +126,19 @@ func NewTimeline(since, until time.Time, duration time.Duration, cacheDir string
 
 	t := &Timeline{
 		CacheDir: cacheDir,
-		frames:   make([]*timeFrame, len(frames)),
-		duration: duration,
-		index:    -1,
+		Frames:   make([]*timeFrame, len(frames)),
+		Duration: duration,
+		Index:    -1,
 	}
 
 	for i, frame := range frames {
-		t.frames[i] = &timeFrame{
-			cache: New(maxBytes),
-			frame: frame,
+		t.Frames[i] = &timeFrame{
+			Cache: New(maxBytes),
+			Frame: frame,
 		}
 	}
 
-	if len(t.frames) > 0 {
+	if len(t.Frames) > 0 {
 		go t.init()
 		// wait init step
 		if since.Before(time.Now()) {
