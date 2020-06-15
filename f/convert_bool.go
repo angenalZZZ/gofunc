@@ -1,6 +1,9 @@
 package f
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 // Bool convert string to bool, or return false.
 func Bool(s string) bool {
@@ -20,4 +23,9 @@ func ToBool(s string) (bool, error) {
 		return false, nil
 	}
 	return false, ErrConvertFail
+}
+
+// ToBoolean convert the input string to a boolean.
+func ToBoolean(str string) (bool, error) {
+	return strconv.ParseBool(str)
 }

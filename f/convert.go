@@ -61,6 +61,24 @@ func ToString(val interface{}) (str string) {
 	return
 }
 
+// ToJSON convert the input to a valid JSON string
+func ToJSON(obj interface{}) (string, error) {
+	res, err := EncodeJson(obj)
+	if err != nil {
+		res = []byte("")
+	}
+	return string(res), err
+}
+
+// ToFloat convert the input string to a float, or 0.0 if the input is not a float.
+func ToFloat(str string) (float64, error) {
+	res, err := strconv.ParseFloat(str, 64)
+	if err != nil {
+		res = 0.0
+	}
+	return res, err
+}
+
 // Bytes converts string to a byte slice without memory allocation.
 // NOTE: panic if modify the member value of the []byte.
 func Bytes(s string) (b []byte) {

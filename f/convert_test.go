@@ -4,7 +4,7 @@ import "testing"
 
 func TestToInt(t *testing.T) {
 	// ToInt parse string to int64
-	if i, err := ToInt("123", false); err != nil {
+	if i, err := ToInt("123"); err != nil {
 		t.Fatal(err)
 	} else {
 		t.Logf("ToInt: %d\n", i)

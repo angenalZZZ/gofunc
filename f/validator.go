@@ -3,7 +3,6 @@ package f
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/asaskevich/govalidator"
 	"net"
 	"net/url"
 	"os"
@@ -13,76 +12,6 @@ import (
 	"strings"
 	"unicode/utf8"
 )
-
-// ---------------------- List of functions -----------------------
-
-var Abs = govalidator.Abs
-var BlackList = govalidator.BlackList
-
-//var ByteLength = govalidator.ByteLength
-var CamelCaseToUnderscore = govalidator.CamelCaseToUnderscore
-
-// ---------------------- List of functions -----------------------
-
-// Contains asserts that the specified string, list(array, slice...) or map contains the
-// specified substring or element.
-//
-//    Contains(t, "Hello World", "World")
-//    Contains(t, ["Hello", "World"], "World")
-//    Contains(t, {"Hello": "World"}, "Hello")
-func Contains(s, sub interface{}) bool {
-	ok, found := ContainsElement(s, sub)
-
-	// ok == false: 's' could not be applied builtin len()
-	// found == false: 's' does not contain 'sub'
-	return ok && found
-}
-
-// NotContains check that the specified string, list(array, slice) or map does NOT contain the
-// specified substring or element.
-//
-// Notice: list check value exist. map check key exist.
-func NotContains(s, sub interface{}) bool {
-	ok, found := ContainsElement(s, sub)
-
-	// ok == false: could not be applied builtin len()
-	// found == true: 's' contain 'sub'
-	return ok && !found
-}
-
-// ContainsElement from package: github.com/stretchr/testify/assert/assertions.go
-func ContainsElement(list, element interface{}) (ok, found bool) {
-	listValue := reflect.ValueOf(list)
-	listKind := reflect.TypeOf(list).Kind()
-	defer func() {
-		if e := recover(); e != nil {
-			ok = false
-			found = false
-		}
-	}()
-
-	if listKind == reflect.String {
-		elementValue := reflect.ValueOf(element)
-		return true, strings.Contains(listValue.String(), elementValue.String())
-	}
-
-	if listKind == reflect.Map {
-		mapKeys := listValue.MapKeys()
-		for i := 0; i < len(mapKeys); i++ {
-			if IsEqual(mapKeys[i].Interface(), element) {
-				return true, true
-			}
-		}
-		return true, false
-	}
-
-	for i := 0; i < listValue.Len(); i++ {
-		if IsEqual(listValue.Index(i).Interface(), element) {
-			return true, true
-		}
-	}
-	return true, false
-}
 
 // IsUint check, allow: intX, uintX, string
 func IsUint(val interface{}) bool {
@@ -208,7 +137,7 @@ func IsInt(val interface{}, minAndMax ...int64) (ok bool) {
 		return false
 	}
 
-	intVal, err := ToInt(val, true)
+	intVal, err := ToInt(val)
 	if err != nil {
 		return false
 	}
@@ -379,7 +308,7 @@ func IsAlpha(s string) bool {
 
 // IsAlphaNum string.
 func IsAlphaNum(s string) bool {
-	return s != "" && rxAlphaNum.MatchString(s)
+	return s != "" && rxAlphaNumeric.MatchString(s)
 }
 
 // IsAlphaDash string.
@@ -389,17 +318,17 @@ func IsAlphaDash(s string) bool {
 
 // IsNumber string. should >= 0
 func IsNumber(v interface{}) bool {
-	return rxNumber.MatchString(ToString(v))
+	return rxNumeric.MatchString(ToString(v))
 }
 
 // IsNumeric is string/int number. should >= 0
 func IsNumeric(v interface{}) bool {
-	return rxNumber.MatchString(ToString(v))
+	return rxNumeric.MatchString(ToString(v))
 }
 
 // IsStringNumber is string number. should >= 0
 func IsStringNumber(s string) bool {
-	return s != "" && rxNumber.MatchString(s)
+	return s != "" && rxNumeric.MatchString(s)
 }
 
 // IsEmail check

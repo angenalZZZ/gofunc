@@ -2,13 +2,22 @@ package f
 
 import (
 	"reflect"
-	"regexp"
 	"runtime"
 	"strings"
 )
 
 const (
 	MimeSniffLen = 512 // sniff Length, use for detect file mime type
+)
+
+// Used by IsFilePath func
+const (
+	// Unknown is unresolved OS type
+	Unknown = iota
+	// Win is Windows type
+	Win
+	// Unix is *nix OS types
+	Unix
 )
 
 // time_stamp.go
@@ -25,6 +34,8 @@ const (
 )
 
 var (
+	emptyValue = reflect.Value{}
+
 	// Go Version Numbers
 	GoVersion = strings.TrimPrefix(runtime.Version(), "go")
 
@@ -40,43 +51,6 @@ var (
 		"ico":  "image/x-icon",
 		"webp": "image/webp",
 	}
-)
-
-// validator.go
-// Basic regular expressions for validating strings.
-var (
-	emptyValue       = reflect.Value{}
-	rxEmail          = regexp.MustCompile("^(((([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+(\\.([a-zA-Z]|\\d|[!#\\$%&'\\*\\+\\-\\/=\\?\\^_`{\\|}~]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])+)*)|((\\x22)((((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(([\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]|\\x21|[\\x23-\\x5b]|[\\x5d-\\x7e]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(\\([\\x01-\\x09\\x0b\\x0c\\x0d-\\x7f]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}]))))*(((\\x20|\\x09)*(\\x0d\\x0a))?(\\x20|\\x09)+)?(\\x22)))@((([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|\\.|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|\\d|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.)+(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])|(([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])([a-zA-Z]|\\d|-|_|~|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])*([a-zA-Z]|[\\x{00A0}-\\x{D7FF}\\x{F900}-\\x{FDCF}\\x{FDF0}-\\x{FFEF}])))\\.?$")
-	rxISBN10         = regexp.MustCompile("^(?:[0-9]{9}X|[0-9]{10})$")
-	rxISBN13         = regexp.MustCompile("^(?:[0-9]{13})$")
-	rxUUID3          = regexp.MustCompile("^[0-9a-f]{8}-[0-9a-f]{4}-3[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$")
-	rxUUID4          = regexp.MustCompile("^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
-	rxUUID5          = regexp.MustCompile("^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
-	rxUUID           = regexp.MustCompile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
-	rxAlpha          = regexp.MustCompile("^[a-zA-Z]+$")
-	rxAlphaNum       = regexp.MustCompile("^[a-zA-Z0-9]+$")
-	rxAlphaDash      = regexp.MustCompile(`^(?:[\w-]+)$`)
-	rxNumber         = regexp.MustCompile("^[0-9]+$")
-	rxInt            = regexp.MustCompile("^(?:[-+]?(?:0|[1-9][0-9]*))$")
-	rxFloat          = regexp.MustCompile("^(?:[-+]?(?:[0-9]+))?(?:\\.[0-9]*)?(?:[eE][\\+\\-]?(?:[0-9]+))?$")
-	rxCnMobile       = regexp.MustCompile(`^1\d{10}$`)
-	rxHexColor       = regexp.MustCompile("^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
-	rxRGBColor       = regexp.MustCompile("^rgb\\(\\s*(0|[1-9]\\d?|1\\d\\d?|2[0-4]\\d|25[0-5])\\s*,\\s*(0|[1-9]\\d?|1\\d\\d?|2[0-4]\\d|25[0-5])\\s*,\\s*(0|[1-9]\\d?|1\\d\\d?|2[0-4]\\d|25[0-5])\\s*\\)$")
-	rxASCII          = regexp.MustCompile("^[\x00-\x7F]+$")
-	rxHexadecimal    = regexp.MustCompile("^[0-9a-fA-F]+$")
-	rxPrintableASCII = regexp.MustCompile("^[\x20-\x7E]+$")
-	rxMultiByte      = regexp.MustCompile("[^\x00-\x7F]")
-	rxBase64         = regexp.MustCompile("^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=|[A-Za-z0-9+\\/]{4})$")
-	rxDataURI        = regexp.MustCompile(`^data:.+/(.+);base64,(?:.+)`)
-	rxLatitude       = regexp.MustCompile("^[-+]?([1-8]?\\d(\\.\\d+)?|90(\\.0+)?)$")
-	rxLongitude      = regexp.MustCompile("^[-+]?(180(\\.0+)?|((1[0-7]\\d)|([1-9]?\\d))(\\.\\d+)?)$")
-	rxDNSName        = regexp.MustCompile(`^([a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62}){1}(\.[a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62})*[\._]?$`)
-	rxFullURL        = regexp.MustCompile(`^(?:ftp|tcp|udp|wss?|https?):\/\/[\w\.\/#=?&]+$`)
-	rxURLSchema      = regexp.MustCompile(`((ftp|tcp|udp|wss?|https?):\/\/)`)
-	rxWinPath        = regexp.MustCompile(`^[a-zA-Z]:\\(?:[^\\/:*?"<>|\r\n]+\\)*[^\\/:*?"<>|\r\n]*$`)
-	rxUnixPath       = regexp.MustCompile(`^(/[^/\x00]*)+/?$`)
-	rxHasLowerCase   = regexp.MustCompile(".*[[:lower:]]")
-	rxHasUpperCase   = regexp.MustCompile(".*[[:upper:]]")
 )
 
 // zip.go

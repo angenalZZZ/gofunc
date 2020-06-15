@@ -64,18 +64,15 @@ func BytesUint64(v uint64) []byte {
 
 // Int convert string to int64, or return 0.
 func Int(v interface{}) (i int64) {
-	i, _ = ToInt(v, false)
+	i, _ = ToInt(v)
 	return
 }
 
 // ToInt parse string to int64, or return ErrConvertFail.
-func ToInt(v interface{}, strict ...bool) (i int64, err error) {
-	switch notParse := len(strict) > 0 && strict[0] == true; t := v.(type) {
+func ToInt(v interface{}) (i int64, err error) {
+	switch t := v.(type) {
 	case string:
-		if notParse {
-			return 0, ErrConvertFail
-		}
-		i, err = strconv.ParseInt(strings.TrimSpace(t), 10, 0)
+		i, err = strconv.ParseInt(strings.TrimSpace(t), 10, 0) // strconv.ParseInt(t, 0, 64)
 	case int:
 		i = int64(t)
 	case int8:
@@ -97,14 +94,8 @@ func ToInt(v interface{}, strict ...bool) (i int64, err error) {
 	case uint64:
 		i = int64(t)
 	case float32:
-		if notParse {
-			return 0, ErrConvertFail
-		}
 		i = int64(t)
 	case float64:
-		if notParse {
-			return 0, ErrConvertFail
-		}
 		i = int64(t)
 	default:
 		err = ErrConvertFail
