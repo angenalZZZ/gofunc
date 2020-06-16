@@ -1,26 +1,27 @@
-package f
+package f_test
 
 import (
+	"github.com/angenalZZZ/gofunc/f"
 	"testing"
 	"time"
 )
 
 func TestTimeStamp(t *testing.T) {
-	ts := Now() // equals f.TimeFrom(time.Now())
-	ts = TimeFrom(time.Now())
+	ts := f.Now() // equals f.TimeFrom(time.Now())
+	ts = f.TimeFrom(time.Now())
 	t.Log(ts.LocalString())
-	t.Log(TimeFrom(ts.Time), TimeFrom(ts.Time, true))
-	t.Log(NewTimeStamp(0))       // 1970-01-01 08:00:00 +0800 CST
-	t.Log(NewTimeStamp(0).UTC()) // 1970-01-01 00:00:00 +0000 UTC
-	ts, _ = TimeFromLocalString("2020-03-08 11:19:42")
-	ts, _ = TimeFromLocalString("20200308111942000")
+	t.Log(f.TimeFrom(ts.Time), f.TimeFrom(ts.Time, true))
+	t.Log(f.NewTimeStamp(0))       // 1970-01-01 08:00:00 +0800 CST
+	t.Log(f.NewTimeStamp(0).UTC()) // 1970-01-01 00:00:00 +0000 UTC
+	ts, _ = f.TimeFromLocalString("2020-03-08 11:19:42")
+	ts, _ = f.TimeFromLocalString("20200308111942000")
 	t.Log(ts.UTCTimeString(), ts.LocalTimeString())
-	ts, _ = TimeFromUTCString("2020-03-08 03:19:42")
+	ts, _ = f.TimeFromUTCString("2020-03-08 03:19:42")
 	t.Log(ts.UTCTimeString(), ts.LocalTimeString())
-	ts = TimeStampFrom("1583637582")
-	ts = TimeStampFrom("1583637582780")
-	ts = TimeStampFrom("1583637582780102")
-	ts = TimeStampFrom("1583637582780102300")
+	ts = f.TimeStampFrom("1583637582")
+	ts = f.TimeStampFrom("1583637582780")
+	ts = f.TimeStampFrom("1583637582780102")
+	ts = f.TimeStampFrom("1583637582780102300")
 	t.Log(ts.String())                     // Output: 2020-03-08 11:19:42.7801023 +0800 CST
 	t.Log(ts.UnixSecondTimeStampString())  // Output: 1583637582
 	t.Log(ts.UnixSecond)                   // Output: 1583637582

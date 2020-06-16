@@ -30,7 +30,7 @@ type Config struct {
 	JsonFormat string
 	// Output is a writer where logs are written
 	// Default: log.Log
-	Output log.Logger
+	Output *log.Logger
 	// Output json defines with JsonFormat
 	JsonOutput bool
 	// ConfigFile log.yaml
@@ -42,7 +42,7 @@ type Config struct {
 
 // LogConfig Defines ConfigFile
 type LogConfig struct {
-	Log log.Config
+	Log *log.Config
 }
 
 // New middleware.

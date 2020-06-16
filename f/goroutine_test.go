@@ -1,6 +1,7 @@
-package f
+package f_test
 
 import (
+	"github.com/angenalZZZ/gofunc/f"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -8,7 +9,7 @@ import (
 )
 
 func BenchmarkPoolFuncJob(b *testing.B) {
-	pool := NewPoolFunc(10, func(in interface{}) interface{} {
+	pool := f.NewPoolFunc(10, func(in interface{}) interface{} {
 		intVal := in.(int)
 		return intVal * 2
 	})
@@ -25,7 +26,7 @@ func BenchmarkPoolFuncJob(b *testing.B) {
 }
 
 func BenchmarkPoolFuncTimedJob(b *testing.B) {
-	pool := NewPoolFunc(10, func(in interface{}) interface{} {
+	pool := f.NewPoolFunc(10, func(in interface{}) interface{} {
 		intVal := in.(int)
 		return intVal * 2
 	})
@@ -45,7 +46,7 @@ func BenchmarkPoolFuncTimedJob(b *testing.B) {
 }
 
 func TestPoolFuncJob(t *testing.T) {
-	pool := NewPoolFunc(10, func(in interface{}) interface{} {
+	pool := f.NewPoolFunc(10, func(in interface{}) interface{} {
 		intVal := in.(int)
 		return intVal * 2
 	})
@@ -60,7 +61,7 @@ func TestPoolFuncJob(t *testing.T) {
 }
 
 func TestPoolFuncJobTimed(t *testing.T) {
-	pool := NewPoolFunc(10, func(in interface{}) interface{} {
+	pool := f.NewPoolFunc(10, func(in interface{}) interface{} {
 		intVal := in.(int)
 		return intVal * 2
 	})
@@ -78,7 +79,7 @@ func TestPoolFuncJobTimed(t *testing.T) {
 }
 
 func TestPoolCallbackJob(t *testing.T) {
-	pool := NewPoolCallback(10)
+	pool := f.NewPoolCallback(10)
 	defer pool.Close()
 
 	var counter int32
@@ -92,7 +93,7 @@ func TestPoolCallbackJob(t *testing.T) {
 	}
 
 	ret := pool.Process("foo")
-	if exp, act := ErrJobNotFunc, ret; exp != act {
+	if exp, act := f.ErrJobNotFunc, ret; exp != act {
 		t.Errorf("Wrong result from non-func: %v != %v", act, exp)
 	}
 
@@ -102,7 +103,7 @@ func TestPoolCallbackJob(t *testing.T) {
 }
 
 func TestPoolTimeout(t *testing.T) {
-	pool := NewPoolFunc(1, func(in interface{}) interface{} {
+	pool := f.NewPoolFunc(1, func(in interface{}) interface{} {
 		intVal := in.(int)
 		<-time.After(time.Second)
 		return intVal * 2
@@ -110,25 +111,25 @@ func TestPoolTimeout(t *testing.T) {
 	defer pool.Close()
 
 	_, act := pool.ProcessTimed(1, time.Microsecond)
-	if exp := ErrJobTimedOut; exp != act {
+	if exp := f.ErrJobTimedOut; exp != act {
 		t.Errorf("Wrong error returned: %v != %v", act, exp)
 	}
 }
 
 func TestPoolTimedJobsAfterClose(t *testing.T) {
-	pool := NewPoolFunc(1, func(in interface{}) interface{} {
+	pool := f.NewPoolFunc(1, func(in interface{}) interface{} {
 		return in
 	})
 	pool.Close()
 
 	_, act := pool.ProcessTimed(1, time.Duration(1))
-	if exp := ErrPoolNotRunning; exp != act {
+	if exp := f.ErrPoolNotRunning; exp != act {
 		t.Errorf("Wrong error returned: %v != %v", act, exp)
 	}
 }
 
 func TestPoolJobsAfterClose(t *testing.T) {
-	pool := NewPoolFunc(1, func(in interface{}) interface{} {
+	pool := f.NewPoolFunc(1, func(in interface{}) interface{} {
 		return in
 	})
 	pool.Close()
@@ -147,7 +148,7 @@ func TestPoolParallelJobs(t *testing.T) {
 
 	testGroup := new(sync.WaitGroup)
 
-	pool := NewPoolFunc(nWorkers, func(in interface{}) interface{} {
+	pool := f.NewPoolFunc(nWorkers, func(in interface{}) interface{} {
 		intVal := in.(int)
 		return intVal * 2
 	})

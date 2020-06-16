@@ -1,7 +1,10 @@
-package f
+package f_test
 
-import "testing"
+import (
+	"github.com/angenalZZZ/gofunc/f"
+	"testing"
+)
 
 func TestIP(t *testing.T) {
-	t.Log(IP("192"))
+	t.Log(f.IP("192"))
 }

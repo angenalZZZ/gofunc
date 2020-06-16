@@ -1,7 +1,10 @@
-package f
+package f_test
 
-import "testing"
+import (
+	"github.com/angenalZZZ/gofunc/f"
+	"testing"
+)
 
 func TestVersion(t *testing.T) {
-	t.Log(GoVersion)
+	t.Log(f.GoVersion)
 }

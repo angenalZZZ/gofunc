@@ -1,6 +1,7 @@
-package f
+package f_test
 
 import (
+	"github.com/angenalZZZ/gofunc/f"
 	"net/http"
 	"testing"
 )
@@ -19,7 +20,7 @@ func TestHtml_Decode(t *testing.T) {
 
 	var ex example
 
-	err = NewHtmlDecoder(res.Body).Decode(&ex)
+	err = f.NewHtmlDecoder(res.Body).Decode(&ex)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +29,7 @@ func TestHtml_Decode(t *testing.T) {
 }
 
 func TestJson_Get(t *testing.T) {
-	json := Json(` {
+	json := f.Json(` {
 	   "name": {"first": "Tom", "last": "Anderson"},
 	   "age":37,
 	   "children": ["Sara","Alex","Jack"],

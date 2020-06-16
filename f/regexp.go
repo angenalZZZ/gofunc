@@ -31,7 +31,7 @@ const (
 	RxHalfWidth         string = "[\u0020-\u007E\uFF61-\uFF9F\uFFA0-\uFFDC\uFFE8-\uFFEE0-9a-zA-Z]"
 	RxBase64            string = "^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=|[A-Za-z0-9+\\/]{4})$"
 	RxPrintableASCII    string = "^[\x20-\x7E]+$"
-	RxDataURI           string = `^data:.+/(.+);base64,(?:.+)` // "^data:.+\\/(.+);base64$"
+	RxDataURI           string = "^data:.+\\/(.+);base64$" // `^data:.+/(.+);base64,(?:.+)`
 	RxMagnetURI         string = "^magnet:\\?xt=urn:[a-zA-Z0-9]+:[a-zA-Z0-9]{32,40}&dn=.+&tr=.+$"
 	RxLatitude          string = "^[-+]?([1-8]?\\d(\\.\\d+)?|90(\\.0+)?)$"
 	RxLongitude         string = "^[-+]?(180(\\.0+)?|((1[0-7]\\d)|([1-9]?\\d))(\\.\\d+)?)$"

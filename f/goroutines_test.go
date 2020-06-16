@@ -1,6 +1,7 @@
-package f
+package f_test
 
 import (
+	"github.com/angenalZZZ/gofunc/f"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -8,7 +9,7 @@ import (
 )
 
 func TestGoroutines(t *testing.T) {
-	defer GoHandle.Release()
+	defer f.GoHandle.Release()
 
 	var sum int32
 	myFunc := func(i interface{}) {
@@ -28,16 +29,16 @@ func TestGoroutines(t *testing.T) {
 	}
 	for i := 0; i < runTimes; i++ {
 		wg.Add(1)
-		_ = GoHandle.Submit(syncCalculateSum)
+		_ = f.GoHandle.Submit(syncCalculateSum)
 	}
 	wg.Wait()
-	goroutines := GoHandle.Running()
+	goroutines := f.GoHandle.Running()
 	t.Logf("running goroutines: %d\n", goroutines)
 	t.Log("finish all tasks.")
 
 	// Use the pool with a function,
 	// set 10 to the capacity of goroutine pool and 1 second for expired duration.
-	p, _ := GoWithFunc(20, func(i interface{}) {
+	p, _ := f.GoWithFunc(20, func(i interface{}) {
 		myFunc(i)
 		wg.Done()
 	})

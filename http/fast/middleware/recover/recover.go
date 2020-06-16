@@ -19,7 +19,7 @@ type Config struct {
 	Log bool
 	// Output is a writer where logs are written
 	// Default: log.Log
-	Output log.Logger
+	Output *log.Logger
 }
 
 // New middleware.

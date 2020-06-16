@@ -6,7 +6,7 @@ import (
 )
 
 // go test -v -run ^ExamplePrintTest$ github.com/angenalZZZ/gofunc/f
-func ExamplePrintTest() {
+func ExampleMust() {
 	// 当前系统登录用户
 	usr, _ := user.Current()
 	fmt.Println("01.usr.Username:", usr.Username)

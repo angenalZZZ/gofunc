@@ -1,6 +1,7 @@
-package f
+package f_test
 
 import (
+	"github.com/angenalZZZ/gofunc/f"
 	"os"
 	"testing"
 )
@@ -11,16 +12,16 @@ func TestZipCompress(t *testing.T) {
 		"../test/rsa",
 	}
 
-	if FileExists(destination) {
-		t.Logf(" file exists: %s , is zip file: %t\n", destination, IsZipFile(destination))
+	if f.FileExists(destination) {
+		t.Logf(" file exists: %s , is zip file: %t\n", destination, f.IsZipFile(destination))
 	}
 
-	if err := ZipCompress(sources, destination, true, false); err != nil {
+	if err := f.ZipCompress(sources, destination, true, false); err != nil {
 		t.Fatal(err)
 	}
 
 	// Zip Decompress
-	reader, err := ZipOpenReader(destination)
+	reader, err := f.ZipOpenReader(destination)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +31,7 @@ func TestZipCompress(t *testing.T) {
 		_ = os.Remove(destination)
 	}()
 
-	if err := ZipDecompress(&reader.Reader, "../test/"); err != nil {
+	if err := f.ZipDecompress(&reader.Reader, "../test/"); err != nil {
 		t.Fatal(err)
 	}
 }
