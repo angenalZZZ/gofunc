@@ -591,6 +591,11 @@ func IsLongitude(s string) bool {
 	return s != "" && rxLongitude.MatchString(s)
 }
 
+// IsIMEI check if a string is valid IMEI
+func IsIMEI(str string) bool {
+	return rxIMEI.MatchString(str)
+}
+
 // IsRsaPublicKey check if a string is valid public key with provided length
 func IsRsaPublicKey(str string, keylen int) bool {
 	bb := bytes.NewBufferString(str)
@@ -1280,7 +1285,7 @@ func IsJSON(s string) bool {
 		return false
 	}
 
-	return json.ConfigCompatibleWithStandardLibrary.Valid([]byte(s))
+	return json.ConfigCompatibleWithStandardLibrary.Valid(Bytes(s))
 }
 
 // HasLowerCase check if the string contains at least 1 lowercase. Empty string is valid.

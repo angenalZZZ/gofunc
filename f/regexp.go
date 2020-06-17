@@ -53,6 +53,7 @@ const (
 	RxHasUpperCase      string = ".*[[:upper:]]"
 	RxHasWhitespace     string = ".*[[:space:]]"
 	RxHasWhitespaceOnly string = "^[[:space:]]+$"
+	RxIMEI              string = "^[0-9a-f]{14}$|^\\d{15}$|^\\d{18}$"
 )
 
 var (
@@ -99,4 +100,5 @@ var (
 	rxHasUpperCase      = regexp.MustCompile(RxHasUpperCase)
 	rxHasWhitespace     = regexp.MustCompile(RxHasWhitespace)
 	rxHasWhitespaceOnly = regexp.MustCompile(RxHasWhitespaceOnly)
+	rxIMEI              = regexp.MustCompile(RxIMEI)
 )
