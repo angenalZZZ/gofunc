@@ -40,3 +40,61 @@ func TestTimeStamp(t *testing.T) {
 	t.Log(ts.UTCDateString())              // Output: 2020-03-08
 	t.Log(ts.LocalDateString())            // Output: 2020-03-08
 }
+
+func TestIsTime(t *testing.T) {
+	t.Parallel()
+	var tests = []struct {
+		param    string
+		format   string
+		expected bool
+	}{
+		{"2016-12-31 11:00", time.RFC3339, false},
+		{"2016-12-31 11:00:00", time.RFC3339, false},
+		{"2016-12-31T11:00", time.RFC3339, false},
+		{"2016-12-31T11:00:00", time.RFC3339, false},
+		{"2016-12-31T11:00:00Z", time.RFC3339, true},
+		{"2016-12-31T11:00:00+01:00", time.RFC3339, true},
+		{"2016-12-31T11:00:00-01:00", time.RFC3339, true},
+		{"2016-12-31T11:00:00.05Z", time.RFC3339, true},
+		{"2016-12-31T11:00:00.05-01:00", time.RFC3339, true},
+		{"2016-12-31T11:00:00.05+01:00", time.RFC3339, true},
+		{"2016-12-31T11:00:00", f.RF3339WithoutZone, true},
+		{"2016-12-31T11:00:00Z", f.RF3339WithoutZone, false},
+		{"2016-12-31T11:00:00+01:00", f.RF3339WithoutZone, false},
+		{"2016-12-31T11:00:00-01:00", f.RF3339WithoutZone, false},
+		{"2016-12-31T11:00:00.05Z", f.RF3339WithoutZone, false},
+		{"2016-12-31T11:00:00.05-01:00", f.RF3339WithoutZone, false},
+		{"2016-12-31T11:00:00.05+01:00", f.RF3339WithoutZone, false},
+	}
+	for _, test := range tests {
+		actual := f.IsTime(test.param, test.format)
+		if actual != test.expected {
+			t.Errorf("Expected IsTime(%q, time.RFC3339) to be %v, got %v", test.param, test.expected, actual)
+		}
+	}
+}
+
+func TestIsRFC3339(t *testing.T) {
+	t.Parallel()
+	var tests = []struct {
+		param    string
+		expected bool
+	}{
+		{"2016-12-31 11:00", false},
+		{"2016-12-31 11:00:00", false},
+		{"2016-12-31T11:00", false},
+		{"2016-12-31T11:00:00", false},
+		{"2016-12-31T11:00:00Z", true},
+		{"2016-12-31T11:00:00+01:00", true},
+		{"2016-12-31T11:00:00-01:00", true},
+		{"2016-12-31T11:00:00.05Z", true},
+		{"2016-12-31T11:00:00.05-01:00", true},
+		{"2016-12-31T11:00:00.05+01:00", true},
+	}
+	for _, test := range tests {
+		actual := f.IsRFC3339(test.param)
+		if actual != test.expected {
+			t.Errorf("Expected IsRFC3339(%q) to be %v, got %v", test.param, test.expected, actual)
+		}
+	}
+}
