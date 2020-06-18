@@ -10,9 +10,6 @@ import (
 // It's recommended to use it's staging environment to test the code:
 // https://letsencrypt.org/docs/staging-environment/
 func AutoCertConfig(certDir string, domains ...string) *tls.Config {
-	if certDir == "" {
-		certDir = "./certs"
-	}
 	// Certificate manager
 	m := &autocert.Manager{
 		Prompt: autocert.AcceptTOS,
