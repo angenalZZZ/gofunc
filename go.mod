@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/PuerkitoBio/goquery v1.5.1
+	github.com/apache/thrift v0.13.0 // indirect
 	github.com/caddyserver/certmagic v0.10.11
 	github.com/cenkalti/backoff/v4 v4.0.2
 	github.com/cespare/xxhash/v2 v2.1.1
