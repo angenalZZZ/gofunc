@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package proto3;
+
+option java_multiple_files = true;
+option java_package = "io.grpc.proto";
+option java_outer_classname = "CacheProto";
+option csharp_namespace = "IO.gRPC.Proto";
+option go_package = "main";
+
+// A CacheWriter Message
+message CacheWriter {
+    string key = 1;
+    bytes value = 2;
+    fixed64 ttl = 3;
+}
+
+// A CacheReader Message
+message CacheReader {
+    string key = 1;
+}
+
+// A CacheValue Message
+message CacheValue {
+    bytes value = 1;
+}
+
+// A CacheTtl Message
+message CacheTtl {
+    fixed64 ttl = 1;
+}
+
+// Interface CacheService - A client-to-server Simple RPC.
+service CacheService {
+    rpc Write (CacheWriter) returns (CacheTtl) {}
+    rpc Read (CacheReader) returns (CacheValue) {}
+    rpc Delete (CacheReader) returns (CacheTtl) {}
+    rpc Ttl (CacheReader) returns (CacheTtl) {}
+}

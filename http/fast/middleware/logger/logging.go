@@ -40,11 +40,6 @@ type Config struct {
 	Tag string
 }
 
-// LogConfig Defines ConfigFile
-type LogConfig struct {
-	Log *log.Config
-}
-
 // New middleware.
 //  cfg := logger.Config{
 //    JsonOutput: true,
@@ -71,9 +66,9 @@ func New(config ...Config) func(*fast.Ctx) {
 		if cfg.ConfigFile == "" {
 			cfg.Output = log.Log
 		} else {
-			logCfg := new(LogConfig)
+			logCfg := new(log.AConfig)
 			if err := configfile.YamlTo(cfg.ConfigFile, logCfg); err != nil {
-				_ = fmt.Errorf("%s", err.Error())
+				_ = fmt.Errorf("%s\n", err.Error())
 			}
 			cfg.Output = log.Init(logCfg.Log)
 			if log.Log == nil {

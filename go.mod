@@ -12,7 +12,9 @@ require (
 	github.com/dgraph-io/badger/v2 v2.0.3
 	github.com/dgraph-io/ristretto v0.0.2-0.20200115201040-8f368f2f2ab3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/facebookgo/grace v0.0.0-20180706040059-75cf19382434
 	github.com/go-resty/resty/v2 v2.2.0
+	github.com/golang/protobuf v1.3.2
 	github.com/golang/snappy v0.0.1
 	github.com/gorilla/schema v1.1.0
 	github.com/json-iterator/go v1.1.9
@@ -31,6 +33,7 @@ require (
 	github.com/valyala/fasttemplate v1.1.0
 	golang.org/x/crypto v0.0.0-20200320181102-891825fb96df
 	golang.org/x/net v0.0.0-20200222125558-5a598a2470a0
+	google.golang.org/grpc v1.21.1
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df

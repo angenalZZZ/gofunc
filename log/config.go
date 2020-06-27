@@ -1,5 +1,10 @@
 package log
 
+// AConfig Defines From A Config File
+type AConfig struct {
+	Log *Config
+}
+
 // Config log
 type Config struct {
 	// 日志文件
