@@ -5,7 +5,7 @@
 // cd A:/test/ && fastcache1e6 -c 2 -d 128 -t 10000000
 // 1.benchmark(4CPU+16G+MHD) GET:2000w/Qps SET:200w/Qps FLUSH:0.4s
 // 2.benchmark(8CPU+16G+SSD) GET:2000w/Qps SET:200w/Qps FLUSH:0.1s
-// >buntdb-benchmark(8CPU+16G+MHD) GET:400w/Qps SET:23w/Qps
+// >buntdb-benchmark(8CPU+16G+MHD) GET:500w/Qps SET:23w/Qps
 
 package main
 
