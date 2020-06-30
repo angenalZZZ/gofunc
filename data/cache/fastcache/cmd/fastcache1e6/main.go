@@ -3,9 +3,9 @@
 // go get github.com/angenalZZZ/gofunc/data/cache/fastcache/cmd/fastcache1e6
 // go build -ldflags "-s -w" -o A:/test/ .
 // cd A:/test/ && fastcache1e6 -c 2 -d 128 -t 10000000
-// cache1.benchmark(4CPU+16G+MHD) GET:2000w/Qps SET:200w/Qps FLUSH:0.4s
-// cache2.benchmark(8CPU+16G+SSD) GET:2000w/Qps SET:200w/Qps FLUSH:0.1s
-// buntdb-benchmark(8CPU+16G+SSD) GET:500w/Qps  SET:23w/Qps
+// cache1.benchmark(4CPU+16G+MHD) GET:2000M/s SET:200M/s FLUSH:0.4s
+// cache2.benchmark(8CPU+16G+SSD) GET:2000M/s SET:200M/s FLUSH:0.1s
+// buntdb-benchmark(8CPU+16G+SSD) GET:500M/s  SET:23M/s
 
 package main
 
