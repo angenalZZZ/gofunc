@@ -22,13 +22,14 @@ require (
 	github.com/klauspost/crc32 v1.2.0
 	github.com/klauspost/pgzip v1.2.3
 	github.com/nsqio/go-nsq v1.0.8
-	github.com/panjf2000/ants/v2 v2.3.1
+	github.com/panjf2000/ants/v2 v2.4.1
 	github.com/rs/xid v1.2.1
 	github.com/rs/zerolog v1.18.0
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/tidwall/gjson v1.6.0
 	github.com/tidwall/sjson v1.0.4
+	github.com/valyala/bytebufferpool v1.0.0
 	github.com/valyala/fasthttp v1.9.0
 	github.com/valyala/fasttemplate v1.1.0
 	golang.org/x/crypto v0.0.0-20200320181102-891825fb96df
