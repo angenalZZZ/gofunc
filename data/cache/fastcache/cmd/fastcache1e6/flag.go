@@ -12,10 +12,16 @@ var (
 	flagTimes  = flag.Int("t", 1000000, "total times")
 	flagRemove = flag.Bool("r", true, "delete data files")
 	flagProd   = flag.Bool("prod", false, "run production mode")
-	flagPort   = flag.Int("p", 10000, "the server port")
+	flagPort   = flag.Int("p", 6060, "the server port")
+	flagSvc    = flag.Int("s", 0, "the server port")
 	flagTls    = flag.Bool("tls", false, "connection uses TLS if true, else plain TCP")
 	flagCert   = flag.String("cert", "", "the TLS cert file")
 	flagKey    = flag.String("key", "", "the TLS key file")
+)
+
+const (
+	flagSvcGRPC int = iota
+	flagSvcTCP
 )
 
 func init() {
