@@ -28,3 +28,4 @@ workspace.xml
 # Project-local Web api swagger files
 swagger.zip
 go.sum
+/vendor/
