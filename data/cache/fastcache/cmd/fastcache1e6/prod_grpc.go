@@ -26,7 +26,7 @@ func ProdGRPC() {
 	}
 
 	svr := grpc.NewServer(opts...)
-	RegisterCacheServiceServer(svr, &cacheServiceImpl{})
+	RegisterCacheServiceServer(svr, defaultService)
 	reflection.Register(svr)
 
 	g, err := rpc.NewGraceGrpc(svr, "tcp", fmt.Sprintf("%d", *flagPort), "log.pid", "log.yaml")

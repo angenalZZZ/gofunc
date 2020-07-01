@@ -22,6 +22,7 @@ var (
 const (
 	flagSvcGRPC int = iota
 	flagSvcTCP
+	flagSvcWS
 )
 
 func init() {

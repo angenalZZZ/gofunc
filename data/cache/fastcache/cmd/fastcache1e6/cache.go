@@ -4,6 +4,14 @@ import "context"
 
 type cacheServiceImpl struct{}
 
+var defaultService *cacheServiceImpl
+
+// Handle input and output, processing logic.
+func (c *cacheServiceImpl) Handle(in []byte) (out []byte) {
+	out = in
+	return
+}
+
 func (c *cacheServiceImpl) Write(context.Context, *CacheWriter) (*CacheTtl, error) {
 	return &CacheTtl{Ttl: 0}, nil
 }

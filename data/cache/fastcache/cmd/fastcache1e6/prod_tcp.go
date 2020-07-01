@@ -17,7 +17,7 @@ func (es *netTcpServer) OnInitComplete(srv gnet.Server) (action gnet.Action) {
 
 func (es *netTcpServer) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Action) {
 	// Write synchronously.
-	out = frame
+	out = defaultService.Handle(frame)
 	return
 
 	/*

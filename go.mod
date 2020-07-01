@@ -14,6 +14,9 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/facebookgo/grace v0.0.0-20180706040059-75cf19382434
 	github.com/go-resty/resty/v2 v2.2.0
+	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect
+	github.com/gobwas/pool v0.2.1 // indirect
+	github.com/gobwas/ws v1.0.3 // indirect
 	github.com/golang/protobuf v1.3.2
 	github.com/golang/snappy v0.0.1
 	github.com/gorilla/schema v1.1.0
