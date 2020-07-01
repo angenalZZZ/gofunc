@@ -23,7 +23,7 @@ require (
 	github.com/klauspost/pgzip v1.2.3
 	github.com/nsqio/go-nsq v1.0.8
 	github.com/panjf2000/ants/v2 v2.4.1
-	github.com/panjf2000/gnet v1.2.2 // indirect
+	github.com/panjf2000/gnet v1.2.2
 	github.com/rs/xid v1.2.1
 	github.com/rs/zerolog v1.18.0
 	github.com/smartystreets/goconvey v1.6.4
