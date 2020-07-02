@@ -2,7 +2,7 @@ package limiter
 
 import (
 	"github.com/angenalZZZ/gofunc/http/fast"
-	"github.com/angenalZZZ/gofunc/ratelimit"
+	"github.com/angenalZZZ/gofunc/http/ratelimit"
 	"github.com/valyala/fasthttp"
 	"sync/atomic"
 	"time"

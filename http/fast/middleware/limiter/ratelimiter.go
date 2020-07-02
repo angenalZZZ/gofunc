@@ -10,7 +10,7 @@ import (
 )
 
 // ErrTooManyRequests is returned when too many requests.
-var ErrTooManyRequests = errors.New("Too many requests, please try again later.")
+var ErrTooManyRequests = errors.New("too many requests")
 
 // ErrRateLimitHeader response when any requests.
 type ErrRateLimitHeader struct {
