@@ -2,10 +2,16 @@
 //!go:generate protoc -I ../../../../../rpc/proto --csharp_out=. ../../../../../rpc/proto/cache.proto
 // go get github.com/angenalZZZ/gofunc/data/cache/fastcache/cmd/fastcache1e6
 // go build -ldflags "-s -w" -o A:/test/ .
-// cd A:/test/ && fastcache1e6 -c 2 -d 128 -t 10000000 || fastcache1e6 -prod=true -s=1 -p=6060
+
+// TEST: fastcache1e6 -c 2 -d 128 -t 10000000
 // cache1.benchmark(4CPU+16G+MHD) GET:20Mq/s SET:2Mq/s FLUSH:0.4s
 // cache2.benchmark(8CPU+16G+SSD) GET:20Mq/s SET:2Mq/s FLUSH:0.1s
 // buntdb-benchmark(8CPU+16G+SSD) GET:5Mq/s  SET:230Kq/s
+
+// TCP: fastcache1e6 -prod=true -s=1 -p=6060
+// CSharp.benchmark(4CPU+16G+MHD) GET:60Kq/s SET:60Kq/s
+
+// WS: fastcache1e6 -prod=true -s=2 -p=6060
 
 package main
 
