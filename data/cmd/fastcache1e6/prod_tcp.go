@@ -17,7 +17,7 @@ type netTcpServer struct {
 // OnInitComplete fires when the server is ready for accepting connections.
 // The server parameter has information and various utilities.
 func (es *netTcpServer) OnInitComplete(server net.Server) (action net.Action) {
-	fmt.Printf("server is listening on %s (multi-cores: %t, loops: %d)\n",
+	fmt.Printf("Io2TCP server is listening on %s (multi-cores: %t, loops: %d)\n",
 		server.Addr.String(), server.Multicore, server.NumEventLoop)
 	return
 }
@@ -74,7 +74,7 @@ func (es *netTcpServer) React(frame []byte, _ net.Conn) (out []byte, action net.
 // Tick fires immediately after the server starts and will fire again
 // following the duration specified by the delay return value.
 func (es *netTcpServer) Tick() (delay time.Duration, action net.Action) {
-	fmt.Println("tick, conn count:", es.connCount)
+	fmt.Println("Io2TCP tick event, conn count:", es.connCount)
 	delay = time.Second
 	return
 }
@@ -86,6 +86,6 @@ func ProdTCP() {
 	if err := net.Serve(echo, fmt.Sprintf("tcp://:%d", *flagPort),
 		net.WithMulticore(true),
 		net.WithTicker(true)); err != nil {
-		_ = fmt.Errorf("failed to serve: %v\n", err)
+		_ = fmt.Errorf("Io2TCP failed to serve: %v\n", err)
 	}
 }

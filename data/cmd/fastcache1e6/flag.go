@@ -13,16 +13,10 @@ var (
 	flagRemove = flag.Bool("r", true, "delete data files")
 	flagProd   = flag.Bool("prod", false, "run production mode")
 	flagPort   = flag.Int("p", 6060, "the server port")
-	flagSvc    = flag.Int("s", 0, "the server type (0:gRPC, 1:TCP)")
+	flagSvc    = flag.Int("s", 0, "the server IO transmission mode SHM(SharedMemory)/gRPC/TCP/WS(WebSocket)")
 	flagTls    = flag.Bool("tls", false, "connection uses TLS if true, else plain TCP")
 	flagCert   = flag.String("cert", "", "the TLS cert file")
 	flagKey    = flag.String("key", "", "the TLS key file")
-)
-
-const (
-	flagSvcGRPC int = iota
-	flagSvcTCP
-	flagSvcWS
 )
 
 func init() {
