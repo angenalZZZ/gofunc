@@ -93,6 +93,28 @@ func ToBytes(s string) []byte {
 	return *(*[]byte)(unsafe.Pointer(&bh))
 }
 
+// BytesFromPtr converts a pointer to a byte slice without memory allocation.
+func BytesFromPtr(p uintptr, b []byte, off int64, size int32) int {
+	h := reflect.SliceHeader{}
+	h.Cap = int(size)
+	h.Len = int(size)
+	h.Data = p
+
+	bb := *(*[]byte)(unsafe.Pointer(&h))
+	return copy(b, bb[off:size])
+}
+
+// BytesToPtr converts a byte slice to a pointer without memory allocation.
+func BytesToPtr(b []byte, p uintptr, off int64, size int32) int {
+	h := reflect.SliceHeader{}
+	h.Cap = int(size)
+	h.Len = int(size)
+	h.Data = p
+
+	bb := *(*[]byte)(unsafe.Pointer(&h))
+	return copy(bb[off:], b)
+}
+
 // StringsConvert converts the string slice to a new slice using fn.
 // If fn returns error, exit the conversion and return the error.
 func StringsConvert(a []string, fn func(string) (string, error)) ([]string, error) {
