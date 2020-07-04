@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/angenalZZZ/gofunc/data/shm"
 	"io"
+	"time"
 )
 
 func ProdSHM() {
@@ -25,16 +26,19 @@ func ProdSHM() {
 	}
 	fmt.Printf("Io2SHM server is listening on %s\n", addr)
 	for {
-		buf := make([]byte, 4096)
+		buf := make([]byte, 2)
 		n, err := m.ReadAt(buf, 0)
 		if err != nil && err != io.EOF {
 			_ = fmt.Errorf("Io2SHM failed to Read: %v\n", err)
 			continue
 		}
-		if n == 0 {
+		if n != 2 || buf[0] == 0 && buf[1] == 0 {
+			time.Sleep(time.Nanosecond)
 			continue
 		}
 
+		buf = make([]byte, 4096)
+		n, _ = m.Read(buf)
 		payload := buf[0:n]
 		fmt.Println(payload)
 
