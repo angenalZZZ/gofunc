@@ -93,6 +93,15 @@ func ToBytes(s string) []byte {
 	return *(*[]byte)(unsafe.Pointer(&bh))
 }
 
+// BytesRepeat returns a new byte slice consisting of count copies of b.
+func BytesRepeat(b byte, count int) []byte {
+	nb := make([]byte, count)
+	for i := 0; i < count; i++ {
+		nb[i] = b
+	}
+	return nb
+}
+
 // BytesFromPtr converts a pointer to a byte slice without memory allocation.
 func BytesFromPtr(p uintptr, b []byte, off int64, size int32) int {
 	h := reflect.SliceHeader{}
