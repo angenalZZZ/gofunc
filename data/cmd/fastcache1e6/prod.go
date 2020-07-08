@@ -6,7 +6,7 @@ func Prod() {
 	// Init cache instance
 	defaultService = &cacheServiceImpl{}
 
-	// IO transmission mode SHM(SharedMemory)/gRPC/TCP/WS(WebSocket)
+	// IO transmission mode SHM(SharedMemory)/gRPC/TCP/WS(WebSocket)/NatS
 	switch *flagSvc {
 	case data.Io2SHM:
 		ProdSHM()
@@ -16,5 +16,7 @@ func Prod() {
 		ProdTCP()
 	case data.Io2WS:
 		ProdWS()
+	case data.Io2NatS:
+		ProdNatS()
 	}
 }

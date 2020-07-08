@@ -31,6 +31,7 @@ require (
 	github.com/klauspost/crc32 v1.2.0
 	github.com/klauspost/pgzip v1.2.3
 	github.com/libp2p/go-reuseport v0.0.1
+	github.com/nats-io/nats.go v1.10.0 // indirect
 	github.com/nsqio/go-nsq v1.0.8
 	github.com/panjf2000/ants/v2 v2.4.1
 	github.com/prometheus/client_golang v1.7.1
@@ -44,7 +45,7 @@ require (
 	github.com/valyala/fasthttp v1.9.0
 	github.com/valyala/fasttemplate v1.1.0
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
-	golang.org/x/crypto v0.0.0-20200320181102-891825fb96df
+	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
 	golang.org/x/net v0.0.0-20200222125558-5a598a2470a0
 	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1
 	google.golang.org/grpc v1.21.1
