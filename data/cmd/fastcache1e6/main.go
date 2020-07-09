@@ -13,6 +13,8 @@
 
 // WS: fastcache1e6 -prod=true -s=3 -p=6060
 
+// NatS: fastcache1e6 -prod=true -s=4 -p=4222 -name=cache -token=HGJ766GR767FKJU0
+
 package main
 
 import (

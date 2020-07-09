@@ -43,7 +43,7 @@ func ProdNatS() {
 		_ = fmt.Errorf("Nats failed connect to server: %v\n", err)
 		return
 	}
-
+	fmt.Printf("Nats client connected to %s with token: %s\n", addr, *flagToken)
 	defer func() {
 		// Flush connection to server, returns when all messages have been processed.
 		_ = nc.Flush()
@@ -54,19 +54,22 @@ func ProdNatS() {
 		//nc.Close()
 	}()
 
-	fmt.Printf("Nats client connected to %s and subscribed to %s\n", addr, name)
-	for {
-		// Requests
-		//msg, err := nc.Request("cache.set.123", []byte("456"), time.Second)
-		_, err := nc.Subscribe(name, func(m *nats.Msg) {
-			result := defaultService.Handle(m.Data)
-			if err = nc.Publish(m.Reply, result); err != nil {
-				_ = fmt.Errorf("Nats failed to Write: %v\n", err)
-			}
-		})
-		if err != nil {
-			_ = fmt.Errorf("Nats failed to Read: %v\n", err)
-			return
+	// Requests
+	//msg, err := nc.Request("cache.set.123", []byte("456"), time.Second)
+	// Replies
+	_, err = nc.Subscribe(name, func(m *nats.Msg) {
+		result := defaultService.Handle(m.Data)
+		if err = nc.Publish(m.Reply, result); err != nil {
+			_ = fmt.Errorf("Nats failed to Write: %v\n", err)
 		}
+	})
+	if err != nil {
+		_ = fmt.Errorf("Nats failed to Read: %v\n", err)
+		return
+	} else {
+		fmt.Printf("Nats client subscribed to %s\n", name)
 	}
+
+	// Wait os.Exit
+	<-make(chan struct{})
 }
