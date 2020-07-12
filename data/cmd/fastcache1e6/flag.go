@@ -12,6 +12,7 @@ var (
 	flagTimes  = flag.Int("t", 1000000, "total times")
 	flagRemove = flag.Bool("r", true, "delete data files")
 	flagProd   = flag.Bool("prod", false, "run production mode")
+	flagAddr   = flag.String("a", "", "the server address")
 	flagPort   = flag.Int("p", 6060, "the server port")
 	flagSvc    = flag.Int("s", 0, "the server IO transmission mode SHM(SharedMemory)/gRPC/TCP/WS(WebSocket)/NatS")
 	flagName   = flag.String("name", "cache", "the Cache name")

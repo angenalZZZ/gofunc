@@ -33,6 +33,7 @@ require (
 	github.com/libp2p/go-reuseport v0.0.1
 	github.com/nats-io/nats.go v1.10.0
 	github.com/nsqio/go-nsq v1.0.8
+	github.com/op/go-nanomsg v0.0.0-20160608204431-48d7bb6353de
 	github.com/panjf2000/ants/v2 v2.4.1
 	github.com/prometheus/client_golang v1.7.1
 	github.com/rs/xid v1.2.1
