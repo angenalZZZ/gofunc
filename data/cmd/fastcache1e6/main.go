@@ -8,7 +8,7 @@
 // cache2.benchmark(8CPU+16G+SSD) GET:20Mq/s SET:2Mq/s FLUSH:0.1s
 // buntdb-benchmark(8CPU+16G+SSD) GET:5Mq/s  SET:230Kq/s
 
-// SHM: fastcache1e6 -prod=true -s=0 -a=ipc://cache
+// SHM: fastcache1e6 -prod=true -s=0 -d=1 -a=ipc://cache
 
 // TCP: fastcache1e6 -prod=true -s=2 -p=6060
 // CSharp.benchmark(4CPU+16G+MHD) GET:60Kq/s SET:60Kq/s
