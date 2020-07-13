@@ -55,11 +55,13 @@ func ProdSHM() {
 				}
 				_ = fmt.Errorf("Io2SHM failed to Read: %v\n", err)
 			} else if len(payload) > headSize {
-				fmt.Printf("Io2SHM Recv %q\n", string(payload))
+				if *flagData > 0 {
+					fmt.Printf("Io2SHM Recv %q\n", string(payload))
+				}
 				result := defaultService.Handle(payload)
 				if _, err = rep.Send(result, 0); err != nil {
 					_ = fmt.Errorf("Io2SHM failed to Write: %v\n", err)
-				} else {
+				} else if *flagData > 0 {
 					fmt.Printf("Io2SHM Send %q\n", string(result))
 				}
 			}
