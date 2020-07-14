@@ -20,12 +20,12 @@ type Stats struct {
 
 // Codec represents an instance of a cache store
 type Codec struct {
-	store store.StoreInterface
+	store store.Interface
 	stats *Stats
 }
 
 // New return a new codec instance
-func New(store store.StoreInterface) *Codec {
+func New(store store.Interface) *Codec {
 	return &Codec{
 		store: store,
 		stats: &Stats{},
@@ -99,7 +99,7 @@ func (c *Codec) Clear() error {
 }
 
 // GetStore returns the store associated to this codec
-func (c *Codec) GetStore() store.StoreInterface {
+func (c *Codec) GetStore() store.Interface {
 	return c.store
 }
 

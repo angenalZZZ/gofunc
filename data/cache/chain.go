@@ -3,6 +3,8 @@ package cache
 import (
 	"fmt"
 	"github.com/angenalZZZ/gofunc/data/store"
+	"github.com/angenalZZZ/gofunc/f"
+	"github.com/panjf2000/ants/v2"
 )
 
 const (
@@ -16,18 +18,40 @@ type chainKeyValue struct {
 	storeType *string
 }
 
+type chainKeyValueSetChannel struct {
+	idx     int
+	key     interface{}
+	value   interface{}
+	options *store.Options
+}
+
 // ChainCache represents the configuration needed by a cache aggregator
 type ChainCache struct {
-	caches     []StorageInterface
-	setChannel chan *chainKeyValue
+	caches  []StorageInterface
+	channel chan *chainKeyValue
+	pool    *ants.PoolWithFunc
 }
 
 // NewChain create a new cache aggregator
 func NewChain(caches ...StorageInterface) *ChainCache {
 	chain := &ChainCache{
-		caches:     caches,
-		setChannel: make(chan *chainKeyValue, 10000),
+		caches:  caches,
+		channel: make(chan *chainKeyValue, 10000),
 	}
+
+	chain.pool, _ = ants.NewPoolWithFunc(100000, func(payload interface{}) {
+		if set, ok := payload.(*chainKeyValueSetChannel); ok {
+			_ = chain.caches[set.idx].Set(set.key, set.value, set.options)
+		}
+	}, ants.WithOptions(ants.Options{
+		ExpiryDuration:   ants.DefaultCleanIntervalTime,
+		PreAlloc:         true,
+		Nonblocking:      true,
+		MaxBlockingTasks: 0,
+		PanicHandler: func(err interface{}) {
+			_ = fmt.Errorf(" GoHttpHandle/worker: %s\n %v", f.Now().LocalTimeString(), err)
+		},
+	}))
 
 	go chain.setter()
 
@@ -36,7 +60,7 @@ func NewChain(caches ...StorageInterface) *ChainCache {
 
 // setter sets a value in available caches, until a given cache layer
 func (c *ChainCache) setter() {
-	for item := range c.setChannel {
+	for item := range c.channel {
 		for _, cache := range c.caches {
 			if item.storeType != nil && *item.storeType == cache.GetCodec().GetStore().GetType() {
 				break
@@ -47,33 +71,46 @@ func (c *ChainCache) setter() {
 	}
 }
 
-// Get returns the object stored in cache if it exists
+// Get returns the value stored in cache if it exists
 func (c *ChainCache) Get(key interface{}) (interface{}, error) {
-	var object interface{}
+	var value interface{}
 	var err error
 
 	for _, cache := range c.caches {
 		storeType := cache.GetCodec().GetStore().GetType()
-		object, err = cache.Get(key)
+		value, err = cache.Get(key)
 		if err == nil {
 			// Set the value back until this cache layer
-			c.setChannel <- &chainKeyValue{key, object, &storeType}
-			return object, nil
+			c.channel <- &chainKeyValue{key, value, &storeType}
+			return value, nil
 		}
 
 		_ = fmt.Errorf("Unable to retrieve item from cache with store '%s': %v\n", storeType, err)
 	}
 
-	return object, err
+	return value, err
 }
 
 // Set sets a value in available caches
-func (c *ChainCache) Set(key, object interface{}, options *store.Options) error {
-	for _, cache := range c.caches {
-		err := cache.Set(key, object, options)
-		if err != nil {
-			storeType := cache.GetCodec().GetStore().GetType()
-			return fmt.Errorf("Unable to set item into cache with store '%s': %v", storeType, err)
+func (c *ChainCache) Set(key, value interface{}, options *store.Options) error {
+	for i, cache := range c.caches {
+		if i == 0 && options.Async == false {
+			err := cache.Set(key, value, options)
+			if err != nil {
+				storeType := cache.GetCodec().GetStore().GetType()
+				return fmt.Errorf("unable to set item into cache with store '%s': %v", storeType, err)
+			}
+		} else {
+			err := c.pool.Invoke(&chainKeyValueSetChannel{
+				idx:     i,
+				key:     key,
+				value:   value,
+				options: options,
+			})
+			if err != nil {
+				storeType := cache.GetCodec().GetStore().GetType()
+				return fmt.Errorf("unable to set item into cache with store '%s': %v", storeType, err)
+			}
 		}
 	}
 
@@ -100,10 +137,11 @@ func (c *ChainCache) Invalidate(options store.InvalidateOptions) error {
 
 // Clear resets all cache data
 func (c *ChainCache) Clear() error {
+	c.pool.Release()
 	for _, cache := range c.caches {
 		_ = cache.Clear()
 	}
-
+	c.pool.Reboot()
 	return nil
 }
 

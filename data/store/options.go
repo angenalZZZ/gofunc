@@ -15,6 +15,9 @@ type Options struct {
 
 	// Tags allows to specify associated tags to the current value
 	Tags []string
+
+	// Async pool invoke
+	Async bool
 }
 
 // CostValue returns the allocated memory capacity

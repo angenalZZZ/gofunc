@@ -12,6 +12,6 @@ type CodecInterface interface {
 	Invalidate(options store.InvalidateOptions) error
 	Clear() error
 
-	GetStore() store.StoreInterface
+	GetStore() store.Interface
 	GetStats() *Stats
 }
