@@ -16,8 +16,8 @@
 // WS: fastcache1e6 -prod=true -s=3 -p=6060
 
 // NatS: fastcache1e6 -prod=true -s=4 -p=4222 -name=cache -token=HGJ766GR767FKJU0
-// CSharp(4CPU+16G+MHD).benchmark -type SUITE -count 100000 -size 8 -token HGJ766GR767FKJU0
-// CSharp(4CPU+16G+MHD).benchmark PUB:200K~2Mq/s PUBSUB:150K~1Mq/s REQREP:5K~7Kq/s
+// CSharp(4CPU+16G+MHD).benchmark -type SUITE -url nats://localhost:4222 -token HGJ766GR767FKJU0
+// CSharp(4CPU+16G+MHD).benchmark PUB:200K~4Mq/s PUBSUB:120K~2Mq/s REQREP:5K~7Kq/s
 
 package main
 
