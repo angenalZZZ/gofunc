@@ -18,12 +18,12 @@ type chainKeyValue struct {
 
 // ChainCache represents the configuration needed by a cache aggregator
 type ChainCache struct {
-	caches     []SetterCacheInterface
+	caches     []StorageInterface
 	setChannel chan *chainKeyValue
 }
 
-// NewChain instanciates a new cache aggregator
-func NewChain(caches ...SetterCacheInterface) *ChainCache {
+// NewChain create a new cache aggregator
+func NewChain(caches ...StorageInterface) *ChainCache {
 	chain := &ChainCache{
 		caches:     caches,
 		setChannel: make(chan *chainKeyValue, 10000),
@@ -42,7 +42,7 @@ func (c *ChainCache) setter() {
 				break
 			}
 
-			cache.Set(item.key, item.value, nil)
+			_ = cache.Set(item.key, item.value, nil)
 		}
 	}
 }
@@ -61,7 +61,7 @@ func (c *ChainCache) Get(key interface{}) (interface{}, error) {
 			return object, nil
 		}
 
-		fmt.Errorf("Unable to retrieve item from cache with store '%s': %v\n", storeType, err)
+		_ = fmt.Errorf("Unable to retrieve item from cache with store '%s': %v\n", storeType, err)
 	}
 
 	return object, err
@@ -83,7 +83,7 @@ func (c *ChainCache) Set(key, object interface{}, options *store.Options) error 
 // Delete removes a value from all available caches
 func (c *ChainCache) Delete(key interface{}) error {
 	for _, cache := range c.caches {
-		cache.Delete(key)
+		_ = cache.Delete(key)
 	}
 
 	return nil
@@ -92,7 +92,7 @@ func (c *ChainCache) Delete(key interface{}) error {
 // Invalidate invalidates cache item from given options
 func (c *ChainCache) Invalidate(options store.InvalidateOptions) error {
 	for _, cache := range c.caches {
-		cache.Invalidate(options)
+		_ = cache.Invalidate(options)
 	}
 
 	return nil
@@ -101,14 +101,14 @@ func (c *ChainCache) Invalidate(options store.InvalidateOptions) error {
 // Clear resets all cache data
 func (c *ChainCache) Clear() error {
 	for _, cache := range c.caches {
-		cache.Clear()
+		_ = cache.Clear()
 	}
 
 	return nil
 }
 
-// GetCaches returns all Chaind caches
-func (c *ChainCache) GetCaches() []SetterCacheInterface {
+// GetCaches returns all chain caches
+func (c *ChainCache) GetCaches() []StorageInterface {
 	return c.caches
 }
 

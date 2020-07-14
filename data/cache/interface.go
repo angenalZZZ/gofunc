@@ -5,8 +5,8 @@ import (
 	"github.com/angenalZZZ/gofunc/data/store"
 )
 
-// CacheInterface represents the interface for all caches (aggregates, metric, memory, redis, ...)
-type CacheInterface interface {
+// Interface represents the interface for all caches (aggregates, metric, memory, redis, ...)
+type Interface interface {
 	Get(key interface{}) (interface{}, error)
 	Set(key, object interface{}, options *store.Options) error
 	Delete(key interface{}) error
@@ -15,10 +15,10 @@ type CacheInterface interface {
 	GetType() string
 }
 
-// SetterCacheInterface represents the interface for caches that allows
+// StorageInterface represents the interface for caches that allows
 // storage (for instance: memory, redis, ...)
-type SetterCacheInterface interface {
-	CacheInterface
+type StorageInterface interface {
+	Interface
 
 	GetCodec() codec.CodecInterface
 }

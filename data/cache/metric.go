@@ -13,11 +13,11 @@ const (
 // MetricCache is the struct that specifies metrics available for different caches
 type MetricCache struct {
 	metrics metrics.MetricsInterface
-	cache   CacheInterface
+	cache   Interface
 }
 
 // NewMetric creates a new cache with metrics and a given cache storage
-func NewMetric(metrics metrics.MetricsInterface, cache CacheInterface) *MetricCache {
+func NewMetric(metrics metrics.MetricsInterface, cache Interface) *MetricCache {
 	return &MetricCache{
 		metrics: metrics,
 		cache:   cache,
@@ -54,14 +54,14 @@ func (c *MetricCache) Clear() error {
 }
 
 // Get obtains a value from cache and also records metrics
-func (c *MetricCache) updateMetrics(cache CacheInterface) {
+func (c *MetricCache) updateMetrics(cache Interface) {
 	switch current := cache.(type) {
 	case *ChainCache:
 		for _, cache := range current.GetCaches() {
 			c.updateMetrics(cache)
 		}
 
-	case SetterCacheInterface:
+	case StorageInterface:
 		c.metrics.RecordFromCodec(current.GetCodec())
 	}
 }

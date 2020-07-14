@@ -8,11 +8,11 @@ import (
 
 // Marshaler is the struct that marshal and unmarshal cache values
 type Marshaler struct {
-	cache cache.CacheInterface
+	cache cache.Interface
 }
 
 // New creates a new marshaler that marshals/unmarshals cache values
-func New(cache cache.CacheInterface) *Marshaler {
+func New(cache cache.Interface) *Marshaler {
 	return &Marshaler{
 		cache: cache,
 	}
