@@ -81,8 +81,14 @@ func ToFloat(str string) (float64, error) {
 
 // Bytes converts string to a byte slice without memory allocation.
 // NOTE: panic if modify the member value of the []byte.
-func Bytes(s string) (b []byte) {
-	return *(*[]byte)(unsafe.Pointer(&s))
+func Bytes(s string) []byte {
+	//return *(*[]byte)(unsafe.Pointer(&s))
+	return *(*[]byte)(unsafe.Pointer(
+		&struct {
+			string
+			Cap int
+		}{s, len(s)},
+	))
 }
 
 // ToBytes converts string to a byte slice without memory allocation.
@@ -104,23 +110,15 @@ func BytesRepeat(b byte, count int) []byte {
 
 // BytesFromPtr converts a pointer to a byte slice without memory allocation.
 func BytesFromPtr(p uintptr, b []byte, off int64, size int32) int {
-	h := reflect.SliceHeader{}
-	h.Cap = int(size)
-	h.Len = int(size)
-	h.Data = p
-
-	bb := *(*[]byte)(unsafe.Pointer(&h))
+	bh := reflect.SliceHeader{Data: p, Len: int(size), Cap: int(size)}
+	bb := *(*[]byte)(unsafe.Pointer(&bh))
 	return copy(b, bb[off:size])
 }
 
 // BytesToPtr converts a byte slice to a pointer without memory allocation.
 func BytesToPtr(b []byte, p uintptr, off int64, size int32) int {
-	h := reflect.SliceHeader{}
-	h.Cap = int(size)
-	h.Len = int(size)
-	h.Data = p
-
-	bb := *(*[]byte)(unsafe.Pointer(&h))
+	bh := reflect.SliceHeader{Data: p, Len: int(size), Cap: int(size)}
+	bb := *(*[]byte)(unsafe.Pointer(&bh))
 	return copy(bb[off:], b)
 }
 
