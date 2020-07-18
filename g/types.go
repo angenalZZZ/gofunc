@@ -1,7 +1,10 @@
-package data
+package g
 
 // Map is a shortcut for map[string]interface{}
 type Map map[string]interface{}
+
+// Strings is a string array
+type Strings []string
 
 // IO transmission mode SHM(SharedMemory)/gRPC/TCP/WS(WebSocket)/NatS
 const (

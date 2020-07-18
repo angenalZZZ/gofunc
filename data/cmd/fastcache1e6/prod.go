@@ -1,6 +1,8 @@
 package main
 
-import "github.com/angenalZZZ/gofunc/data"
+import (
+	"github.com/angenalZZZ/gofunc/g"
+)
 
 func Prod() {
 	// Init cache instance
@@ -8,15 +10,15 @@ func Prod() {
 
 	// IO transmission mode SHM(SharedMemory)/gRPC/TCP/WS(WebSocket)/NatS
 	switch *flagSvc {
-	case data.Io2SHM:
+	case g.Io2SHM:
 		ProdSHM()
-	case data.Io2gRPC:
+	case g.Io2gRPC:
 		ProdGRPC()
-	case data.Io2TCP:
+	case g.Io2TCP:
 		ProdTCP()
-	case data.Io2WS:
+	case g.Io2WS:
 		ProdWS()
-	case data.Io2NatS:
+	case g.Io2NatS:
 		ProdNatS()
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/user"
 	"path"
 	"path/filepath"
@@ -84,6 +85,19 @@ func IsFile(path string) bool {
 
 	if fi, err := os.Stat(path); err == nil {
 		return !fi.IsDir()
+	}
+	return false
+}
+
+func IsExeFile(name string) bool {
+	if name == "" {
+		return false
+	}
+
+	if lp, err := exec.LookPath(name); err == nil {
+		if fi, err := os.Stat(lp); err == nil {
+			return !fi.IsDir()
+		}
 	}
 	return false
 }

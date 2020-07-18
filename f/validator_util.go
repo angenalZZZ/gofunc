@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"github.com/angenalZZZ/gofunc/g"
 	json "github.com/json-iterator/go"
 	"html"
 	"io/ioutil"
@@ -378,7 +379,7 @@ func IsFloat(str string) bool {
 }
 
 // IsArray check
-func IsArray(val interface{}) (ok bool) {
+func IsArray(val interface{}) bool {
 	if val == nil {
 		return false
 	}
@@ -387,12 +388,11 @@ func IsArray(val interface{}) (ok bool) {
 	if rv.Kind() == reflect.Ptr {
 		rv = rv.Elem()
 	}
-
 	return rv.Kind() == reflect.Array
 }
 
 // IsSlice check
-func IsSlice(val interface{}) (ok bool) {
+func IsSlice(val interface{}) bool {
 	if val == nil {
 		return false
 	}
@@ -418,19 +418,28 @@ func IsIntSlice(val interface{}) bool {
 }
 
 // IsStrings is string slice check
-func IsStrings(val interface{}) (ok bool) {
+func IsStrings(val interface{}) bool {
 	if val == nil {
 		return false
 	}
 
-	_, ok = val.([]string)
-	return
+	if _, ok := val.([]string); ok {
+		return true
+	}
+	if _, ok := val.(g.Strings); ok {
+		return true
+	}
+	return false
 }
 
 // IsMap check
 func IsMap(val interface{}) (ok bool) {
 	if val == nil {
 		return false
+	}
+
+	if _, ok = val.(g.Map); ok {
+		return true
 	}
 
 	var rv reflect.Value
@@ -445,10 +454,10 @@ func IsMap(val interface{}) (ok bool) {
 	return rv.Kind() == reflect.Map
 }
 
-// IsInt check if the string is an integer. Empty string is valid.
+// IsInt check if the string is an integer. Empty string is not valid.
 func IsInt(str string) bool {
 	if IsNull(str) {
-		return true
+		return false
 	}
 	return rxInt.MatchString(str)
 }
