@@ -1,6 +1,7 @@
 package f
 
 import (
+	"github.com/angenalZZZ/gofunc/g"
 	json "github.com/json-iterator/go"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -140,6 +141,38 @@ func (j Json) IsValid() bool {
 // Exists Check for the existence of a value.
 func (j Json) Exists(path string) bool {
 	return gjson.Get(string(j), path).Exists()
+}
+
+// EncodedJson returns json data.
+func EncodedJson(v interface{}) []byte {
+	if p, err := json.Marshal(v); err != nil {
+		return []byte{}
+	} else {
+		return p
+	}
+}
+
+// EncodedMap returns json data.
+func EncodedMap(v interface{}) []byte {
+	if m1, ok := v.(map[string]interface{}); ok {
+		m := make(map[string]interface{})
+		for k, o := range m1 {
+			if o != nil {
+				m[k] = o
+			}
+		}
+		return EncodedJson(m)
+	}
+	if m2, ok := v.(g.Map); ok {
+		m, m1 := make(map[string]interface{}), map[string]interface{}(m2)
+		for k, o := range m1 {
+			if o != nil {
+				m[k] = o
+			}
+		}
+		return EncodedJson(m)
+	}
+	return EncodedJson(v)
 }
 
 // EncodeJson encode a object v to json data.

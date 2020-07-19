@@ -56,3 +56,20 @@ func TestJson_Get(t *testing.T) {
 	json = json.Deletes("friends.1")
 	t.Log(json.GetMany("friends")[0])
 }
+
+func TestJson_Jwt(t *testing.T) {
+	o := struct {
+		Token string
+		Exp   int
+	}{"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1OTUyMTA2MjUsImlzcyI6bnVsbCwic3ViIjpudWxsLCJhdWQiOm51bGwsIm5iZiI6bnVsbCwiaWF0IjpudWxsLCJqdGkiOm51bGx9.EN_oGUhyzGlbRJkMr0YpAj-6Uoxqkq2FT1lJYFno1iU", 3600}
+	if p, err := f.EncodeJson(o); err != nil {
+		t.Fatal(err)
+	} else {
+		t.Logf("%s\n", p)
+	}
+	if m, ok := f.IsJwtToken(o.Token); ok {
+		t.Logf("%s\n", f.EncodedMap(m))
+	} else {
+		t.Fatal("Error", 401)
+	}
+}

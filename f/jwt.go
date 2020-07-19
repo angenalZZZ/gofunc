@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	json "github.com/json-iterator/go"
 	"strings"
 )
 
@@ -15,8 +16,8 @@ var (
 	jwtDefaultClaims = []string{"iss", "sub", "aud", "exp", "nbf", "iat", "jti"}
 	jwtEncodeString  = base64.RawURLEncoding.EncodeToString
 	jwtDecodeString  = base64.RawURLEncoding.DecodeString
-	jwtEncodeJson    = EncodeJson
-	jwtDecodeJson    = DecodeJson
+	jwtEncodeJson    = json.Marshal
+	jwtDecodeJson    = json.Unmarshal
 )
 
 // NewJwtToken returns a token (string) and error.
