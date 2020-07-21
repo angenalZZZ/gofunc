@@ -12,6 +12,7 @@ import (
 type RedisClientInterface interface {
 	Get(key string) *redis.StringCmd
 	Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd
+	//TTL(key string) int64
 	Del(keys ...string) *redis.IntCmd
 	FlushAll() *redis.StatusCmd
 }

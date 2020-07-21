@@ -18,6 +18,7 @@ const (
 type RistrettoClientInterface interface {
 	Get(key interface{}) (interface{}, bool)
 	SetWithTTL(key, value interface{}, cost int64, ttl time.Duration) bool
+	//TTL(key string) int64
 	Del(key interface{})
 	Clear()
 }

@@ -46,18 +46,13 @@ func NewChain(caches ...StorageInterface) *ChainCache {
 			_ = fmt.Errorf(" GoHttpHandle/worker: %s\n %v", f.Now().LocalTimeString(), err)
 		},
 	}))
-
 	return chain
 }
 
 // Get returns the value stored in cache if it exists
-func (c *ChainCache) Get(key interface{}) (interface{}, error) {
-	var value interface{}
-	var err error
-
+func (c *ChainCache) Get(key interface{}) (value interface{}, err error) {
 	for i, cache := range c.caches {
 		value, err = cache.Get(key)
-		storeType := cache.GetCodec().GetStore().GetType()
 		if err == nil {
 			// Set the value back until this cache layer
 			if err = c.pool.Invoke(&chainKeyValue{
@@ -66,15 +61,14 @@ func (c *ChainCache) Get(key interface{}) (interface{}, error) {
 				value:   value,
 				options: nil, // TODO: get store Options
 			}); err != nil {
-				_ = fmt.Errorf("unable to set item into cache with store '%s': %v", storeType, err)
+				_ = fmt.Errorf("unable to set item into cache with store '%s': %v", cache.GetCodec().GetStore().GetType(), err)
 			}
 			return value, nil
 		}
 
-		_ = fmt.Errorf("Unable to retrieve item from cache with store '%s': %v\n", storeType, err)
+		_ = fmt.Errorf("Unable to retrieve item from cache with store '%s': %v\n", cache.GetCodec().GetStore().GetType(), err)
 	}
-
-	return value, err
+	return
 }
 
 // Set sets a value in available caches
@@ -98,7 +92,6 @@ func (c *ChainCache) Set(key, value interface{}, options *store.Options) error {
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -107,7 +100,6 @@ func (c *ChainCache) Delete(key interface{}) error {
 	for _, cache := range c.caches {
 		_ = cache.Delete(key)
 	}
-
 	return nil
 }
 
@@ -116,7 +108,6 @@ func (c *ChainCache) Invalidate(options store.InvalidateOptions) error {
 	for _, cache := range c.caches {
 		_ = cache.Invalidate(options)
 	}
-
 	return nil
 }
 

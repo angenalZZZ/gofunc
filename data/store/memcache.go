@@ -13,6 +13,7 @@ import (
 type MemcacheClientInterface interface {
 	Get(key string) (item *memcache.Item, err error)
 	Set(item *memcache.Item) error
+	//TTL(key string) int64
 	Delete(item string) error
 	FlushAll() error
 }

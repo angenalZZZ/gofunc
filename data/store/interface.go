@@ -4,6 +4,7 @@ package store
 type Interface interface {
 	Get(key interface{}) (interface{}, error)
 	Set(key interface{}, value interface{}, options *Options) error
+	TTL(key string) int64
 	Delete(key interface{}) error
 	Invalidate(options InvalidateOptions) error
 	Clear() error

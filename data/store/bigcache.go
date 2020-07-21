@@ -11,6 +11,7 @@ import (
 type BigcacheClientInterface interface {
 	Get(key string) ([]byte, error)
 	Set(key string, entry []byte) error
+	//TTL(key string) int64
 	Delete(key string) error
 	Reset() error
 }
