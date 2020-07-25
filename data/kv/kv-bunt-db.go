@@ -86,6 +86,15 @@ func (db *BuntDB) Get(k string) (string, error) {
 	return db.get(k)
 }
 
+// GetBytes fetches the value of the specified k.
+func (db *BuntDB) GetBytes(k []byte) ([]byte, error) {
+	data, err := db.get(f.String(k))
+	if err != nil {
+		return []byte{}, err
+	}
+	return f.Bytes(data), nil
+}
+
 // MGet fetch multiple values of the specified keys.
 func (db *BuntDB) MGet(keys []string) (data []string) {
 	data = make([]string, 0, len(keys))

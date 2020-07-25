@@ -10,6 +10,7 @@ type KV interface {
 	SetBytes([]byte, []byte, int) error
 	MSet(map[string]string) error
 	Get(string) (string, error)
+	GetBytes([]byte) ([]byte, error)
 	MGet([]string) []string
 	TTL(string) int64
 	Del([]string) error

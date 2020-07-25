@@ -126,21 +126,24 @@ func (db *BadgerDB) MSet(data map[string]string) error {
 
 // Get fetches the value of the specified k.
 func (db *BadgerDB) Get(k string) (string, error) {
-	var data string
+	data, err := db.GetBytes(f.Bytes(k))
+	if err != nil {
+		return "", err
+	}
+	return f.String(data), nil
+}
 
+// GetBytes fetches the value of the specified k.
+func (db *BadgerDB) GetBytes(k []byte) ([]byte, error) {
+	var data []byte
 	err := db.DB.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(f.Bytes(k))
+		item, err := txn.Get(k)
 		if err != nil {
 			return err
 		}
 
-		val, err := item.ValueCopy(nil)
-		if err != nil {
-			return err
-		}
-
-		data = f.String(val)
-		return nil
+		data, err = item.ValueCopy(nil)
+		return err
 	})
 	return data, err
 }
