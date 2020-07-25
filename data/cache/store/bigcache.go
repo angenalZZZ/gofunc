@@ -42,25 +42,25 @@ func NewBigcache(client BigcacheClientInterface, options *Options) *BigcacheStor
 }
 
 // Get returns data stored from a given key
-func (s *BigcacheStore) Get(key interface{}) (interface{}, error) {
-	item, err := s.client.Get(key.(string))
+func (s *BigcacheStore) Get(key string) (interface{}, error) {
+	item, err := s.client.Get(key)
 	if err != nil {
 		return nil, err
 	}
 	if item == nil {
-		return nil, errors.New("Unable to retrieve data from bigcache")
+		return nil, errors.New("unable to retrieve data from bigcache")
 	}
 
 	return item, err
 }
 
 // Set defines data in Redis for given key identifier
-func (s *BigcacheStore) Set(key interface{}, value interface{}, options *Options) error {
+func (s *BigcacheStore) Set(key string, value interface{}, options *Options) error {
 	if options == nil {
 		options = s.options
 	}
 
-	err := s.client.Set(key.(string), value.([]byte))
+	err := s.client.Set(key, value.([]byte))
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func (s *BigcacheStore) Set(key interface{}, value interface{}, options *Options
 	return nil
 }
 
-func (s *BigcacheStore) setTags(key interface{}, tags []string) {
+func (s *BigcacheStore) setTags(key string, tags []string) {
 	for _, tag := range tags {
 		var tagKey = fmt.Sprintf(BigcacheTagPattern, tag)
 		var cacheKeys = []string{}
@@ -85,14 +85,14 @@ func (s *BigcacheStore) setTags(key interface{}, tags []string) {
 
 		var alreadyInserted = false
 		for _, cacheKey := range cacheKeys {
-			if cacheKey == key.(string) {
+			if cacheKey == key {
 				alreadyInserted = true
 				break
 			}
 		}
 
 		if !alreadyInserted {
-			cacheKeys = append(cacheKeys, key.(string))
+			cacheKeys = append(cacheKeys, key)
 		}
 
 		s.Set(tagKey, []byte(strings.Join(cacheKeys, ",")), &Options{
@@ -102,8 +102,8 @@ func (s *BigcacheStore) setTags(key interface{}, tags []string) {
 }
 
 // Delete removes data from Redis for given key identifier
-func (s *BigcacheStore) Delete(key interface{}) error {
-	return s.client.Delete(key.(string))
+func (s *BigcacheStore) Delete(key string) error {
+	return s.client.Delete(key)
 }
 
 // Invalidate invalidates some cache data in Redis for given options

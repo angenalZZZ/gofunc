@@ -2,7 +2,7 @@ package cache
 
 import (
 	"fmt"
-	"github.com/angenalZZZ/gofunc/data/store"
+	"github.com/angenalZZZ/gofunc/data/cache/store"
 )
 
 const (
@@ -11,7 +11,7 @@ const (
 )
 
 type loadableKeyValue struct {
-	key   interface{}
+	key   string
 	value interface{}
 }
 
@@ -44,7 +44,7 @@ func (c *LoadableCache) setter() {
 }
 
 // Get returns the object stored in cache if it exists
-func (c *LoadableCache) Get(key interface{}) (object interface{}, err error) {
+func (c *LoadableCache) Get(key string) (object interface{}, err error) {
 	object, err = c.cache.Get(key)
 	if err == nil {
 		return
@@ -63,12 +63,17 @@ func (c *LoadableCache) Get(key interface{}) (object interface{}, err error) {
 }
 
 // Set sets a value in available caches
-func (c *LoadableCache) Set(key, object interface{}, options *store.Options) error {
+func (c *LoadableCache) Set(key string, object interface{}, options *store.Options) error {
 	return c.cache.Set(key, object, options)
 }
 
+// TTL returns an expiration time
+func (c *LoadableCache) TTL(key string) int64 {
+	return c.cache.TTL(key)
+}
+
 // Delete removes a value from cache
-func (c *LoadableCache) Delete(key interface{}) error {
+func (c *LoadableCache) Delete(key string) error {
 	return c.cache.Delete(key)
 }
 

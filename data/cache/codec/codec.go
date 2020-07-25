@@ -1,7 +1,7 @@
 package codec
 
 import (
-	"github.com/angenalZZZ/gofunc/data/store"
+	"github.com/angenalZZZ/gofunc/data/cache/store"
 )
 
 // Stats allows to returns some statistics of codec usage
@@ -33,7 +33,7 @@ func New(store store.Interface) *Codec {
 }
 
 // Get allows to retrieve the value from a given key identifier
-func (c *Codec) Get(key interface{}) (interface{}, error) {
+func (c *Codec) Get(key string) (interface{}, error) {
 	val, err := c.store.Get(key)
 
 	if err == nil {
@@ -45,9 +45,8 @@ func (c *Codec) Get(key interface{}) (interface{}, error) {
 	return val, err
 }
 
-// Set allows to set a value for a given key identifier and also allows to specify
-// an expiration time
-func (c *Codec) Set(key interface{}, value interface{}, options *store.Options) error {
+// Set allows to set a value for a given key identifier and also allows to specify an expiration time
+func (c *Codec) Set(key string, value interface{}, options *store.Options) error {
 	err := c.store.Set(key, value, options)
 
 	if err == nil {
@@ -59,8 +58,13 @@ func (c *Codec) Set(key interface{}, value interface{}, options *store.Options) 
 	return err
 }
 
+// TTL returns an expiration time
+func (c *Codec) TTL(key string) int64 {
+	return c.store.TTL(key)
+}
+
 // Delete allows to remove a value for a given key identifier
-func (c *Codec) Delete(key interface{}) error {
+func (c *Codec) Delete(key string) error {
 	err := c.store.Delete(key)
 
 	if err == nil {

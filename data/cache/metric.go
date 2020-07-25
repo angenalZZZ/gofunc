@@ -1,8 +1,8 @@
 package cache
 
 import (
-	"github.com/angenalZZZ/gofunc/data/metrics"
-	"github.com/angenalZZZ/gofunc/data/store"
+	"github.com/angenalZZZ/gofunc/data/cache/metrics"
+	"github.com/angenalZZZ/gofunc/data/cache/store"
 )
 
 const (
@@ -25,7 +25,7 @@ func NewMetric(metrics metrics.MetricsInterface, cache Interface) *MetricCache {
 }
 
 // Get obtains a value from cache and also records metrics
-func (c *MetricCache) Get(key interface{}) (interface{}, error) {
+func (c *MetricCache) Get(key string) (interface{}, error) {
 	result, err := c.cache.Get(key)
 
 	c.updateMetrics(c.cache)
@@ -34,12 +34,17 @@ func (c *MetricCache) Get(key interface{}) (interface{}, error) {
 }
 
 // Set sets a value from the cache
-func (c *MetricCache) Set(key, object interface{}, options *store.Options) error {
+func (c *MetricCache) Set(key string, object interface{}, options *store.Options) error {
 	return c.cache.Set(key, object, options)
 }
 
+// TTL returns an expiration time
+func (c *MetricCache) TTL(key string) int64 {
+	return c.cache.TTL(key)
+}
+
 // Delete removes a value from the cache
-func (c *MetricCache) Delete(key interface{}) error {
+func (c *MetricCache) Delete(key string) error {
 	return c.cache.Delete(key)
 }
 

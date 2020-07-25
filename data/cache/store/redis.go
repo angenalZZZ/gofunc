@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	redis "github.com/go-redis/redis/v7"
+	"github.com/go-redis/redis/v7"
 )
 
 // RedisClientInterface represents a go-redis/redis client
@@ -43,17 +43,17 @@ func NewRedis(client RedisClientInterface, options *Options) *RedisStore {
 }
 
 // Get returns data stored from a given key
-func (s *RedisStore) Get(key interface{}) (interface{}, error) {
-	return s.client.Get(key.(string)).Result()
+func (s *RedisStore) Get(key string) (interface{}, error) {
+	return s.client.Get(key).Result()
 }
 
 // Set defines data in Redis for given key identifier
-func (s *RedisStore) Set(key interface{}, value interface{}, options *Options) error {
+func (s *RedisStore) Set(key string, value interface{}, options *Options) error {
 	if options == nil {
 		options = s.options
 	}
 
-	err := s.client.Set(key.(string), value, options.ExpirationValue()).Err()
+	err := s.client.Set(key, value, options.ExpirationValue()).Err()
 	if err != nil {
 		return err
 	}
@@ -65,21 +65,21 @@ func (s *RedisStore) Set(key interface{}, value interface{}, options *Options) e
 	return nil
 }
 
-func (s *RedisStore) setTags(key interface{}, tags []string) {
+func (s *RedisStore) setTags(key string, tags []string) {
 	for _, tag := range tags {
 		var tagKey = fmt.Sprintf(RedisTagPattern, tag)
 		var cacheKeys = s.getCacheKeysForTag(tagKey)
 
 		var alreadyInserted = false
 		for _, cacheKey := range cacheKeys {
-			if cacheKey == key.(string) {
+			if cacheKey == key {
 				alreadyInserted = true
 				break
 			}
 		}
 
 		if !alreadyInserted {
-			cacheKeys = append(cacheKeys, key.(string))
+			cacheKeys = append(cacheKeys, key)
 		}
 
 		s.Set(tagKey, strings.Join(cacheKeys, ","), &Options{
@@ -99,8 +99,8 @@ func (s *RedisStore) getCacheKeysForTag(tagKey string) []string {
 }
 
 // Delete removes data from Redis for given key identifier
-func (s *RedisStore) Delete(key interface{}) error {
-	_, err := s.client.Del(key.(string)).Result()
+func (s *RedisStore) Delete(key string) error {
+	_, err := s.client.Del(key).Result()
 	return err
 }
 

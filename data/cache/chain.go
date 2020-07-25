@@ -2,7 +2,7 @@ package cache
 
 import (
 	"fmt"
-	"github.com/angenalZZZ/gofunc/data/store"
+	"github.com/angenalZZZ/gofunc/data/cache/store"
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/panjf2000/ants/v2"
 )
@@ -50,7 +50,7 @@ func NewChain(caches ...StorageInterface) *ChainCache {
 }
 
 // Get returns the value stored in cache if it exists
-func (c *ChainCache) Get(key interface{}) (value interface{}, err error) {
+func (c *ChainCache) Get(key string) (value interface{}, err error) {
 	for i, cache := range c.caches {
 		value, err = cache.Get(key)
 		if err == nil {
@@ -72,7 +72,7 @@ func (c *ChainCache) Get(key interface{}) (value interface{}, err error) {
 }
 
 // Set sets a value in available caches
-func (c *ChainCache) Set(key, value interface{}, options *store.Options) error {
+func (c *ChainCache) Set(key string, value interface{}, options *store.Options) error {
 	for i, cache := range c.caches {
 		if i == 0 && options.Async == false {
 			err := cache.Set(key, value, options)
@@ -96,11 +96,16 @@ func (c *ChainCache) Set(key, value interface{}, options *store.Options) error {
 }
 
 // Delete removes a value from all available caches
-func (c *ChainCache) Delete(key interface{}) error {
+func (c *ChainCache) Delete(key string) error {
 	for _, cache := range c.caches {
 		_ = cache.Delete(key)
 	}
 	return nil
+}
+
+// TTL returns an expiration time
+func (c *ChainCache) TTL(key string) int64 {
+	return c.caches[len(c.caches)-1].TTL(key)
 }
 
 // Invalidate invalidates cache item from given options

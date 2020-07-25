@@ -2,7 +2,7 @@ package marshaler
 
 import (
 	"github.com/angenalZZZ/gofunc/data/cache"
-	"github.com/angenalZZZ/gofunc/data/store"
+	"github.com/angenalZZZ/gofunc/data/cache/store"
 	"github.com/vmihailenco/msgpack"
 )
 
@@ -19,7 +19,7 @@ func New(cache cache.Interface) *Marshaler {
 }
 
 // Get obtains a value from cache and unmarshal value with given object
-func (c *Marshaler) Get(key interface{}, returnObj interface{}) (interface{}, error) {
+func (c *Marshaler) Get(key string, returnObj interface{}) (interface{}, error) {
 	result, err := c.cache.Get(key)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func (c *Marshaler) Get(key interface{}, returnObj interface{}) (interface{}, er
 }
 
 // Set sets a value in cache by marshaling value
-func (c *Marshaler) Set(key, object interface{}, options *store.Options) error {
+func (c *Marshaler) Set(key string, object interface{}, options *store.Options) error {
 	bytes, err := msgpack.Marshal(object)
 	if err != nil {
 		return err
@@ -50,8 +50,13 @@ func (c *Marshaler) Set(key, object interface{}, options *store.Options) error {
 	return c.cache.Set(key, bytes, options)
 }
 
+// TTL returns an expiration time
+func (c *Marshaler) TTL(key string) int64 {
+	return c.cache.TTL(key)
+}
+
 // Delete removes a value from the cache
-func (c *Marshaler) Delete(key interface{}) error {
+func (c *Marshaler) Delete(key string) error {
 	return c.cache.Delete(key)
 }
 

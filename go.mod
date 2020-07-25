@@ -11,7 +11,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.0.2
 	github.com/cespare/xxhash/v2 v2.1.1
 	github.com/dgraph-io/badger/v2 v2.0.3
-	github.com/dgraph-io/ristretto v0.0.2
+	github.com/dgraph-io/ristretto v0.0.2-0.20200115201040-8f368f2f2ab3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c // indirect
 	github.com/facebookgo/freeport v0.0.0-20150612182905-d4adf43b75b9 // indirect
@@ -31,6 +31,7 @@ require (
 	github.com/klauspost/crc32 v1.2.0
 	github.com/klauspost/pgzip v1.2.3
 	github.com/libp2p/go-reuseport v0.0.1
+	github.com/nats-io/nats-server/v2 v2.1.7 // indirect
 	github.com/nats-io/nats.go v1.10.0
 	github.com/nsqio/go-nsq v1.0.8
 	github.com/op/go-nanomsg v0.0.0-20160608204431-48d7bb6353de

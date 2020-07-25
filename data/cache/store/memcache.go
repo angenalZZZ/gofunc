@@ -44,26 +44,26 @@ func NewMemcache(client MemcacheClientInterface, options *Options) *MemcacheStor
 }
 
 // Get returns data stored from a given key
-func (s *MemcacheStore) Get(key interface{}) (interface{}, error) {
-	item, err := s.client.Get(key.(string))
+func (s *MemcacheStore) Get(key string) (interface{}, error) {
+	item, err := s.client.Get(key)
 	if err != nil {
 		return nil, err
 	}
 	if item == nil {
-		return nil, errors.New("Unable to retrieve data from memcache")
+		return nil, errors.New("unable to retrieve data from memcache")
 	}
 
 	return item.Value, err
 }
 
 // Set defines data in Memcache for given key identifier
-func (s *MemcacheStore) Set(key interface{}, value interface{}, options *Options) error {
+func (s *MemcacheStore) Set(key string, value interface{}, options *Options) error {
 	if options == nil {
 		options = s.options
 	}
 
 	item := &memcache.Item{
-		Key:        key.(string),
+		Key:        key,
 		Value:      value.([]byte),
 		Expiration: int32(options.ExpirationValue().Seconds()),
 	}
@@ -80,7 +80,7 @@ func (s *MemcacheStore) Set(key interface{}, value interface{}, options *Options
 	return nil
 }
 
-func (s *MemcacheStore) setTags(key interface{}, tags []string) {
+func (s *MemcacheStore) setTags(key string, tags []string) {
 	for _, tag := range tags {
 		var tagKey = fmt.Sprintf(MemcacheTagPattern, tag)
 		var cacheKeys = []string{}
@@ -93,14 +93,14 @@ func (s *MemcacheStore) setTags(key interface{}, tags []string) {
 
 		var alreadyInserted = false
 		for _, cacheKey := range cacheKeys {
-			if cacheKey == key.(string) {
+			if cacheKey == key {
 				alreadyInserted = true
 				break
 			}
 		}
 
 		if !alreadyInserted {
-			cacheKeys = append(cacheKeys, key.(string))
+			cacheKeys = append(cacheKeys, key)
 		}
 
 		s.Set(tagKey, []byte(strings.Join(cacheKeys, ",")), &Options{
@@ -110,8 +110,8 @@ func (s *MemcacheStore) setTags(key interface{}, tags []string) {
 }
 
 // Delete removes data from Memcache for given key identifier
-func (s *MemcacheStore) Delete(key interface{}) error {
-	return s.client.Delete(key.(string))
+func (s *MemcacheStore) Delete(key string) error {
+	return s.client.Delete(key)
 }
 
 // Invalidate invalidates some cache data in Redis for given options

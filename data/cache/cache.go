@@ -1,9 +1,8 @@
 package cache
 
 import (
-	"github.com/angenalZZZ/gofunc/data/codec"
-	"github.com/angenalZZZ/gofunc/data/store"
-	"github.com/angenalZZZ/gofunc/f"
+	"github.com/angenalZZZ/gofunc/data/cache/codec"
+	"github.com/angenalZZZ/gofunc/data/cache/store"
 )
 
 const (
@@ -24,21 +23,23 @@ func New(store store.Interface) *Cache {
 }
 
 // Get returns the object stored in cache if it exists
-func (c *Cache) Get(key interface{}) (interface{}, error) {
-	cacheKey := c.getMD5Key(key)
-	return c.codec.Get(cacheKey)
+func (c *Cache) Get(key string) (interface{}, error) {
+	return c.codec.Get(key)
 }
 
 // Set populates the cache item using the given key
-func (c *Cache) Set(key, object interface{}, options *store.Options) error {
-	cacheKey := c.getMD5Key(key)
-	return c.codec.Set(cacheKey, object, options)
+func (c *Cache) Set(key string, object interface{}, options *store.Options) error {
+	return c.codec.Set(key, object, options)
+}
+
+// TTL returns an expiration time
+func (c *Cache) TTL(key string) int64 {
+	return c.codec.TTL(key)
 }
 
 // Delete removes the cache item using the given key
-func (c *Cache) Delete(key interface{}) error {
-	cacheKey := c.getMD5Key(key)
-	return c.codec.Delete(cacheKey)
+func (c *Cache) Delete(key string) error {
+	return c.codec.Delete(key)
 }
 
 // Invalidate invalidates cache item from given options
@@ -59,9 +60,4 @@ func (c *Cache) GetCodec() codec.CodecInterface {
 // GetType returns the cache type
 func (c *Cache) GetType() string {
 	return DefaultType
-}
-
-// getMD5Key returns the cache key for the given key object by computing a checksum of key struct
-func (c *Cache) getMD5Key(key interface{}) string {
-	return f.CryptoMD5Key(key)
 }
