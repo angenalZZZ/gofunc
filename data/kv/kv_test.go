@@ -30,15 +30,21 @@ func TestBadgerDBWriter(t *testing.T) {
 	}()
 
 	t.Parallel()
-	const items = 1e6
-	for i := 0; i < items; i++ {
-		if err := db.SetBytes(random.AlphaNumberBytes(32), random.AlphaNumberBytes(128), 0); err != nil {
+	for i := 0; i < 1e6; i++ {
+		k, v1 := random.AlphaNumberBytes(32), random.AlphaNumberBytes(128)
+		if err := db.SetBytes(k, v1, 0); err != nil {
 			t.Error(err)
+			continue
+		}
+		if v2, err := db.GetBytes(k); err != nil {
+			t.Error(err)
+		} else if len(v1) != len(v2) {
+			t.FailNow()
 		}
 	}
 }
 
-func TestBadgerDB(t *testing.T) {
+func TestBadgerDBReader(t *testing.T) {
 	var db KV = new(BadgerDB)
 	err := db.Open(testDBPath)
 	if err != nil {

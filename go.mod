@@ -40,7 +40,7 @@ require (
 	github.com/rs/zerolog v1.18.0
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/syndtr/goleveldb v1.0.0
-	github.com/tidwall/buntdb v1.1.2 // indirect
+	github.com/tidwall/buntdb v1.1.2
 	github.com/tidwall/gjson v1.6.0
 	github.com/tidwall/sjson v1.0.4
 	github.com/valyala/bytebufferpool v1.0.0
