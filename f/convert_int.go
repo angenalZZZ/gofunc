@@ -2,8 +2,8 @@ package f
 
 import (
 	"encoding/binary"
+	"github.com/angenalZZZ/gofunc/g"
 	"github.com/cespare/xxhash/v2"
-	"github.com/dgraph-io/ristretto/z"
 	"github.com/klauspost/crc32"
 	"reflect"
 	"strconv"
@@ -33,12 +33,12 @@ var Int64SumString = xxhash.Sum64String
 // Int64MemHash is the hash function used by go map,
 // it utilizes available hardware instructions(behaves as aes.hash if aes instruction is available).
 // NOTE: The hash seed changes for every process. So, this cannot be used as a persistent hash.
-var Int64MemHash = z.MemHash
+var Int64MemHash = g.MemHash
 
 // Int64MemHashString is the hash function used by go map,
 // it utilizes available hardware instructions (behaves as aes.hash if aes instruction is available).
 // NOTE: The hash seed changes for every process. So, this cannot be used as a persistent hash.
-var Int64MemHashString = z.MemHashString
+var Int64MemHashString = g.MemHashString
 
 var Uint16Bytes = binary.BigEndian.Uint16
 var Uint32Bytes = binary.BigEndian.Uint32

@@ -1,15 +1,15 @@
 package random
 
-import "github.com/dgraph-io/ristretto/z"
+import "github.com/angenalZZZ/gofunc/g"
 
-var Int = z.FastRand
+var Int = g.FastRand
 
 func Int8() uint8 {
-	return uint8(z.FastRand() % (1 << 8))
+	return uint8(g.FastRand() % (1 << 8))
 }
 
 func Int16() uint16 {
-	return uint16(z.FastRand() % (1 << 16))
+	return uint16(g.FastRand() % (1 << 16))
 }
 
 func Max(val1, val2 uint32) uint32 {
@@ -21,5 +21,5 @@ func Max(val1, val2 uint32) uint32 {
 		val1, val2 = val2, val1
 	}
 
-	return val1 + z.FastRand()%(val2-val1)
+	return val1 + g.FastRand()%(val2-val1)
 }
