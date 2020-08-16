@@ -9,15 +9,6 @@ import (
 	"github.com/bradfitz/gomemcache/memcache"
 )
 
-// MemcacheClientInterface represents a bradfitz/gomemcache client
-type MemcacheClientInterface interface {
-	Get(key string) (item *memcache.Item, err error)
-	Set(item *memcache.Item) error
-	//TTL(key string) int64
-	Delete(item string) error
-	FlushAll() error
-}
-
 const (
 	// MemcacheType represents the storage type as a string value
 	MemcacheType = "memcache"
@@ -27,12 +18,13 @@ const (
 
 // MemcacheStore is a store for Memcache
 type MemcacheStore struct {
-	client  MemcacheClientInterface
+	// MemcacheClientInterface represents a bradfitz/gomemcache client
+	client  *memcache.Client
 	options *Options
 }
 
 // NewMemcache creates a new store to Memcache instance(s)
-func NewMemcache(client MemcacheClientInterface, options *Options) *MemcacheStore {
+func NewMemcache(client *memcache.Client, options *Options) *MemcacheStore {
 	if options == nil {
 		options = &Options{}
 	}
@@ -54,6 +46,19 @@ func (s *MemcacheStore) Get(key string) (interface{}, error) {
 	}
 
 	return item.Value, err
+}
+
+// TTL returns a expiration time
+func (s *MemcacheStore) TTL(key string) (time.Duration, error) {
+	item, err := s.client.Get(key)
+	if err != nil {
+		return 0, err
+	}
+	if item == nil {
+		return 0, errors.New("unable to retrieve data from memcache")
+	}
+
+	return time.Second * time.Duration(item.Expiration), err
 }
 
 // Set defines data in Memcache for given key identifier

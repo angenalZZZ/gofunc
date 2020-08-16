@@ -4,6 +4,7 @@ import (
 	"github.com/angenalZZZ/gofunc/data/cache"
 	"github.com/angenalZZZ/gofunc/data/cache/store"
 	"github.com/vmihailenco/msgpack"
+	"time"
 )
 
 // Marshaler is the struct that marshal and unmarshal cache values
@@ -51,7 +52,7 @@ func (c *Marshaler) Set(key string, object interface{}, options *store.Options) 
 }
 
 // TTL returns an expiration time
-func (c *Marshaler) TTL(key string) int64 {
+func (c *Marshaler) TTL(key string) (time.Duration, error) {
 	return c.cache.TTL(key)
 }
 

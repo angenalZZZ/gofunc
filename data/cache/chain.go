@@ -5,6 +5,7 @@ import (
 	"github.com/angenalZZZ/gofunc/data/cache/store"
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/panjf2000/ants/v2"
+	"time"
 )
 
 const (
@@ -15,7 +16,7 @@ const (
 // chainKeyValue transport in the channel
 type chainKeyValue struct {
 	idx     int
-	key     interface{}
+	key     string
 	value   interface{}
 	options *store.Options
 }
@@ -55,18 +56,28 @@ func (c *ChainCache) Get(key string) (value interface{}, err error) {
 		value, err = cache.Get(key)
 		if err == nil {
 			// Set the value back until this cache layer
-			if err = c.pool.Invoke(&chainKeyValue{
-				idx:     i,
-				key:     key,
-				value:   value,
-				options: nil, // TODO: get store Options
-			}); err != nil {
-				_ = fmt.Errorf("unable to set item into cache with store '%s': %v", cache.GetCodec().GetStore().GetType(), err)
+			if i == 0 {
+				return value, nil
+			}
+			option, err := cache.TTL(key)
+			if err != nil {
+				return value, nil
+			}
+			for ; i >= 0; i-- {
+				if err = c.pool.Invoke(&chainKeyValue{
+					idx:   i,
+					key:   key,
+					value: value,
+					options: &store.Options{
+						Expiration: option,
+					},
+				}); err != nil {
+					_ = fmt.Errorf("unable to set item into cache with store '%s': %v", cache.GetCodec().GetStore().GetType(), err)
+					continue
+				}
 			}
 			return value, nil
 		}
-
-		_ = fmt.Errorf("Unable to retrieve item from cache with store '%s': %v\n", cache.GetCodec().GetStore().GetType(), err)
 	}
 	return
 }
@@ -104,7 +115,7 @@ func (c *ChainCache) Delete(key string) error {
 }
 
 // TTL returns an expiration time
-func (c *ChainCache) TTL(key string) int64 {
+func (c *ChainCache) TTL(key string) (time.Duration, error) {
 	return c.caches[len(c.caches)-1].TTL(key)
 }
 

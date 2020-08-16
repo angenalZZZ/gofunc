@@ -2,6 +2,7 @@ package codec
 
 import (
 	"github.com/angenalZZZ/gofunc/data/cache/store"
+	"time"
 )
 
 // Stats allows to returns some statistics of codec usage
@@ -59,7 +60,7 @@ func (c *Codec) Set(key string, value interface{}, options *store.Options) error
 }
 
 // TTL returns an expiration time
-func (c *Codec) TTL(key string) int64 {
+func (c *Codec) TTL(key string) (time.Duration, error) {
 	return c.store.TTL(key)
 }
 

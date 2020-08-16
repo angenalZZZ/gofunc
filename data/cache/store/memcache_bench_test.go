@@ -24,7 +24,7 @@ func BenchmarkMemcacheSet(b *testing.B) {
 				key := fmt.Sprintf("test-%d", n)
 				value := []byte(fmt.Sprintf("value-%d", n))
 
-				store.Set(key, value, &Options{
+				_ = store.Set(key, value, &Options{
 					Tags: []string{fmt.Sprintf("tag-%d", n)},
 				})
 			}
@@ -43,7 +43,7 @@ func BenchmarkMemcacheGet(b *testing.B) {
 	key := "test"
 	value := []byte("value")
 
-	store.Set(key, value, nil)
+	_ = store.Set(key, value, nil)
 
 	for k := 0.; k <= 10; k++ {
 		n := int(math.Pow(2, k))

@@ -8,15 +8,6 @@ import (
 	"github.com/go-redis/redis/v7"
 )
 
-// RedisClientInterface represents a go-redis/redis client
-type RedisClientInterface interface {
-	Get(key string) *redis.StringCmd
-	Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd
-	//TTL(key string) int64
-	Del(keys ...string) *redis.IntCmd
-	FlushAll() *redis.StatusCmd
-}
-
 const (
 	// RedisType represents the storage type as a string value
 	RedisType = "redis"
@@ -26,12 +17,13 @@ const (
 
 // RedisStore is a store for Redis
 type RedisStore struct {
-	client  RedisClientInterface
+	// RedisClientInterface represents a go-redis/redis client
+	client  *redis.Client
 	options *Options
 }
 
 // NewRedis creates a new store to Redis instance(s)
-func NewRedis(client RedisClientInterface, options *Options) *RedisStore {
+func NewRedis(client *redis.Client, options *Options) *RedisStore {
 	if options == nil {
 		options = &Options{}
 	}
@@ -45,6 +37,11 @@ func NewRedis(client RedisClientInterface, options *Options) *RedisStore {
 // Get returns data stored from a given key
 func (s *RedisStore) Get(key string) (interface{}, error) {
 	return s.client.Get(key).Result()
+}
+
+// TTL returns a expiration time
+func (s *RedisStore) TTL(key string) (time.Duration, error) {
+	return s.client.TTL(key).Result()
 }
 
 // Set defines data in Redis for given key identifier
@@ -82,14 +79,14 @@ func (s *RedisStore) setTags(key string, tags []string) {
 			cacheKeys = append(cacheKeys, key)
 		}
 
-		s.Set(tagKey, strings.Join(cacheKeys, ","), &Options{
+		_ = s.Set(tagKey, strings.Join(cacheKeys, ","), &Options{
 			Expiration: 720 * time.Hour,
 		})
 	}
 }
 
 func (s *RedisStore) getCacheKeysForTag(tagKey string) []string {
-	var cacheKeys = []string{}
+	var cacheKeys []string
 	if result, err := s.Get(tagKey); err == nil && result != "" {
 		if str, ok := result.(string); ok {
 			cacheKeys = strings.Split(str, ",")
@@ -112,10 +109,10 @@ func (s *RedisStore) Invalidate(options InvalidateOptions) error {
 			var cacheKeys = s.getCacheKeysForTag(tagKey)
 
 			for _, cacheKey := range cacheKeys {
-				s.Delete(cacheKey)
+				_ = s.Delete(cacheKey)
 			}
 
-			s.Delete(tagKey)
+			_ = s.Delete(tagKey)
 		}
 	}
 

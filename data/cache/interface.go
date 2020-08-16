@@ -3,13 +3,14 @@ package cache
 import (
 	"github.com/angenalZZZ/gofunc/data/cache/codec"
 	"github.com/angenalZZZ/gofunc/data/cache/store"
+	"time"
 )
 
 // Interface represents the interface for all caches (aggregates, metric, memory, redis, ...)
 type Interface interface {
 	Get(key string) (interface{}, error)
 	Set(key string, object interface{}, options *store.Options) error
-	TTL(key string) int64
+	TTL(key string) (time.Duration, error)
 	Delete(key string) error
 	Invalidate(options store.InvalidateOptions) error
 	Clear() error

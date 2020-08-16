@@ -3,6 +3,7 @@ package cache
 import (
 	"github.com/angenalZZZ/gofunc/data/cache/codec"
 	"github.com/angenalZZZ/gofunc/data/cache/store"
+	"time"
 )
 
 const (
@@ -33,7 +34,7 @@ func (c *Cache) Set(key string, object interface{}, options *store.Options) erro
 }
 
 // TTL returns an expiration time
-func (c *Cache) TTL(key string) int64 {
+func (c *Cache) TTL(key string) (time.Duration, error) {
 	return c.codec.TTL(key)
 }
 

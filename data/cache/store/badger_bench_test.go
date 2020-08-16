@@ -4,14 +4,10 @@ import (
 	"fmt"
 	"math"
 	"testing"
-	"time"
-
-	"github.com/allegro/bigcache"
 )
 
-func BenchmarkBigcacheSet(b *testing.B) {
-	client, _ := bigcache.NewBigCache(bigcache.DefaultConfig(5 * time.Minute))
-	store := NewBigcache(client, nil)
+func BenchmarkBadgerSet(b *testing.B) {
+	store := NewBadger(nil)
 
 	for k := 0.; k <= 10; k++ {
 		n := int(math.Pow(2, k))
@@ -20,7 +16,7 @@ func BenchmarkBigcacheSet(b *testing.B) {
 				key := fmt.Sprintf("test-%d", n)
 				value := []byte(fmt.Sprintf("value-%d", n))
 
-				store.Set(key, value, &Options{
+				_ = store.Set(key, value, &Options{
 					Tags: []string{fmt.Sprintf("tag-%d", n)},
 				})
 			}
@@ -28,14 +24,13 @@ func BenchmarkBigcacheSet(b *testing.B) {
 	}
 }
 
-func BenchmarkBigcacheGet(b *testing.B) {
-	client, _ := bigcache.NewBigCache(bigcache.DefaultConfig(5 * time.Minute))
-	store := NewBigcache(client, nil)
+func BenchmarkBadgerGet(b *testing.B) {
+	store := NewBadger(nil)
 
 	key := "test"
 	value := []byte("value")
 
-	store.Set(key, value, nil)
+	_ = store.Set(key, value, nil)
 
 	for k := 0.; k <= 10; k++ {
 		n := int(math.Pow(2, k))
