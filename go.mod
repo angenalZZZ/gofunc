@@ -5,7 +5,6 @@ go 1.13
 require (
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/PuerkitoBio/goquery v1.5.1
-	github.com/allegro/bigcache v1.2.1
 	github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b
 	github.com/caddyserver/certmagic v0.10.11
 	github.com/cenkalti/backoff/v4 v4.0.2
