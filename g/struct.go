@@ -14,8 +14,10 @@ type Struct struct {
 	TagName string
 }
 
-// NewStruct returns a new *Struct with the struct s. It panics if the s's kind is
-// not struct.
+// NewStruct returns a new *Struct with the struct s. It panics if the s's kind is not struct.
+// Add/Remove tags tool[vscode-go] https://github.com/golang/vscode-go
+// the cli command https://github.com/fatih/gomodifytags
+// $ gomodifytags -file models/demo.go -struct Server -add-tags json,xml,struct
 func NewStruct(s interface{}) *Struct {
 	return &Struct{
 		raw:     s,
