@@ -47,8 +47,8 @@ func ExampleContextOnInterrupt() {
 	<-ctx.Done()
 
 	// Stop the server
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
 	if err := s.Shutdown(shutdownCtx); err != nil {
 		log.Fatal(err)
 	}
