@@ -3,6 +3,7 @@ module github.com/angenalZZZ/gofunc
 go 1.13
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/PuerkitoBio/goquery v1.5.1
 	github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b
@@ -24,6 +25,8 @@ require (
 	github.com/golang/protobuf v1.4.2
 	github.com/golang/snappy v0.0.1
 	github.com/gorilla/schema v1.1.0
+	github.com/jinzhu/gorm v1.9.16
+	github.com/jinzhu/now v1.1.1 // indirect
 	github.com/json-iterator/go v1.1.10
 	github.com/klauspost/compress v1.8.2
 	github.com/klauspost/crc32 v1.2.0
@@ -38,6 +41,7 @@ require (
 	github.com/rs/xid v1.2.1
 	github.com/rs/zerolog v1.18.0
 	github.com/smartystreets/goconvey v1.6.4
+	github.com/stretchr/testify v1.4.0
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/tidwall/buntdb v1.1.2
 	github.com/tidwall/gjson v1.6.0
@@ -47,7 +51,7 @@ require (
 	github.com/valyala/fasttemplate v1.1.0
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
-	golang.org/x/net v0.0.0-20200222125558-5a598a2470a0
+	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1
 	google.golang.org/grpc v1.21.1
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect

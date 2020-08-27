@@ -2,11 +2,12 @@ package f
 
 import (
 	"reflect"
+	"sort"
 	"strings"
 )
 
 // MapKeys get all keys of the given map.
-func MapKeys(mp interface{}) (keys []string) {
+func MapKeys(mp interface{}, sorted ...bool) (keys []string) {
 	rftVal := reflect.ValueOf(mp)
 	if rftVal.Type().Kind() == reflect.Ptr {
 		rftVal = rftVal.Elem()
@@ -19,7 +20,20 @@ func MapKeys(mp interface{}) (keys []string) {
 	for _, key := range rftVal.MapKeys() {
 		keys = append(keys, key.String())
 	}
+
+	if len(sorted) > 0 && sorted[0] {
+		sort.Strings(keys)
+	}
 	return
+}
+
+// MapKeySorted Enable map keys to be retrieved in same order when iterating.
+func MapKeySorted(mp map[string]interface{}) (keys []string) {
+	for key := range mp {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 // MapValues get all values from the given map.

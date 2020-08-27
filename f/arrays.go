@@ -56,3 +56,28 @@ func Count(array []interface{}, iterator ConditionIterator) int {
 	}
 	return count
 }
+
+// SplitObjects Separate objects into several size.
+func SplitObjects(array []interface{}, size int) [][]interface{} {
+	var chunkSet [][]interface{}
+	var chunk []interface{}
+
+	for len(array) > size {
+		chunk, array = array[:size], array[size:]
+		chunkSet = append(chunkSet, chunk)
+	}
+	if len(array) > 0 {
+		chunkSet = append(chunkSet, array[:])
+	}
+	return chunkSet
+}
+
+// StringsContains Check if string value is contained in slice.
+func StringsContains(s []string, sub string) bool {
+	for _, v := range s {
+		if v == sub {
+			return true
+		}
+	}
+	return false
+}
