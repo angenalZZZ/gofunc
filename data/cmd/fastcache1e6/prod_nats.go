@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/nats-io/nats.go"
+	"os"
+	"runtime"
 )
 
 func ProdNatS() {
@@ -41,12 +43,10 @@ func ProdNatS() {
 
 	if nc, err = nats.Connect(addr, ops...); err != nil {
 		_ = fmt.Errorf("Nats failed connect to server: %v\n", err)
-		return
+		os.Exit(1)
 	}
 	fmt.Printf("Nats client connected to %s with token: %s\n", addr, *flagToken)
 	defer func() {
-		// Flush connection to server, returns when all messages have been processed.
-		_ = nc.Flush()
 		// Drain connection (Preferred for responders)
 		// Close() not needed if this is called.
 		_ = nc.Drain()
@@ -55,21 +55,27 @@ func ProdNatS() {
 	}()
 
 	// Requests
-	//msg, err := nc.Request("cache.set.123", []byte("456"), time.Second)
+	// msg, err := nc.Request("cache.set.123", []byte("456"), time.Second)
 	// Replies
 	_, err = nc.Subscribe(name, func(m *nats.Msg) {
 		result := defaultService.Handle(m.Data)
-		if err = nc.Publish(m.Reply, result); err != nil {
+		if err = m.Respond(result); err != nil {
 			_ = fmt.Errorf("Nats failed to Write: %v\n", err)
 		}
+		//if err = nc.Publish(m.Reply, result); err != nil {
+		//	_ = fmt.Errorf("Nats failed to Write: %v\n", err)
+		//}
 	})
 	if err != nil {
 		_ = fmt.Errorf("Nats failed to Read: %v\n", err)
-		return
-	} else {
-		fmt.Printf("Nats client subscribed to %s\n", name)
+		os.Exit(1)
 	}
 
+	fmt.Printf("Nats client subscribed to %s\n", name)
+
+	// Flush connection to server, returns when all messages have been processed.
+	_ = nc.Flush()
+
 	// Wait os.Exit
-	<-make(chan struct{})
+	runtime.Goexit()
 }
