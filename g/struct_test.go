@@ -2,6 +2,7 @@ package g_test
 
 import (
 	"fmt"
+	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/g"
 	"reflect"
 	"testing"
@@ -66,18 +67,8 @@ func TestMap(t *testing.T) {
 		t.Errorf("Map should return a map of len 3, got: %d", len(a))
 	}
 
-	inMap := func(val interface{}) bool {
-		for _, v := range a {
-			if reflect.DeepEqual(v, val) {
-				return true
-			}
-		}
-
-		return false
-	}
-
 	for _, val := range []interface{}{"a-value", 2, true} {
-		if !inMap(val) {
+		if !f.MapValuesContains(a, val) {
 			t.Errorf("Map should have the value %v", val)
 		}
 	}
@@ -97,17 +88,8 @@ func TestMap_Tag(t *testing.T) {
 
 	a := g.Maps(T)
 
-	inMap := func(key interface{}) bool {
-		for k := range a {
-			if reflect.DeepEqual(k, key) {
-				return true
-			}
-		}
-		return false
-	}
-
 	for _, key := range []string{"x", "y", "z"} {
-		if !inMap(key) {
+		if !f.MapKeysContains(a, key) {
 			t.Errorf("Map should have the key %v", key)
 		}
 	}

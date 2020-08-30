@@ -27,6 +27,16 @@ func MapKeys(mp interface{}, sorted ...bool) (keys []string) {
 	return
 }
 
+// MapKeysContains map keys contains key.
+func MapKeysContains(mp map[string]interface{}, key string) bool {
+	for k := range mp {
+		if k == key {
+			return true
+		}
+	}
+	return false
+}
+
 // MapKeySorted Enable map keys to be retrieved in same order when iterating.
 func MapKeySorted(mp map[string]interface{}) (keys []string) {
 	for key := range mp {
@@ -52,6 +62,16 @@ func MapValues(mp interface{}) (values []interface{}) {
 		values = append(values, rftVal.MapIndex(key).Interface())
 	}
 	return
+}
+
+// MapValuesContains map values contains value.
+func MapValuesContains(mp map[string]interface{}, val interface{}) bool {
+	for _, v := range mp {
+		if reflect.DeepEqual(v, val) {
+			return true
+		}
+	}
+	return false
 }
 
 // MapValue get value from a map[string]interface{}. eg "top" "top.sub"
