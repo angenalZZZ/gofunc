@@ -3,6 +3,7 @@ package nats
 import (
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/nats-io/nats.go"
+	"log"
 	"syscall"
 )
 
@@ -28,13 +29,20 @@ func (sub *Subscriber) Run() {
 	defer func() {
 		if err := recover(); err != nil {
 			Log.Error().Msgf("[nats] run error\t>\t%s", err)
-			_ = sub.Conn.Drain()
+			if err = sub.Conn.Drain(); err != nil {
+				log.Fatal(err)
+			}
 		}
 	}()
 
 	// Async Subscriber
 	s, err := sub.Conn.Subscribe(sub.Subj, sub.Hand)
 	SubscribeErrorHandle(s, true, err)
+	if err != nil {
+		panic(err)
+	}
+
+	// Set pending limits
 	SubscribeLimitHandle(s, 10000000, 1048576)
 
 	// Flush connection to server, returns when all messages have been processed.
@@ -42,7 +50,7 @@ func (sub *Subscriber) Run() {
 
 	// Pass the signals you want to end your application.
 	death := f.NewDeath(syscall.SIGINT, syscall.SIGTERM)
-	// When you want to block for shutdown signals
+	// When you want to block for shutdown signals.
 	death.WaitForDeathWithFunc(func() {
 		// Drain connection (Preferred for responders), Close() not needed if this is called.
 		_ = sub.Conn.Drain()
