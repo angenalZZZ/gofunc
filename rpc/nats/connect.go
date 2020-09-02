@@ -41,10 +41,12 @@ func New(name, flagAddr, flagCred, flagToken string, flagCert, flagKey string) (
 	}
 
 	ops = append(ops,
-		nats.MaxReconnects(120),
+		nats.MaxReconnects(1200),
+		nats.PingInterval(time.Minute),
 		nats.ReconnectWait(2*time.Second),
+		nats.ReconnectBufSize(104857600), // 100Mb size of messages kept while busy reconnecting.
 		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
-			Log.Error().Msgf("[nats] disconnected due to: %s, will attempt reconnects for 1m", err)
+			Log.Error().Msgf("[nats] disconnected due to: %s, will attempt reconnects for 10 minutes", err)
 		}),
 		nats.ReconnectHandler(func(nc *nats.Conn) {
 			Log.Error().Msgf("[nats] reconnected %q", nc.ConnectedUrl())
@@ -76,7 +78,7 @@ func SubscribeLimitHandle(sub *nats.Subscription, msgLimit, bytesLimitOfMsg int)
 	if deliveredNum, err := sub.Delivered(); err != nil {
 		Log.Error().Msgf("[nats] get number of delivered messages error\t>\t%s", err)
 	} else {
-		Log.Info().Msgf("[nats] get number of delivered messages: %d \n", deliveredNum)
+		Log.Info().Msgf("[nats] get number of delivered messages: %d", deliveredNum)
 	}
 
 	// Dropped returns the number of known dropped messages for this subscription.
@@ -89,14 +91,14 @@ func SubscribeLimitHandle(sub *nats.Subscription, msgLimit, bytesLimitOfMsg int)
 
 func SubscribeErrorHandle(sub *nats.Subscription, async bool, err error) {
 	if err != nil {
-		Log.Error().Msgf("[nats] failed listening on %q\n %s", sub.Subject, err)
+		Log.Error().Msgf("[nats] failed listening on %q\t>\t%s", sub.Subject, err)
 	} else {
-		a, v := "async", "valid"
+		a, v := "async", "available"
 		if async == false {
 			a = "sync"
 		}
 		if sub.IsValid() == false {
-			v = "not valid"
+			v = "invalid"
 		}
 		Log.Info().Msgf("[nats] succeeded listening on %s subject %q", v, sub.Subject)
 		Log.Info().Msgf("[nats] %s waiting to receive message...", a)
