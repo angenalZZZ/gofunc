@@ -138,7 +138,7 @@ func (sub *SubscriberFastCache) init() {
 		since1 := s[0]
 		index, _ := strconv.ParseInt(s[1], 10, 0)
 		count, _ := strconv.ParseInt(s[2], 10, 0)
-		if index == 0 || count == 0 {
+		if count == 0 {
 			continue
 		}
 
@@ -150,7 +150,7 @@ func (sub *SubscriberFastCache) init() {
 				if x == CacheBulkSize || i+1 == c {
 					x = 0
 					// bulk handle data
-					if sub.Hand != nil && sub.Hand(data) != nil {
+					if sub.Hand != nil && sub.Hand(data) != nil && i > 1 {
 						// rollback data
 						index = int64(i)
 						clearCache(cache, 0, index)
