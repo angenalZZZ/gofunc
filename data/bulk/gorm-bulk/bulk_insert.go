@@ -19,11 +19,14 @@ import (
 // and exceeds the limit of prepared statement. Larger size normally leads to better performance, in most cases 2000 to 3000 is reasonable.
 //
 // [excludeColumns] is column names to exclude from insert.
-func BulkInsert(db *gorm.DB, objects []interface{}, chunkSize int, excludeColumns ...string) error {
+func BulkInsert(db *gorm.DB, objects []interface{}, chunkSize int, interval time.Duration, excludeColumns ...string) error {
 	// Split records with specified size not to exceed Database parameter limit
 	for _, objSet := range f.SplitObjects(objects, chunkSize) {
 		if err := insertObjSet(db, objSet, excludeColumns...); err != nil {
 			return err
+		}
+		if interval > 0 {
+			time.Sleep(interval)
 		}
 	}
 	return nil
