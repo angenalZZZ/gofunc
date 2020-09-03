@@ -28,7 +28,7 @@ func New(name, flagAddr, flagCred, flagToken string, flagCert, flagKey string) (
 	}
 
 	// If the server requires client certificate
-	// E.g. /certs/client-cert.pem  /certs/client-key.pem
+	// E.g. /certs/client-cert.pem  /certs/client-Index.pem
 	if flagCert != "" && flagKey != "" {
 		cert := nats.ClientCert(flagCert, flagKey)
 		ops = append(ops, cert)
