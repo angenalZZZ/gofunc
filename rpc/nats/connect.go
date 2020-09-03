@@ -100,7 +100,7 @@ func SubscribeErrorHandle(sub *nats.Subscription, async bool, err error) {
 		if sub.IsValid() == false {
 			v = "invalid"
 		}
-		Log.Info().Msgf("[nats] succeeded listening on %s subject: %q", v, sub.Subject)
-		Log.Info().Msgf("[nats] start %s waiting to receive message on %q", a, sub.Subject)
+		Log.Info().Msgf("[nats] successful listening on %s subject: %q", v, sub.Subject)
+		Log.Info().Msgf("[nats] start %s waiting to receive messages on %q", a, sub.Subject)
 	}
 }

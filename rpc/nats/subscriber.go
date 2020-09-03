@@ -5,7 +5,6 @@ import (
 	"github.com/nats-io/nats.go"
 	"log"
 	"syscall"
-	"time"
 )
 
 type Subscriber struct {
@@ -25,13 +24,15 @@ func NewSubscriber(nc *nats.Conn, subject string, msgHandler nats.MsgHandler) *S
 }
 
 // Run runtime to end your application.
-func (sub *Subscriber) Run(duration ...time.Duration) {
+func (sub *Subscriber) Run(waitFunc ...func()) {
+	hasWait := len(waitFunc) > 0
+
 	// Handle panic
 	defer func() {
 		if err := recover(); err != nil {
 			Log.Error().Msgf("[nats] run error\t>\t%s", err)
 			log.Panic(err)
-		} else if len(duration) > 0 {
+		} else if hasWait {
 			// Drain connection (Preferred for responders), Close() not needed if this is called.
 			if err = sub.Conn.Drain(); err != nil {
 				log.Fatal(err)
@@ -52,8 +53,8 @@ func (sub *Subscriber) Run(duration ...time.Duration) {
 	// Flush connection to server, returns when all messages have been processed.
 	FlushAndCheckLastError(sub.Conn)
 
-	if len(duration) > 0 {
-		time.Sleep(duration[0])
+	if hasWait {
+		waitFunc[0]()
 		return
 	}
 
