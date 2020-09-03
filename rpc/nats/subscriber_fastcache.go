@@ -135,6 +135,7 @@ func (sub *SubscriberFastCache) init() {
 			continue
 		}
 
+		since1 := s[0]
 		index, _ := strconv.ParseInt(s[1], 10, 0)
 		count, _ := strconv.ParseInt(s[2], 10, 0)
 		if index == 0 || count == 0 {
@@ -153,8 +154,7 @@ func (sub *SubscriberFastCache) init() {
 						// rollback data
 						index = int64(i)
 						clearCache(cache, 0, index)
-						since1 := f.TimeFrom(time.Now(), true)
-						dirname1, filename1 := sub.Dirnames(since1, i, c), sub.Filenames(since1, i, c)
+						dirname1, filename1 := sub.Dirnames2(since1, i, c), sub.Filenames2(since1, i, c)
 						saveFastCache(cache, cacheDir, dirname1, filename1)
 						_ = os.Remove(oldFile)
 						_ = os.RemoveAll(filePath)
@@ -174,7 +174,11 @@ func (sub *SubscriberFastCache) Dirname() string {
 }
 
 func (sub *SubscriberFastCache) Dirnames(since *f.TimeStamp, index, count uint64) string {
-	return fmt.Sprintf("%s.%d.%d", since.LocalTimeStampString(true), index, count)
+	return sub.Dirnames2(since.LocalTimeStampString(true), index, count)
+}
+
+func (sub *SubscriberFastCache) Dirnames2(since string, index, count uint64) string {
+	return fmt.Sprintf("%s.%d.%d", since, index, count)
 }
 
 func (sub *SubscriberFastCache) Filename() string {
@@ -182,7 +186,11 @@ func (sub *SubscriberFastCache) Filename() string {
 }
 
 func (sub *SubscriberFastCache) Filenames(since *f.TimeStamp, index, count uint64) string {
-	return fmt.Sprintf("%s.%d.%d.json", since.LocalTimeStampString(true), index, count)
+	return sub.Filenames2(since.LocalTimeStampString(true), index, count)
+}
+
+func (sub *SubscriberFastCache) Filenames2(since string, index, count uint64) string {
+	return fmt.Sprintf("%s.%d.%d.json", since, index, count)
 }
 
 func (sub *SubscriberFastCache) Save(cacheDir string) {
