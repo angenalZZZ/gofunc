@@ -63,7 +63,7 @@ func New(name, flagAddr, flagCred, flagToken string, flagCert, flagKey string) (
 // Flush connection to server, returns when all messages have been processed.
 func FlushAndCheckLastError(nc *nats.Conn) {
 	if err := nc.Flush(); err != nil {
-		Log.Error().Msgf("[nats] flush messages error\t>\t%s", err)
+		Log.Error().Msgf("[nats] flush messages\t>\t%s", err)
 	} else if err = nc.LastError(); err != nil {
 		Log.Error().Msgf("[nats] after flush and get last error\t>\t%s", err)
 	}
@@ -71,21 +71,21 @@ func FlushAndCheckLastError(nc *nats.Conn) {
 
 func SubscribeLimitHandle(sub *nats.Subscription, msgLimit, bytesLimitOfMsg int) {
 	if err := sub.SetPendingLimits(msgLimit, msgLimit*bytesLimitOfMsg); err != nil {
-		Log.Error().Msgf("[nats] set pending limits error\t>\t%s", err)
+		Log.Error().Msgf("[nats] set pending limits\t>\t%s", err)
 	}
 
 	// Delivered returns the number of delivered messages for this subscription.
 	if deliveredNum, err := sub.Delivered(); err != nil {
-		Log.Error().Msgf("[nats] get number of delivered messages error\t>\t%s", err)
+		Log.Error().Msgf("[nats] number of messages delivered\t>\t%s", err)
 	} else {
-		Log.Info().Msgf("[nats] get number of delivered messages: %d", deliveredNum)
+		Log.Info().Msgf("[nats] number of messages delivered: %d", deliveredNum)
 	}
 
 	// Dropped returns the number of known dropped messages for this subscription.
 	if droppedNum, err := sub.Dropped(); err != nil {
-		Log.Error().Msgf("[nats] get number of dropped messages error\t>\t%s", err)
+		Log.Error().Msgf("[nats] number of messages dropped\t>\t%s", err)
 	} else {
-		Log.Info().Msgf("[nats] get number of dropped messages: %d", droppedNum)
+		Log.Info().Msgf("[nats] number of messages dropped: %d", droppedNum)
 	}
 }
 
@@ -100,7 +100,7 @@ func SubscribeErrorHandle(sub *nats.Subscription, async bool, err error) {
 		if sub.IsValid() == false {
 			v = "invalid"
 		}
-		Log.Info().Msgf("[nats] succeeded listening on %s subject %q", v, sub.Subject)
-		Log.Info().Msgf("[nats] %s waiting to receive message...", a)
+		Log.Info().Msgf("[nats] succeeded listening on %s subject: %q", v, sub.Subject)
+		Log.Info().Msgf("[nats] start %s waiting to receive message on %q", a, sub.Subject)
 	}
 }

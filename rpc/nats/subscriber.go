@@ -5,6 +5,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"log"
 	"syscall"
+	"time"
 )
 
 type Subscriber struct {
@@ -13,7 +14,7 @@ type Subscriber struct {
 	Subj string
 }
 
-// NewSubscriber create a subscriber.
+// NewSubscriber Create a subscriber for Client Connect.
 func NewSubscriber(nc *nats.Conn, subject string, msgHandler nats.MsgHandler) *Subscriber {
 	sub := &Subscriber{
 		Conn: nc,
@@ -24,11 +25,14 @@ func NewSubscriber(nc *nats.Conn, subject string, msgHandler nats.MsgHandler) *S
 }
 
 // Run runtime to end your application.
-func (sub *Subscriber) Run() {
+func (sub *Subscriber) Run(duration ...time.Duration) {
 	// Handle panic
 	defer func() {
 		if err := recover(); err != nil {
 			Log.Error().Msgf("[nats] run error\t>\t%s", err)
+			log.Panic(err)
+		} else if len(duration) > 0 {
+			// Drain connection (Preferred for responders), Close() not needed if this is called.
 			if err = sub.Conn.Drain(); err != nil {
 				log.Fatal(err)
 			}
@@ -48,11 +52,18 @@ func (sub *Subscriber) Run() {
 	// Flush connection to server, returns when all messages have been processed.
 	FlushAndCheckLastError(sub.Conn)
 
+	if len(duration) > 0 {
+		time.Sleep(duration[0])
+		return
+	}
+
 	// Pass the signals you want to end your application.
 	death := f.NewDeath(syscall.SIGINT, syscall.SIGTERM)
 	// When you want to block for shutdown signals.
 	death.WaitForDeathWithFunc(func() {
 		// Drain connection (Preferred for responders), Close() not needed if this is called.
-		_ = sub.Conn.Drain()
+		if err = sub.Conn.Drain(); err != nil {
+			log.Fatal(err)
+		}
 	})
 }
