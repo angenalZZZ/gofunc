@@ -134,6 +134,10 @@ func (sub *SubscriberFastCache) init() {
 
 		dirname := strings.ReplaceAll(jsonFile, ".json", "")
 		filePath := filepath.Join(dir, dirname)
+		if f.PathExists(filePath) == false {
+			continue
+		}
+
 		cache, err := fastcache.LoadFromFile(filePath)
 		s := strings.Split(dirname, ".")
 		if err != nil || len(s) != 3 {
