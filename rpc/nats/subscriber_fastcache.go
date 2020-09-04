@@ -90,7 +90,8 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	// init handle old data
 	go sub.init()
 
-	// Todo handle new data
+	// run handle new data
+	go sub.hand()
 
 	if hasWait {
 		waitFunc[0]()
@@ -114,6 +115,8 @@ func (sub *SubscriberFastCache) init() {
 	if sub.Hand == nil {
 		return
 	}
+
+	Log.Info().Msg("[nats] init handle old data\t>\tstart")
 
 	oldFiles, _ := filepath.Glob(filepath.Join(sub.CacheDir, "*"))
 	sort.Strings(oldFiles)
@@ -147,7 +150,7 @@ func (sub *SubscriberFastCache) init() {
 		since := s[0]
 		index, _ := strconv.ParseInt(s[1], 10, 0)
 		count, _ := strconv.ParseInt(s[2], 10, 0)
-		indexZero := uint64(index) + 1
+		indexZero, countRecords := uint64(index)+1, 0
 
 		var data [CacheBulkSize][]byte
 		for i, c, dataIndex := indexZero, uint64(count), 0; i <= c; i++ {
@@ -157,7 +160,7 @@ func (sub *SubscriberFastCache) init() {
 					// bulk handle
 					if err := sub.Hand(data); err != nil {
 						// rollback
-						Log.Error().Msgf("[nats] init handle old data\t>\t%s", err)
+						Log.Error().Msgf("[nats] init handle old data\t>\t%s\t>\t%s", dirname, err)
 						if i > indexZero {
 							clearCache(cache, int64(indexZero)-1, int64(i))
 							dirname1, filename1 := sub.dirnames(since, i-1, c), sub.filenames(since, i-1, c)
@@ -170,6 +173,7 @@ func (sub *SubscriberFastCache) init() {
 						sub.init()
 						return
 					}
+					countRecords += len(data)
 					// reset data
 					dataIndex = 0
 					data = [CacheBulkSize][]byte{}
@@ -179,6 +183,17 @@ func (sub *SubscriberFastCache) init() {
 
 		_ = os.Remove(oldFile)
 		_ = os.RemoveAll(filePath)
+
+		Log.Info().Msgf("[nats] init handle old data\t>\t%s\t>\t%s records", dirname, countRecords)
+	}
+
+	Log.Info().Msg("[nats] init handle old data\t>\tfinish")
+}
+
+// run handle new data
+func (sub *SubscriberFastCache) hand() {
+	if sub.Hand == nil {
+		return
 	}
 }
 
