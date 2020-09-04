@@ -51,14 +51,17 @@ func NewSubscriberFastCache(nc *nats.Conn, subject string, cacheDir ...string) *
 // Run runtime to end your application.
 func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	hasWait := len(waitFunc) > 0
+	wait := make(chan struct{})
 
 	// Handle panic
 	defer func() {
 		if err := recover(); err != nil {
+			close(wait)
 			sub.Save(sub.CacheDir)
 			Log.Error().Msgf("[nats] run error\t>\t%s", err)
 			log.Panic(err)
 		} else if hasWait {
+			close(wait)
 			sub.Save(sub.CacheDir)
 			// Drain connection (Preferred for responders), Close() not needed if this is called.
 			if err = sub.Conn.Drain(); err != nil {
@@ -91,7 +94,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	go sub.init()
 
 	// run handle new data
-	go sub.hand()
+	go sub.hand(wait)
 
 	if hasWait {
 		waitFunc[0]()
@@ -102,6 +105,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	death := f.NewDeath(syscall.SIGINT, syscall.SIGTERM)
 	// When you want to block for shutdown signals.
 	death.WaitForDeathWithFunc(func() {
+		close(wait)
 		sub.Save(sub.CacheDir)
 		// Drain connection (Preferred for responders), Close() not needed if this is called.
 		if err = sub.Conn.Drain(); err != nil {
@@ -184,16 +188,49 @@ func (sub *SubscriberFastCache) init() {
 		_ = os.Remove(oldFile)
 		_ = os.RemoveAll(filePath)
 
-		Log.Info().Msgf("[nats] init handle old data\t>\t%s\t>\t%s records", dirname, countRecords)
+		Log.Info().Msgf("[nats] init handle old data\t>\t%s\t>\t %d records", dirname, countRecords)
 	}
 
 	Log.Info().Msg("[nats] init handle old data\t>\tfinish")
 }
 
 // run handle new data
-func (sub *SubscriberFastCache) hand() {
+func (sub *SubscriberFastCache) hand(wait chan struct{}) {
 	if sub.Hand == nil {
 		return
+	}
+
+	for {
+		select {
+		case <-wait:
+			return
+		case <-time.After(time.Second):
+			var data [CacheBulkSize][]byte
+			count := atomic.LoadUint64(&sub.Count)
+			countRecords := 0
+			for dataIndex := 0; dataIndex < CacheBulkSize && count > sub.Index; {
+				key := atomic.AddUint64(&sub.Index, 1)
+				src := sub.Cache.Get(nil, f.BytesUint64(key))
+				if len(src) == 0 {
+					continue
+				}
+				data[dataIndex] = src
+				if dataIndex++; dataIndex == CacheBulkSize || sub.Index == count {
+					// bulk handle
+					if err := sub.Hand(data); err != nil {
+						// rollback
+						Log.Error().Msgf("[nats] run handle new data\t>\t%s", err)
+						sub.Index -= uint64(len(data))
+						break
+					}
+					countRecords += len(data)
+					// reset data
+					dataIndex = 0
+					data = [CacheBulkSize][]byte{}
+				}
+			}
+			Log.Info().Msgf("[nats] run handle new data\t>\t %d records", countRecords)
+		}
 	}
 }
 
@@ -222,7 +259,7 @@ func (sub *SubscriberFastCache) filenames(since string, index, count uint64) str
 }
 
 func (sub *SubscriberFastCache) Save(cacheDir string) {
-	if sub.saved || sub.Count == 0 || sub.Hand == nil {
+	if sub.saved || sub.Count == 0 || sub.Hand == nil || sub.Index == sub.Count {
 		return
 	}
 
