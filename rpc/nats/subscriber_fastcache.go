@@ -87,7 +87,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	// Flush connection to server, returns when all messages have been processed.
 	FlushAndCheckLastError(sub.Conn)
 
-	// Init handle old data
+	// init handle old data
 	go sub.init()
 
 	// Todo handle new data
@@ -109,7 +109,12 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	})
 }
 
+// init handle old data
 func (sub *SubscriberFastCache) init() {
+	if sub.Hand == nil {
+		return
+	}
+
 	oldFiles, _ := filepath.Glob(filepath.Join(sub.CacheDir, "*"))
 	sort.Strings(oldFiles)
 
@@ -135,31 +140,35 @@ func (sub *SubscriberFastCache) init() {
 			continue
 		}
 
-		since1 := s[0]
+		since := s[0]
 		index, _ := strconv.ParseInt(s[1], 10, 0)
 		count, _ := strconv.ParseInt(s[2], 10, 0)
-		if count == 0 {
-			continue
-		}
+		indexZero := uint64(index) + 1
 
 		var data [CacheBulkSize][]byte
-		for i, c, x := uint64(index)+1, uint64(count), 0; i <= c; i++ {
+		for i, c, dataIndex := indexZero, uint64(count), 0; i <= c; i++ {
 			if key := f.BytesUint64(i); cache.Has(key) {
-				data[x] = cache.Get(nil, key)
-				x++
-				if x == CacheBulkSize || i+1 == c {
-					x = 0
-					// bulk handle data
-					if sub.Hand != nil && sub.Hand(data) != nil && i > 1 {
-						// rollback data
-						index = int64(i)
-						clearCache(cache, 0, index)
-						dirname1, filename1 := sub.Dirnames2(since1, i, c), sub.Filenames2(since1, i, c)
-						saveFastCache(cache, cacheDir, dirname1, filename1)
-						_ = os.Remove(oldFile)
-						_ = os.RemoveAll(filePath)
+				data[dataIndex] = cache.Get(nil, key)
+				if dataIndex++; dataIndex == CacheBulkSize || i == c {
+					// bulk handle
+					if err := sub.Hand(data); err != nil {
+						// rollback
+						Log.Error().Msgf("[nats] init handle old data\t>\t%s", err)
+						if i > indexZero {
+							clearCache(cache, int64(indexZero)-1, int64(i))
+							dirname1, filename1 := sub.dirnames(since, i-1, c), sub.filenames(since, i-1, c)
+							saveFastCache(cache, cacheDir, dirname1, filename1)
+							_ = os.Remove(oldFile)
+							_ = os.RemoveAll(filePath)
+						}
+						// reboot init handle old data
+						time.Sleep(time.Second)
+						sub.init()
 						return
 					}
+					// reset data
+					dataIndex = 0
+					data = [CacheBulkSize][]byte{}
 				}
 			}
 		}
@@ -170,26 +179,26 @@ func (sub *SubscriberFastCache) init() {
 }
 
 func (sub *SubscriberFastCache) Dirname() string {
-	return sub.Dirnames(sub.Since, sub.Index, sub.Count)
+	return sub.dirname(sub.Since, sub.Index, sub.Count)
 }
 
-func (sub *SubscriberFastCache) Dirnames(since *f.TimeStamp, index, count uint64) string {
-	return sub.Dirnames2(since.LocalTimeStampString(true), index, count)
+func (sub *SubscriberFastCache) dirname(since *f.TimeStamp, index, count uint64) string {
+	return sub.dirnames(since.LocalTimeStampString(true), index, count)
 }
 
-func (sub *SubscriberFastCache) Dirnames2(since string, index, count uint64) string {
+func (sub *SubscriberFastCache) dirnames(since string, index, count uint64) string {
 	return fmt.Sprintf("%s.%d.%d", since, index, count)
 }
 
 func (sub *SubscriberFastCache) Filename() string {
-	return sub.Filenames(sub.Since, sub.Index, sub.Count)
+	return sub.filename(sub.Since, sub.Index, sub.Count)
 }
 
-func (sub *SubscriberFastCache) Filenames(since *f.TimeStamp, index, count uint64) string {
-	return sub.Filenames2(since.LocalTimeStampString(true), index, count)
+func (sub *SubscriberFastCache) filename(since *f.TimeStamp, index, count uint64) string {
+	return sub.filenames(since.LocalTimeStampString(true), index, count)
 }
 
-func (sub *SubscriberFastCache) Filenames2(since string, index, count uint64) string {
+func (sub *SubscriberFastCache) filenames(since string, index, count uint64) string {
 	return fmt.Sprintf("%s.%d.%d.json", since, index, count)
 }
 
