@@ -5,6 +5,10 @@ import (
 	"testing"
 )
 
-func TestVersion(t *testing.T) {
-	t.Log(f.GoVersion)
+func TestGoVersion(t *testing.T) {
+	t.Logf("Go Version: %s", f.GoVersion)
+}
+
+func TestNumCPU(t *testing.T) {
+	t.Logf("Number of CPUs: %d * 16 = %d", f.NumCPU, f.NumCPUx16)
 }

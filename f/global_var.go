@@ -6,6 +6,14 @@ import (
 	"strings"
 )
 
+var (
+	NumCPU    = runtime.NumCPU()
+	NumCPUx2  = NumCPU * 2
+	NumCPUx4  = NumCPUx2 * 2
+	NumCPUx8  = NumCPUx4 * 2
+	NumCPUx16 = NumCPUx8 * 2
+)
+
 const (
 	MimeSniffLen = 512 // sniff Length, use for detect file mime type
 )

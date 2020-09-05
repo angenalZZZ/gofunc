@@ -85,6 +85,16 @@ func NewPool(n int, ctor func() PoolWorker) *Pool {
 	return p
 }
 
+// NewFunc creates a new Pool of a worker.
+func NewFunc(f func(interface{}) interface{}) *Pool {
+	return NewPoolFunc(1, f)
+}
+
+// NewPoolsFunc creates a new Pool of workers where each worker.
+func NewPoolsFunc(f func(interface{}) interface{}) *Pool {
+	return NewPoolFunc(NumCPUx16, f)
+}
+
 // NewPoolFunc creates a new Pool of workers where each worker will process using
 // the provided func.
 func NewPoolFunc(n int, f func(interface{}) interface{}) *Pool {
@@ -93,6 +103,11 @@ func NewPoolFunc(n int, f func(interface{}) interface{}) *Pool {
 			processor: f,
 		}
 	})
+}
+
+// NewPoolsCallback creates a new Pool of workers.
+func NewPoolsCallback() *Pool {
+	return NewPoolCallback(NumCPUx16)
 }
 
 // NewPoolCallback creates a new Pool of workers where workers cast the job payload
@@ -129,10 +144,7 @@ func (p *Pool) Process(payload interface{}) interface{} {
 // the result. If the timeout occurs before the job has finished the worker will
 // be interrupted and ErrJobTimedOut will be returned. ProcessTimed can be
 // called safely by any goroutines.
-func (p *Pool) ProcessTimed(
-	payload interface{},
-	timeout time.Duration,
-) (interface{}, error) {
+func (p *Pool) ProcessTimed(payload interface{}, timeout time.Duration) (interface{}, error) {
 	atomic.AddInt64(&p.queuedJobs, 1)
 	defer atomic.AddInt64(&p.queuedJobs, -1)
 
@@ -252,10 +264,7 @@ type poolWorkerWrapper struct {
 	closedChan chan struct{}
 }
 
-func newPoolWorkerWrapper(
-	reqChan chan<- poolWorkRequest,
-	worker PoolWorker,
-) *poolWorkerWrapper {
+func newPoolWorkerWrapper(reqChan chan<- poolWorkRequest, worker PoolWorker) *poolWorkerWrapper {
 	w := poolWorkerWrapper{
 		worker:        worker,
 		interruptChan: make(chan struct{}),
