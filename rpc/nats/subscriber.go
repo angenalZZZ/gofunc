@@ -27,7 +27,7 @@ func NewSubscriber(nc *nats.Conn, subject string, msgHandler nats.MsgHandler) *S
 func (sub *Subscriber) Run(waitFunc ...func()) {
 	hasWait := len(waitFunc) > 0
 
-	// Handle panic
+	// Handle panic.
 	defer func() {
 		if err := recover(); err != nil {
 			Log.Error().Msgf("[nats] run error\t>\t%s", err)
@@ -40,14 +40,15 @@ func (sub *Subscriber) Run(waitFunc ...func()) {
 		}
 	}()
 
-	// Async Subscriber
+	// Async Subscriber.
 	s, err := sub.Conn.Subscribe(sub.Subj, sub.Hand)
+	// Set listening.
 	SubscribeErrorHandle(s, true, err)
 	if err != nil {
 		panic(err)
 	}
 
-	// Set pending limits
+	// Set pending limits.
 	SubscribeLimitHandle(s, 10000000, 1048576)
 
 	// Flush connection to server, returns when all messages have been processed.

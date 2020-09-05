@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+// Logger for Client Connect.
+var Log *log.Logger
+
 // New Client Connect.
 func New(name, flagAddr, flagCred, flagToken string, flagCert, flagKey string) (nc *nats.Conn, err error) {
 	var (
@@ -69,6 +72,7 @@ func FlushAndCheckLastError(nc *nats.Conn) {
 	}
 }
 
+// Set pending limits error handle.
 func SubscribeLimitHandle(sub *nats.Subscription, msgLimit, bytesLimitOfMsg int) {
 	if err := sub.SetPendingLimits(msgLimit, msgLimit*bytesLimitOfMsg); err != nil {
 		Log.Error().Msgf("[nats] set pending limits\t>\t%s", err)
@@ -76,9 +80,9 @@ func SubscribeLimitHandle(sub *nats.Subscription, msgLimit, bytesLimitOfMsg int)
 
 	// Delivered returns the number of delivered messages for this subscription.
 	if deliveredNum, err := sub.Delivered(); err != nil {
-		Log.Error().Msgf("[nats] number of messages delivered\t>\t%s", err)
+		Log.Error().Msgf("[nats] number of messages deliver\t>\t%s", err)
 	} else {
-		Log.Info().Msgf("[nats] number of messages delivered: %d", deliveredNum)
+		Log.Info().Msgf("[nats] number of messages deliver: %d", deliveredNum)
 	}
 
 	// Dropped returns the number of known dropped messages for this subscription.
@@ -89,6 +93,7 @@ func SubscribeLimitHandle(sub *nats.Subscription, msgLimit, bytesLimitOfMsg int)
 	}
 }
 
+// Set listening error handle.
 func SubscribeErrorHandle(sub *nats.Subscription, async bool, err error) {
 	if err != nil {
 		Log.Error().Msgf("[nats] failed listening on %q\t>\t%s", sub.Subject, err)

@@ -5,7 +5,9 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"sync/atomic"
 	"syscall"
+	"time"
 )
 
 // ContextOnInterrupt creates a new context that cancels on SIGINT or SIGTERM.
@@ -78,5 +80,12 @@ func DoneContext(ctx context.Context) {
 		default:
 			close(wait)
 		}
+	}
+}
+
+// NumIncrWait to wait succeeded-number equals published-number.
+func NumIncrWait(publishedNumber, succeededNumber *int64) {
+	for atomic.LoadInt64(succeededNumber) < atomic.LoadInt64(publishedNumber) {
+		time.Sleep(time.Nanosecond)
 	}
 }

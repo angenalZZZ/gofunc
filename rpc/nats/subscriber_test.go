@@ -10,9 +10,13 @@ import (
 	"time"
 )
 
-func TestNewSubscriber(t *testing.T) {
+func newTestClientConnect() (nc *nats.Conn, err error) {
+	return New("nats.go", "", "", "HGJ766GR767FKJU0", "", "")
+}
+
+func TestSubscriber(t *testing.T) {
 	// New Client Connect.
-	nc, err := New("nats.go", "", "", "HGJ766GR767FKJU0", "", "")
+	nc, err := newTestClientConnect()
 	if err != nil {
 		t.Fatalf("[nats] failed to connect: %s\n", err.Error())
 	}
@@ -29,7 +33,7 @@ func TestNewSubscriber(t *testing.T) {
 
 	// Ping a message.
 	go func() {
-		time.Sleep(time.Second)
+		time.Sleep(time.Millisecond)
 		err = nc.Publish(sub.Subj, []byte("ping"))
 		if err != nil {
 			t.Fatalf("[nats] failed publishing a test message\t>\t%s", err.Error())
@@ -41,15 +45,14 @@ func TestNewSubscriber(t *testing.T) {
 	sub.Run(wait)
 }
 
-func BenchmarkNewSubscriber(b *testing.B) {
-	var publishNumber, succeededNumber, failedNumber int64
-	var bufferData = random.AlphaNumberBytes(60)
-
+func BenchmarkPublisher(b *testing.B) {
 	// New Client Connect.
-	nc, err := New("nats.go", "", "", "HGJ766GR767FKJU0", "", "")
+	nc, err := newTestClientConnect()
 	if err != nil {
 		b.Fatalf("[nats] failed to connect: %s\n", err.Error())
 	}
+
+	var publishedNumber, succeededNumber, failedNumber int64
 
 	// Create a subscriber for Client Connect.
 	sub := NewSubscriber(nc, "OpLogCommand", func(msg *nats.Msg) {
@@ -60,23 +63,25 @@ func BenchmarkNewSubscriber(b *testing.B) {
 	go sub.Run(wait)
 	time.Sleep(time.Millisecond)
 
-	// Start benchmark
+	var bufferData = random.AlphaNumberBytes(60)
+
+	// start benchmark test
 	b.ResetTimer()
 
+	// test publish pressure
 	for i := 0; i < b.N; i++ {
 		err = nc.Publish(sub.Subj, bufferData)
 		if err != nil {
 			atomic.AddInt64(&failedNumber, 1)
 		} else {
-			atomic.AddInt64(&publishNumber, 1)
+			atomic.AddInt64(&publishedNumber, 1)
 		}
 	}
 
-	for atomic.LoadInt64(&succeededNumber) < atomic.LoadInt64(&publishNumber) {
-		time.Sleep(time.Millisecond)
-	}
+	// wait succeeded-number equals published-number
+	f.NumIncrWait(&publishedNumber, &succeededNumber)
 	f.DoneContext(ctx)
 	b.StopTimer()
 
-	b.Logf("Publish Number: %d, Successful Number: %d, Failed Number %d", publishNumber, succeededNumber, failedNumber)
+	b.Logf("Publish Number: %d, Successful Number: %d, Failed Number %d", publishedNumber, succeededNumber, failedNumber)
 }
