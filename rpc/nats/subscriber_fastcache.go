@@ -2,6 +2,7 @@ package nats
 
 import (
 	"fmt"
+	"github.com/angenalZZZ/gofunc/data"
 	"github.com/angenalZZZ/gofunc/data/cache/fastcache"
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/nats-io/nats.go"
@@ -18,12 +19,12 @@ import (
 	"time"
 )
 
-const CacheBulkSize int = 1000
+const HandSize int = 2000
 
 type SubscriberFastCache struct {
 	*nats.Conn
 	Subj string
-	Hand func([CacheBulkSize][]byte) error
+	Hand func([HandSize][]byte) error
 	*fastcache.Cache
 	CacheDir string // cache persist to disk directory
 	Index    uint64
@@ -43,7 +44,7 @@ func NewSubscriberFastCache(nc *nats.Conn, subject string, cacheDir ...string) *
 	if len(cacheDir) == 1 && cacheDir[0] != "" {
 		sub.CacheDir = cacheDir[0]
 	} else {
-		sub.CacheDir = f.CurrentDir()
+		sub.CacheDir = data.CurrentDir
 	}
 	return sub
 }
@@ -156,11 +157,11 @@ func (sub *SubscriberFastCache) init() {
 		count, _ := strconv.ParseInt(s[2], 10, 0)
 		indexZero, countRecords := uint64(index)+1, 0
 
-		var data [CacheBulkSize][]byte
+		var data [HandSize][]byte
 		for i, c, dataIndex := indexZero, uint64(count), 0; i <= c; i++ {
 			if key := f.BytesUint64(i); cache.Has(key) {
 				data[dataIndex] = cache.Get(nil, key)
-				if dataIndex++; dataIndex == CacheBulkSize || i == c {
+				if dataIndex++; dataIndex == HandSize || i == c {
 					// bulk handle
 					if err := sub.Hand(data); err != nil {
 						// rollback
@@ -180,7 +181,7 @@ func (sub *SubscriberFastCache) init() {
 					countRecords += len(data)
 					// reset data
 					dataIndex = 0
-					data = [CacheBulkSize][]byte{}
+					data = [HandSize][]byte{}
 				}
 			}
 		}
@@ -205,17 +206,17 @@ func (sub *SubscriberFastCache) hand(wait chan struct{}) {
 		case <-wait:
 			return
 		case <-time.After(time.Second):
-			var data [CacheBulkSize][]byte
+			var data [HandSize][]byte
 			count := atomic.LoadUint64(&sub.Count)
 			countRecords := 0
-			for dataIndex := 0; dataIndex < CacheBulkSize && count > sub.Index; {
+			for dataIndex := 0; dataIndex < HandSize && count > sub.Index; {
 				key := atomic.AddUint64(&sub.Index, 1)
 				src := sub.Cache.Get(nil, f.BytesUint64(key))
 				if len(src) == 0 {
 					continue
 				}
 				data[dataIndex] = src
-				if dataIndex++; dataIndex == CacheBulkSize || sub.Index == count {
+				if dataIndex++; dataIndex == HandSize || sub.Index == count {
 					// bulk handle
 					if err := sub.Hand(data); err != nil {
 						// rollback
@@ -226,7 +227,7 @@ func (sub *SubscriberFastCache) hand(wait chan struct{}) {
 					countRecords += len(data)
 					// reset data
 					dataIndex = 0
-					data = [CacheBulkSize][]byte{}
+					data = [HandSize][]byte{}
 				}
 			}
 			Log.Info().Msgf("[nats] run handle new data\t>\t %d records", countRecords)

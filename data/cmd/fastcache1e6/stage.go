@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/angenalZZZ/gofunc/data"
 	"github.com/angenalZZZ/gofunc/data/cache/fastcache"
 	"github.com/angenalZZZ/gofunc/data/random"
-	"github.com/angenalZZZ/gofunc/f"
 	"io/ioutil"
 	"path/filepath"
 	"sync"
@@ -16,7 +16,7 @@ func Stage() {
 	c, l, m := *flagCont, *flagData, *flagTimes
 
 	p := []byte(random.AlphaNumberLower(l))
-	tl := fastcache.NewTimeline(time.Now(), time.Now().Add(time.Hour), time.Hour, f.CurrentDir(), 2048)
+	tl := fastcache.NewTimeline(time.Now(), time.Now().Add(time.Hour), time.Hour, data.CurrentDir, 2048)
 
 	wg := new(sync.WaitGroup)
 	wg.Add(c)
