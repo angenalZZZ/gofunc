@@ -23,6 +23,7 @@ const HandSize int = 2000
 
 type SubscriberFastCache struct {
 	*nats.Conn
+	sub  *nats.Subscription
 	Subj string
 	Hand func([HandSize][]byte) error
 	*fastcache.Cache
@@ -33,7 +34,7 @@ type SubscriberFastCache struct {
 	saved    bool
 }
 
-// SubscriberFastCache Create a subscriber with cache store for Client Connect.
+// NewSubscriberFastCache Create a subscriber with cache store for Client Connect.
 func NewSubscriberFastCache(nc *nats.Conn, subject string, cacheDir ...string) *SubscriberFastCache {
 	sub := &SubscriberFastCache{
 		Conn:  nc,
@@ -51,28 +52,32 @@ func NewSubscriberFastCache(nc *nats.Conn, subject string, cacheDir ...string) *
 
 // Run runtime to end your application.
 func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
-	hasWait := len(waitFunc) > 0
+	var err error
 	wait := make(chan struct{})
 
 	// Handle panic
 	defer func() {
-		if err := recover(); err != nil {
-			close(wait)
-			sub.Save(sub.CacheDir)
-			Log.Error().Msgf("[nats] run error\t>\t%s", err)
-			log.Panic(err)
-		} else if hasWait {
-			close(wait)
-			sub.Save(sub.CacheDir)
-			// Drain connection (Preferred for responders), Close() not needed if this is called.
-			if err = sub.Conn.Drain(); err != nil {
-				log.Fatal(err)
-			}
+		var err = recover()
+		if err != nil {
+			Log.Error().Msgf("[nats] run error\t>\t%v", err)
+		}
+
+		close(wait)
+		// Unsubscribe will remove interest in the given subject.
+		_ = sub.sub.Unsubscribe()
+		// Save cache.
+		sub.Save(sub.CacheDir)
+		// Drain connection (Preferred for responders), Close() not needed if this is called.
+		_ = sub.Conn.Drain()
+
+		// os.Exit(1)
+		if err != nil {
+			log.Fatal(err)
 		}
 	}()
 
 	// Async Subscriber
-	s, err := sub.Conn.Subscribe(sub.Subj, func(msg *nats.Msg) {
+	sub.sub, err = sub.Conn.Subscribe(sub.Subj, func(msg *nats.Msg) {
 		if msg.Data[0] != '{' {
 			Log.Info().Msgf("[nats] received test message on %q: %s", msg.Subject, string(msg.Data))
 		} else {
@@ -80,13 +85,13 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 			sub.Cache.Set(f.BytesUint64(key), msg.Data)
 		}
 	})
-	SubscribeErrorHandle(s, true, err)
+	SubscribeErrorHandle(sub.sub, true, err)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	// Set pending limits
-	SubscribeLimitHandle(s, 10000000, 1048576)
+	SubscribeLimitHandle(sub.sub, 10000000, 1048576)
 
 	// Flush connection to server, returns when all messages have been processed.
 	FlushAndCheckLastError(sub.Conn)
@@ -97,7 +102,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	// run handle new data
 	go sub.hand(wait)
 
-	if hasWait {
+	if len(waitFunc) > 0 {
 		waitFunc[0]()
 		return
 	}
@@ -106,12 +111,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	death := f.NewDeath(syscall.SIGINT, syscall.SIGTERM)
 	// When you want to block for shutdown signals.
 	death.WaitForDeathWithFunc(func() {
-		close(wait)
-		sub.Save(sub.CacheDir)
-		// Drain connection (Preferred for responders), Close() not needed if this is called.
-		if err = sub.Conn.Drain(); err != nil {
-			log.Fatal(err)
-		}
+		Log.Error().Msg("[nats] run forced termination")
 	})
 }
 
@@ -157,13 +157,13 @@ func (sub *SubscriberFastCache) init() {
 		count, _ := strconv.ParseInt(s[2], 10, 0)
 		indexZero, countRecords := uint64(index)+1, 0
 
-		var data [HandSize][]byte
+		var handData [HandSize][]byte
 		for i, c, dataIndex := indexZero, uint64(count), 0; i <= c; i++ {
 			if key := f.BytesUint64(i); cache.Has(key) {
-				data[dataIndex] = cache.Get(nil, key)
+				handData[dataIndex] = cache.Get(nil, key)
 				if dataIndex++; dataIndex == HandSize || i == c {
 					// bulk handle
-					if err := sub.Hand(data); err != nil {
+					if err := sub.Hand(handData); err != nil {
 						// rollback
 						Log.Error().Msgf("[nats] init handle old data\t>\t%s\t>\t%s", dirname, err)
 						if i > indexZero {
@@ -178,10 +178,10 @@ func (sub *SubscriberFastCache) init() {
 						sub.init()
 						return
 					}
-					countRecords += len(data)
+					countRecords += len(handData)
 					// reset data
 					dataIndex = 0
-					data = [HandSize][]byte{}
+					handData = [HandSize][]byte{}
 				}
 			}
 		}
@@ -206,7 +206,7 @@ func (sub *SubscriberFastCache) hand(wait chan struct{}) {
 		case <-wait:
 			return
 		case <-time.After(time.Second):
-			var data [HandSize][]byte
+			var handData [HandSize][]byte
 			count := atomic.LoadUint64(&sub.Count)
 			countRecords := 0
 			for dataIndex := 0; dataIndex < HandSize && count > sub.Index; {
@@ -215,19 +215,19 @@ func (sub *SubscriberFastCache) hand(wait chan struct{}) {
 				if len(src) == 0 {
 					continue
 				}
-				data[dataIndex] = src
+				handData[dataIndex] = src
 				if dataIndex++; dataIndex == HandSize || sub.Index == count {
 					// bulk handle
-					if err := sub.Hand(data); err != nil {
+					if err := sub.Hand(handData); err != nil {
 						// rollback
 						Log.Error().Msgf("[nats] run handle new data\t>\t%s", err)
-						sub.Index -= uint64(len(data))
+						sub.Index -= uint64(len(handData))
 						break
 					}
-					countRecords += len(data)
+					countRecords += len(handData)
 					// reset data
 					dataIndex = 0
-					data = [HandSize][]byte{}
+					handData = [HandSize][]byte{}
 				}
 			}
 			Log.Info().Msgf("[nats] run handle new data\t>\t %d records", countRecords)
@@ -271,13 +271,13 @@ func (sub *SubscriberFastCache) Save(cacheDir string) {
 func saveFastCache(cache *fastcache.Cache, cacheDir, dirname, filename string) {
 	fileStat := new(fastcache.Stats)
 	cache.UpdateStats(fileStat)
-	data, err := f.EncodeJson(fileStat)
+	handData, err := f.EncodeJson(fileStat)
 	if err != nil {
 		Log.Error().Msgf("[nats] save cache stats\t>\t%s", err)
 	}
 
 	filePath := filepath.Join(cacheDir, filename)
-	err = ioutil.WriteFile(filePath, data, 0644)
+	err = ioutil.WriteFile(filePath, handData, 0644)
 	if err != nil {
 		Log.Error().Msgf("[nats] save cache stats\t>\t%s", err)
 	}

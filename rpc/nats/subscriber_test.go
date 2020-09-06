@@ -59,7 +59,7 @@ func BenchmarkPublisher(b *testing.B) {
 		atomic.AddInt64(&succeededNumber, 1)
 	})
 
-	ctx, wait := f.ContextWithWait(context.Background())
+	ctx, wait := f.ContextWithWait(context.TODO())
 	go sub.Run(wait)
 	time.Sleep(time.Millisecond)
 
