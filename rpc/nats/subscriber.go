@@ -30,7 +30,7 @@ func (sub *Subscriber) Run(waitFunc ...func()) {
 
 	// Handle panic.
 	defer func() {
-		var err = recover()
+		err := recover()
 		if err != nil {
 			Log.Error().Msgf("[nats] run error\t>\t%v", err)
 		}

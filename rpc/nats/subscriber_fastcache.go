@@ -57,19 +57,19 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 
 	// Handle panic
 	defer func() {
-		var err = recover()
+		err := recover()
 		if err != nil {
 			Log.Error().Msgf("[nats] run error\t>\t%v", err)
 		}
 
-		// Stop handle new data
-		close(wait)
 		// Unsubscribe will remove interest in the given subject.
 		_ = sub.sub.Unsubscribe()
-		// Save cache.
-		sub.Save(sub.CacheDir)
 		// Drain connection (Preferred for responders), Close() not needed if this is called.
 		_ = sub.Conn.Drain()
+		// Stop handle new data
+		close(wait)
+		// Save cache.
+		sub.Save(sub.CacheDir)
 
 		// os.Exit(1)
 		if err != nil {
@@ -216,6 +216,7 @@ func (sub *SubscriberFastCache) hand(wait chan struct{}) {
 				if len(src) == 0 {
 					continue
 				}
+				countRecords++
 				handData[dataIndex] = src
 				if dataIndex++; dataIndex == HandSize || sub.Index == count {
 					// bulk handle
@@ -225,7 +226,6 @@ func (sub *SubscriberFastCache) hand(wait chan struct{}) {
 						sub.Index -= uint64(len(handData))
 						break
 					}
-					countRecords += len(handData)
 					// reset data
 					dataIndex = 0
 					handData = [HandSize][]byte{}
