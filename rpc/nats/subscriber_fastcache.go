@@ -62,6 +62,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 			Log.Error().Msgf("[nats] run error\t>\t%v", err)
 		}
 
+		// Stop handle new data
 		close(wait)
 		// Unsubscribe will remove interest in the given subject.
 		_ = sub.sub.Unsubscribe()
