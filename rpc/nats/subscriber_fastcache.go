@@ -1,6 +1,7 @@
 package nats
 
 import (
+	"context"
 	"fmt"
 	"github.com/angenalZZZ/gofunc/data"
 	"github.com/angenalZZZ/gofunc/data/cache/fastcache"
@@ -53,7 +54,7 @@ func NewSubscriberFastCache(nc *nats.Conn, subject string, cacheDir ...string) *
 // Run runtime to end your application.
 func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	var err error
-	wait := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
 
 	// Handle panic
 	defer func() {
@@ -66,8 +67,9 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 		_ = sub.sub.Unsubscribe()
 		// Drain connection (Preferred for responders), Close() not needed if this is called.
 		_ = sub.Conn.Drain()
+
 		// Stop handle new data
-		wait<-struct{}{}
+		cancel()
 		// Save cache.
 		sub.Save(sub.CacheDir)
 
@@ -101,7 +103,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	go sub.init()
 
 	// run handle new data
-	go sub.hand(wait)
+	go sub.hand(ctx)
 
 	if len(waitFunc) > 0 {
 		waitFunc[0]()
@@ -197,14 +199,14 @@ func (sub *SubscriberFastCache) init() {
 }
 
 // run handle new data
-func (sub *SubscriberFastCache) hand(wait chan struct{}) {
+func (sub *SubscriberFastCache) hand(ctx context.Context) {
 	if sub.Hand == nil {
 		return
 	}
 
 	for {
 		select {
-		case <-wait:
+		case <-ctx.Done():
 			return
 		case <-time.After(time.Second):
 			var handData [HandSize][]byte

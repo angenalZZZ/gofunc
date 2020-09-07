@@ -18,15 +18,19 @@ func TestSubscriberFastCache(t *testing.T) {
 	ctx, wait := f.ContextWithWait(context.Background())
 
 	// Create a subscriber for Client Connect.
-	sub := NewSubscriberFastCache(nc, "OpLogCommand", data.RootDir)
+	sub := NewSubscriberFastCache(nc, "TestSubscriberFastCache", data.RootDir)
 	sub.Hand = func(list [HandSize][]byte) error {
 		for _, item := range list {
-			if len(item) > 0 && item[0] != '{' {
+			if item == nil || len(item) == 0 {
+				break
+			}
+			if item[0] != '{' {
 				t.Logf("[nats] received test message on %q: %s", sub.Subj, string(item))
 			}
 		}
 
 		f.DoneContext(ctx)
+		t.Logf("[nats] received test message on %q: finished.", sub.Subj)
 		return nil
 	}
 

@@ -24,7 +24,7 @@ func TestSubscriber(t *testing.T) {
 	ctx, wait := f.ContextWithWait(context.Background())
 
 	// Create a subscriber for Client Connect.
-	sub := NewSubscriber(nc, "OpLogCommand", func(msg *nats.Msg) {
+	sub := NewSubscriber(nc, "TestSubscriber", func(msg *nats.Msg) {
 		if msg.Data[0] != '{' {
 			t.Logf("[nats] received test message on %q: %s", msg.Subject, string(msg.Data))
 		}
@@ -55,7 +55,7 @@ func BenchmarkPublisher(b *testing.B) {
 	var publishedNumber, succeededNumber, failedNumber int64
 
 	// Create a subscriber for Client Connect.
-	sub := NewSubscriber(nc, "OpLogCommand", func(msg *nats.Msg) {
+	sub := NewSubscriber(nc, "BenchmarkPublisher", func(msg *nats.Msg) {
 		atomic.AddInt64(&succeededNumber, 1)
 	})
 
