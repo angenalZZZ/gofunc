@@ -67,7 +67,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 		// Drain connection (Preferred for responders), Close() not needed if this is called.
 		_ = sub.Conn.Drain()
 		// Stop handle new data
-		close(wait)
+		wait<-struct{}{}
 		// Save cache.
 		sub.Save(sub.CacheDir)
 
