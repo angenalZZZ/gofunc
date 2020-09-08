@@ -36,7 +36,7 @@ func TestSubscriber(t *testing.T) {
 		time.Sleep(time.Millisecond)
 		err = nc.Publish(sub.Subj, []byte("ping"))
 		if err != nil {
-			t.Fatalf("[nats] failed publishing a test message\t>\t%s", err.Error())
+			t.Fatalf("[nats] failed publishing a test message > %s", err.Error())
 		} else {
 			t.Logf("[nats] successful publishing a test message")
 		}

@@ -32,7 +32,7 @@ func (sub *Subscriber) Run(waitFunc ...func()) {
 	defer func() {
 		err := recover()
 		if err != nil {
-			Log.Error().Msgf("[nats] run error\t>\t%v", err)
+			Log.Error().Msgf("[nats] run error > %v", err)
 		}
 
 		// Unsubscribe will remove interest in the given subject.

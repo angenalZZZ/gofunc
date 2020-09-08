@@ -60,7 +60,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	defer func() {
 		err := recover()
 		if err != nil {
-			Log.Error().Msgf("[nats] run error\t>\t%v", err)
+			Log.Error().Msgf("[nats] run error > %v", err)
 		}
 
 		// Unsubscribe will remove interest in the given subject.
@@ -81,9 +81,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 
 	// Async Subscriber
 	sub.sub, err = sub.Conn.Subscribe(sub.Subj, func(msg *nats.Msg) {
-		if msg.Data[0] != '{' {
-			Log.Info().Msgf("[nats] received test message on %q: %s", msg.Subject, string(msg.Data))
-		} else {
+		if len(msg.Data) > 0 {
 			key := atomic.AddUint64(&sub.Count, 1)
 			sub.Cache.Set(f.BytesUint64(key), msg.Data)
 		}
@@ -100,15 +98,18 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	FlushAndCheckLastError(sub.Conn)
 
 	// init handle old data
-	go sub.init()
+	go sub.init(ctx)
 
 	// run handle new data
 	go sub.hand(ctx)
 
 	if len(waitFunc) > 0 {
+		Log.Info().Msg("[nats] start running and wait to auto exit")
 		waitFunc[0]()
 		return
 	}
+
+	Log.Info().Msg("[nats] start running and wait to manual exit")
 
 	// Pass the signals you want to end your application.
 	death := f.NewDeath(syscall.SIGINT, syscall.SIGTERM)
@@ -119,12 +120,10 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 }
 
 // init handle old data
-func (sub *SubscriberFastCache) init() {
+func (sub *SubscriberFastCache) init(ctx context.Context) {
 	if sub.Hand == nil {
 		return
 	}
-
-	Log.Info().Msg("[nats] init handle old data\t>\tstart")
 
 	oldFiles, _ := filepath.Glob(filepath.Join(sub.CacheDir, "*"))
 	sort.Strings(oldFiles)
@@ -137,6 +136,7 @@ func (sub *SubscriberFastCache) init() {
 		}
 	}
 
+	handRecords := 0
 	for _, oldFile := range oldFiles {
 		dir, jsonFile := filepath.Split(oldFile)
 		if ok, _ := regexp.MatchString(`^\d+\.\d+\.\d+\.json$`, jsonFile); !ok {
@@ -158,7 +158,7 @@ func (sub *SubscriberFastCache) init() {
 		since := s[0]
 		index, _ := strconv.ParseInt(s[1], 10, 0)
 		count, _ := strconv.ParseInt(s[2], 10, 0)
-		indexZero, countRecords := uint64(index)+1, 0
+		indexZero := uint64(index) + 1
 
 		var handData [HandSize][]byte
 		for i, c, dataIndex := indexZero, uint64(count), 0; i <= c; i++ {
@@ -168,7 +168,7 @@ func (sub *SubscriberFastCache) init() {
 					// bulk handle
 					if err := sub.Hand(handData); err != nil {
 						// rollback
-						Log.Error().Msgf("[nats] init handle old data\t>\t%s\t>\t%s", dirname, err)
+						Log.Error().Msgf("[nats] init handle old data > %s > %s", dirname, err)
 						if i > indexZero {
 							clearCache(cache, int64(indexZero)-1, int64(i))
 							dirname1, filename1 := sub.dirnames(since, i-1, c), sub.filenames(since, i-1, c)
@@ -178,10 +178,10 @@ func (sub *SubscriberFastCache) init() {
 						}
 						// reboot init handle old data
 						time.Sleep(time.Second)
-						sub.init()
+						sub.init(ctx)
 						return
 					}
-					countRecords += len(handData)
+					handRecords += len(handData)
 					// reset data
 					dataIndex = 0
 					handData = [HandSize][]byte{}
@@ -191,11 +191,12 @@ func (sub *SubscriberFastCache) init() {
 
 		_ = os.Remove(oldFile)
 		_ = os.RemoveAll(filePath)
-
-		Log.Info().Msgf("[nats] init handle old data\t>\t%s\t>\t %d records", dirname, countRecords)
 	}
 
-	Log.Info().Msg("[nats] init handle old data\t>\tfinish")
+	Log.Info().Msgf("[nats] init handle old data > %d records", handRecords)
+	if err := ctx.Err(); err != nil && err != context.Canceled {
+		Log.Info().Msgf("[nats] init handle old data err > %s", err)
+	}
 }
 
 // run handle new data
@@ -204,27 +205,35 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 		return
 	}
 
+	var prevCount uint64
 	for {
 		select {
 		case <-ctx.Done():
+			if err := ctx.Err(); err != nil && err != context.Canceled {
+				Log.Info().Msgf("[nats] run handle new data err > %s", err)
+			}
 			return
 		case <-time.After(time.Second):
 			var handData [HandSize][]byte
-			count := atomic.LoadUint64(&sub.Count)
-			countRecords := 0
+			count, handRecords := atomic.LoadUint64(&sub.Count), 0
+			if count == 0 || count == prevCount {
+				_ = sub.Hand(handData)
+				continue
+			}
+			prevCount = count
 			for dataIndex := 0; dataIndex < HandSize && count > sub.Index; {
 				key := atomic.AddUint64(&sub.Index, 1)
 				src := sub.Cache.Get(nil, f.BytesUint64(key))
 				if len(src) == 0 {
 					continue
 				}
-				countRecords++
+				handRecords++
 				handData[dataIndex] = src
 				if dataIndex++; dataIndex == HandSize || sub.Index == count {
 					// bulk handle
 					if err := sub.Hand(handData); err != nil {
 						// rollback
-						Log.Error().Msgf("[nats] run handle new data\t>\t%s", err)
+						Log.Error().Msgf("[nats] run handle new data > %s", err)
 						sub.Index -= uint64(len(handData))
 						break
 					}
@@ -233,7 +242,7 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 					handData = [HandSize][]byte{}
 				}
 			}
-			Log.Info().Msgf("[nats] run handle new data\t>\t %d records", countRecords)
+			Log.Info().Msgf("[nats] run handle new data > %d records", handRecords)
 		}
 	}
 }
@@ -276,18 +285,18 @@ func saveFastCache(cache *fastcache.Cache, cacheDir, dirname, filename string) {
 	cache.UpdateStats(fileStat)
 	handData, err := f.EncodeJson(fileStat)
 	if err != nil {
-		Log.Error().Msgf("[nats] save cache stats\t>\t%s", err)
+		Log.Error().Msgf("[nats] save cache stats > %s", err)
 	}
 
 	filePath := filepath.Join(cacheDir, filename)
 	err = ioutil.WriteFile(filePath, handData, 0644)
 	if err != nil {
-		Log.Error().Msgf("[nats] save cache stats\t>\t%s", err)
+		Log.Error().Msgf("[nats] save cache stats > %s", err)
 	}
 
 	dirPath := filepath.Join(cacheDir, dirname)
 	if err = cache.SaveToFileConcurrent(dirPath, 0); err != nil {
-		Log.Error().Msgf("[nats] save cache data\t>\t%s", err)
+		Log.Error().Msgf("[nats] save cache data > %s", err)
 	} else {
 		cache.Reset() // Reset removes all the items from the cache.
 	}

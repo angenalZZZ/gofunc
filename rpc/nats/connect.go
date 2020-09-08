@@ -66,28 +66,28 @@ func New(name, flagAddr, flagCred, flagToken string, flagCert, flagKey string) (
 // Flush connection to server, returns when all messages have been processed.
 func FlushAndCheckLastError(nc *nats.Conn) {
 	if err := nc.Flush(); err != nil {
-		Log.Error().Msgf("[nats] flush messages\t>\t%s", err)
+		Log.Error().Msgf("[nats] flush messages > %s", err)
 	} else if err = nc.LastError(); err != nil {
-		Log.Error().Msgf("[nats] after flush and get last error\t>\t%s", err)
+		Log.Error().Msgf("[nats] after flush and get last error > %s", err)
 	}
 }
 
 // Set pending limits error handle.
 func SubscribeLimitHandle(sub *nats.Subscription, msgLimit, bytesLimitOfMsg int) {
 	if err := sub.SetPendingLimits(msgLimit, msgLimit*bytesLimitOfMsg); err != nil {
-		Log.Error().Msgf("[nats] set pending limits\t>\t%s", err)
+		Log.Error().Msgf("[nats] set pending limits > %s", err)
 	}
 
 	// Delivered returns the number of delivered messages for this subscription.
 	if deliveredNum, err := sub.Delivered(); err != nil {
-		Log.Error().Msgf("[nats] number of messages deliver\t>\t%s", err)
+		Log.Error().Msgf("[nats] number of messages deliver > %s", err)
 	} else {
 		Log.Info().Msgf("[nats] number of messages deliver: %d", deliveredNum)
 	}
 
 	// Dropped returns the number of known dropped messages for this subscription.
 	if droppedNum, err := sub.Dropped(); err != nil {
-		Log.Error().Msgf("[nats] number of messages dropped\t>\t%s", err)
+		Log.Error().Msgf("[nats] number of messages dropped > %s", err)
 	} else {
 		Log.Info().Msgf("[nats] number of messages dropped: %d", droppedNum)
 	}
@@ -96,7 +96,7 @@ func SubscribeLimitHandle(sub *nats.Subscription, msgLimit, bytesLimitOfMsg int)
 // Set listening error handle.
 func SubscribeErrorHandle(sub *nats.Subscription, async bool, err error) {
 	if err != nil {
-		Log.Error().Msgf("[nats] failed listening on %q\t>\t%s", sub.Subject, err)
+		Log.Error().Msgf("[nats] failed listening on %q > %s", sub.Subject, err)
 	} else {
 		a, v := "async", "available"
 		if async == false {

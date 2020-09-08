@@ -21,7 +21,7 @@ func TestSubscriberFastCache(t *testing.T) {
 	sub := NewSubscriberFastCache(nc, "TestSubscriberFastCache", data.RootDir)
 	sub.Hand = func(list [HandSize][]byte) error {
 		for _, item := range list {
-			if item == nil || len(item) == 0 {
+			if len(item) == 0 {
 				break
 			}
 			if item[0] != '{' {
@@ -30,7 +30,7 @@ func TestSubscriberFastCache(t *testing.T) {
 		}
 
 		f.DoneContext(ctx)
-		t.Logf("[nats] received test message on %q: finished.", sub.Subj)
+		t.Logf("[nats] test finished on %q", sub.Subj)
 		return nil
 	}
 
