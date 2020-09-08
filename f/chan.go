@@ -28,7 +28,7 @@ type channel struct {
 }
 
 // Make new channel. Provide a length to make a buffered channel.
-func Make(length int) Channel {
+func MakeChannel(length int) Channel {
 	c := &channel{c: make(chan channelMessage, length)}
 	c.cond = sync.NewCond(&c.mu)
 	return c

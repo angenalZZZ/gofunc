@@ -1,6 +1,7 @@
 package f
 
 import (
+	"io"
 	"reflect"
 	"runtime"
 	"strings"
@@ -12,6 +13,9 @@ var (
 	NumCPUx4  = NumCPUx2 * 2
 	NumCPUx8  = NumCPUx4 * 2
 	NumCPUx16 = NumCPUx8 * 2
+
+	// Output is used to print elapsed time and ops/sec
+	Output io.Writer
 )
 
 const (
