@@ -1,5 +1,8 @@
 package g
 
+// Map is a shortcut for map[string]interface{}
+type Map map[string]interface{}
+
 // NewMap Allocate a Map.
 func NewMap() Map {
 	m := make(map[string]interface{}, 0)
