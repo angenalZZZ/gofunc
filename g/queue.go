@@ -4,28 +4,29 @@ import "time"
 
 type Queue struct {
 	length int
-	data   []QueueItemComparer
+	data   []QueueComparer
 }
 
-type QueueItemComparer interface {
-	Less(QueueItemComparer) bool
+type QueueComparer interface {
+	Less(QueueComparer) bool
 }
 
-type QueueStringItem struct {
+type QueueString struct {
 	index  int64
 	String string
 }
 
-func NewQueueString(s string) *QueueStringItem {
-	return &QueueStringItem{index: time.Now().UnixNano(), String: s}
+func NewQueueString(s string) *QueueString {
+	return &QueueString{index: time.Now().UnixNano(), String: s}
 }
 
-func (a *QueueStringItem) Less(b *QueueStringItem) bool {
-	return a.index < b.index
+// Less Implementation QueueComparer interface.
+func (a *QueueString) Less(b QueueComparer) bool {
+	return a.index < b.(*QueueString).index
 	//return strings.Compare(a.String, b.String) < 0
 }
 
-func New(data []QueueItemComparer) *Queue {
+func NewQueue(data []QueueComparer) *Queue {
 	q := &Queue{}
 	q.data = data
 	q.length = len(data)
@@ -38,13 +39,13 @@ func New(data []QueueItemComparer) *Queue {
 	return q
 }
 
-func (q *Queue) Push(item QueueItemComparer) {
+func (q *Queue) Push(item QueueComparer) {
 	q.data = append(q.data, item)
 	q.length++
 	q.up(q.length - 1)
 }
 
-func (q *Queue) Pop() QueueItemComparer {
+func (q *Queue) Pop() QueueComparer {
 	if q.length == 0 {
 		return nil
 	}
@@ -58,7 +59,7 @@ func (q *Queue) Pop() QueueItemComparer {
 	return top
 }
 
-func (q *Queue) Peek() QueueItemComparer {
+func (q *Queue) Peek() QueueComparer {
 	if q.length == 0 {
 		return nil
 	}
