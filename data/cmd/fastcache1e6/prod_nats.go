@@ -2,18 +2,18 @@ package main
 
 import (
 	"fmt"
+	"github.com/angenalZZZ/gofunc/f"
+	nat "github.com/angenalZZZ/gofunc/rpc/nats"
 	"github.com/nats-io/nats.go"
+	"log"
 	"os"
-	"runtime"
+	"syscall"
 )
 
 func ProdNatS() {
 	var (
 		name = "cache.>"
-		addr = nats.DefaultURL
-		ops  = make([]nats.Option, 0)
-		nc   *nats.Conn
-		err  error
+		sub  *nats.Subscription
 	)
 
 	// "*" matches any token, at any level of the subject.
@@ -22,42 +22,34 @@ func ProdNatS() {
 	if *flagName != "" {
 		name = *flagName + ".>"
 	}
-	if *flagPort > 0 && *flagPort != nats.DefaultPort {
-		addr = fmt.Sprintf("nats://127.0.0.1:%d", *flagPort)
-	}
-	if *flagToken != "" {
-		ops = append(ops, nats.Token(*flagToken))
-	}
-	// If the server requires client certificate
-	// E.g. /certs/client-cert.pem  /certs/client-key.pem
-	if *flagCert != "" && *flagKey != "" {
-		cert := nats.ClientCert(*flagCert, *flagKey)
-		ops = append(ops, cert)
-	}
-	// If you are using a self-signed certificate, you need to have a tls.Config with RootCAs setup
-	// E.g. /certs/ca.pem
-	if *flagCert != "" {
-		cert := nats.RootCAs(*flagCert)
-		ops = append(ops, cert)
-	}
 
-	if nc, err = nats.Connect(addr, ops...); err != nil {
-		_ = fmt.Errorf("Nats failed connect to server: %v\n", err)
+	nc, err := nat.New("fastcache1e6", *flagAddr, "", *flagToken, *flagCert, *flagKey)
+
+	if err != nil {
+		nat.Log.Error().Msgf("Nats failed connect to server: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Printf("Nats client connected to %s with token: %s\n", addr, *flagToken)
+
+	// Handle panic.
 	defer func() {
-		// Drain connection (Preferred for responders)
-		// Close() not needed if this is called.
+		err := recover()
+		if err != nil {
+			nat.Log.Error().Msgf("[nats] run error > %v", err)
+		}
+
+		// Unsubscribe will remove interest in the given subject.
+		_ = sub.Unsubscribe()
+		// Drain connection (Preferred for responders), Close() not needed if this is called.
 		_ = nc.Drain()
-		// Close connection
-		//nc.Close()
+
+		// os.Exit(1)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}()
 
-	// Requests
-	// msg, err := nc.Request("cache.set.123", []byte("456"), time.Second)
-	// Replies
-	_, err = nc.Subscribe(name, func(m *nats.Msg) {
+	// Async Subscriber.
+	sub, err = nc.Subscribe(name, func(m *nats.Msg) {
 		result := defaultService.Handle(m.Data)
 		if err = m.Respond(result); err != nil {
 			_ = fmt.Errorf("Nats failed to Write: %v\n", err)
@@ -66,16 +58,22 @@ func ProdNatS() {
 		//	_ = fmt.Errorf("Nats failed to Write: %v\n", err)
 		//}
 	})
+	// Set listening.
+	nat.SubscribeErrorHandle(sub, true, err)
 	if err != nil {
-		_ = fmt.Errorf("Nats failed to Read: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Nats client subscribed to %s\n", name)
+	// Set pending limits.
+	nat.SubscribeLimitHandle(sub, 10000000, 1048576)
 
 	// Flush connection to server, returns when all messages have been processed.
-	_ = nc.Flush()
+	nat.FlushAndCheckLastError(nc)
 
-	// Wait os.Exit
-	runtime.Goexit()
+	// Pass the signals you want to end your application.
+	death := f.NewDeath(syscall.SIGINT, syscall.SIGTERM)
+	// When you want to block for shutdown signals.
+	death.WaitForDeathWithFunc(func() {
+		nat.Log.Error().Msg("[nats] run forced termination")
+	})
 }
