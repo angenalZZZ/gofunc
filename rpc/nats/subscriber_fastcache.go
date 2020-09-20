@@ -205,11 +205,19 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 		return
 	}
 
-	var runCount uint64
+	var (
+		runCount uint64
+		delIndex uint64
+	)
+
 	var runHandle = func() {
 		var handData [BulkSize][]byte
 		count, handRecords := atomic.LoadUint64(&sub.Count), 0
 		if count <= runCount {
+			if sub.Index <= delIndex && time.Now().Format("150405") == "030000" {
+				sub.Count, sub.Index = 0, 0
+				runCount, delIndex = 0, 0
+			}
 			return
 		}
 
@@ -241,6 +249,7 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 		go func(index, handRecords uint64) {
 			for i, n := index-handRecords+1, index; i <= n; i++ {
 				sub.Cache.Del(f.BytesUint64(i))
+				atomic.AddUint64(&delIndex, 1)
 			}
 		}(sub.Index, uint64(handRecords))
 	}
