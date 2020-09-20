@@ -20,13 +20,13 @@ import (
 	"time"
 )
 
-const HandSize int = 2000
+const BulkSize int = 2000
 
 type SubscriberFastCache struct {
 	*nats.Conn
 	sub  *nats.Subscription
 	Subj string
-	Hand func([HandSize][]byte) error
+	Hand func([BulkSize][]byte) error
 	*fastcache.Cache
 	CacheDir string // cache persist to disk directory
 	Index    uint64
@@ -40,7 +40,7 @@ func NewSubscriberFastCache(nc *nats.Conn, subject string, cacheDir ...string) *
 	sub := &SubscriberFastCache{
 		Conn:  nc,
 		Subj:  subject,
-		Cache: fastcache.New(2048),
+		Cache: fastcache.New(104857600), // 100Mb size of messages.
 		Since: f.TimeFrom(time.Now(), true),
 	}
 	if len(cacheDir) == 1 && cacheDir[0] != "" {
@@ -60,7 +60,9 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	defer func() {
 		err := recover()
 		if err != nil {
-			Log.Error().Msgf("[nats] run error > %v", err)
+			Log.Error().Msgf("[nats] stop receive new data with error > %v", err)
+		} else {
+			Log.Info().Msgf("[nats] stop receive new data > %d/%d", sub.Index, sub.Count)
 		}
 
 		// Unsubscribe will remove interest in the given subject.
@@ -68,7 +70,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 		// Drain connection (Preferred for responders), Close() not needed if this is called.
 		_ = sub.Conn.Drain()
 
-		// Stop handle new data
+		// Stop handle new data.
 		cancel()
 		// Save cache.
 		sub.Save(sub.CacheDir)
@@ -81,10 +83,8 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 
 	// Async Subscriber
 	sub.sub, err = sub.Conn.Subscribe(sub.Subj, func(msg *nats.Msg) {
-		if len(msg.Data) > 0 {
-			key := atomic.AddUint64(&sub.Count, 1)
-			sub.Cache.Set(f.BytesUint64(key), msg.Data)
-		}
+		key, val := atomic.AddUint64(&sub.Count, 1), msg.Data
+		sub.Cache.Set(f.BytesUint64(key), val)
 	})
 	SubscribeErrorHandle(sub.sub, true, err)
 	if err != nil {
@@ -160,11 +160,11 @@ func (sub *SubscriberFastCache) init(ctx context.Context) {
 		count, _ := strconv.ParseInt(s[2], 10, 0)
 		indexZero := uint64(index) + 1
 
-		var handData [HandSize][]byte
+		var handData [BulkSize][]byte
 		for i, c, dataIndex := indexZero, uint64(count), 0; i <= c; i++ {
 			if key := f.BytesUint64(i); cache.Has(key) {
 				handData[dataIndex] = cache.Get(nil, key)
-				if dataIndex++; dataIndex == HandSize || i == c {
+				if dataIndex++; dataIndex == BulkSize || i == c {
 					// bulk handle
 					if err := sub.Hand(handData); err != nil {
 						// rollback
@@ -184,7 +184,7 @@ func (sub *SubscriberFastCache) init(ctx context.Context) {
 					handRecords += len(handData)
 					// reset data
 					dataIndex = 0
-					handData = [HandSize][]byte{}
+					handData = [BulkSize][]byte{}
 				}
 			}
 		}
@@ -205,44 +205,57 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 		return
 	}
 
-	var prevCount uint64
+	var runCount uint64
+	var runHandle = func() {
+		var handData [BulkSize][]byte
+		count, handRecords := atomic.LoadUint64(&sub.Count), 0
+		if count <= runCount {
+			return
+		}
+
+		for dataIndex := 0; dataIndex < BulkSize && sub.Index < count; runCount++ {
+			key := atomic.AddUint64(&sub.Index, 1)
+			handData[dataIndex] = sub.Cache.Get(nil, f.BytesUint64(key))
+			handRecords++
+			if dataIndex++; dataIndex == BulkSize || sub.Index == count {
+				// bulk handle
+				if err := sub.Hand(handData); err != nil {
+					// rollback
+					Log.Error().Msgf("[nats] run handle new data err > %s", err)
+					sub.Index -= uint64(dataIndex)
+					handRecords -= dataIndex
+					break
+				}
+				// reset data
+				dataIndex = 0
+				handData = [BulkSize][]byte{}
+			}
+		}
+
+		Log.Info().Msgf("[nats] run handle new data > %d records", handRecords)
+
+		if handRecords == 0 {
+			return
+		}
+		// delete old data
+		go func(index, handRecords uint64) {
+			for i, n := index-handRecords+1, index; i <= n; i++ {
+				sub.Cache.Del(f.BytesUint64(i))
+			}
+		}(sub.Index, uint64(handRecords))
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
 			if err := ctx.Err(); err != nil && err != context.Canceled {
-				Log.Info().Msgf("[nats] run handle new data err > %s", err)
+				Log.Info().Msgf("[nats] done handle new data err > %s", err)
 			}
+			runHandle()
 			return
 		case <-time.After(time.Second):
-			var handData [HandSize][]byte
-			count, handRecords := atomic.LoadUint64(&sub.Count), 0
-			if count == 0 || count == prevCount {
-				_ = sub.Hand(handData)
-				continue
-			}
-			prevCount = count
-			for dataIndex := 0; dataIndex < HandSize && count > sub.Index; {
-				key := atomic.AddUint64(&sub.Index, 1)
-				src := sub.Cache.Get(nil, f.BytesUint64(key))
-				if len(src) == 0 {
-					continue
-				}
-				handRecords++
-				handData[dataIndex] = src
-				if dataIndex++; dataIndex == HandSize || sub.Index == count {
-					// bulk handle
-					if err := sub.Hand(handData); err != nil {
-						// rollback
-						Log.Error().Msgf("[nats] run handle new data > %s", err)
-						sub.Index -= uint64(len(handData))
-						break
-					}
-					// reset data
-					dataIndex = 0
-					handData = [HandSize][]byte{}
-				}
-			}
-			Log.Info().Msgf("[nats] run handle new data > %d records", handRecords)
+			Log.Info().Msgf("[nats] run receive new data > %d/%d", sub.Index, sub.Count)
+			runHandle()
 		}
 	}
 }
