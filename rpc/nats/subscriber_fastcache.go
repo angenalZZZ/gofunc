@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const BulkSize int = 2000
+const BulkSize = 2000
 
 type SubscriberFastCache struct {
 	*nats.Conn
@@ -28,21 +28,33 @@ type SubscriberFastCache struct {
 	Subj string
 	Hand func([BulkSize][]byte) error
 	*fastcache.Cache
-	CacheDir string // cache persist to disk directory
-	Index    uint64
-	Count    uint64
-	Since    *f.TimeStamp
-	saved    bool
+	CacheDir   string // sets cache persist to disk directory
+	Index      uint64
+	Count      uint64
+	Since      *f.TimeStamp
+	MsgLimit   int // sets the limits for pending messages for this subscription.
+	BytesLimit int // sets the limits for a message's bytes for this subscription.
+	async      bool
+	err        error
+	pool       *f.Pool
 }
 
 // NewSubscriberFastCache Create a subscriber with cache store for Client Connect.
 func NewSubscriberFastCache(nc *nats.Conn, subject string, cacheDir ...string) *SubscriberFastCache {
 	sub := &SubscriberFastCache{
-		Conn:  nc,
-		Subj:  subject,
-		Cache: fastcache.New(104857600), // 100Mb size of messages.
-		Since: f.TimeFrom(time.Now(), true),
+		Conn:       nc,
+		Subj:       subject,
+		Cache:      fastcache.New(1073741824), // 1GB cache capacity
+		Since:      f.TimeFrom(time.Now(), true),
+		MsgLimit:   100000000, // pending messages: 100 million
+		BytesLimit: 10485760,  // a message's size: 10MB
+		async:      true,
 	}
+	sub.pool = f.NewPool(f.NumCPUx16, func() f.PoolWorker {
+		return &CachePoolWorker{
+			processor: sub.Process,
+		}
+	})
 	if len(cacheDir) == 1 && cacheDir[0] != "" {
 		sub.CacheDir = cacheDir[0]
 	} else {
@@ -51,9 +63,15 @@ func NewSubscriberFastCache(nc *nats.Conn, subject string, cacheDir ...string) *
 	return sub
 }
 
+// Process messages for this subscription.
+func (sub *SubscriberFastCache) Process(msg *CacheMsg) error {
+	key, val := msg.Key, msg.Val
+	sub.Cache.Set(f.BytesUint64(key), val)
+	return nil
+}
+
 // Run runtime to end your application.
 func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
-	var err error
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Handle panic
@@ -72,6 +90,8 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 
 		// Stop handle new data.
 		cancel()
+		// Stop pool processor.
+		sub.pool.Close()
 		// Save cache.
 		sub.Save(sub.CacheDir)
 
@@ -82,17 +102,18 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	}()
 
 	// Async Subscriber
-	sub.sub, err = sub.Conn.Subscribe(sub.Subj, func(msg *nats.Msg) {
+	sub.sub, sub.err = sub.Conn.Subscribe(sub.Subj, func(msg *nats.Msg) {
 		key, val := atomic.AddUint64(&sub.Count, 1), msg.Data
+		//sub.pool.Process(&CacheMsg{Key: key, Val: val})
 		sub.Cache.Set(f.BytesUint64(key), val)
 	})
-	SubscribeErrorHandle(sub.sub, true, err)
-	if err != nil {
-		log.Fatal(err)
+	SubscribeErrorHandle(sub.sub, sub.async, sub.err)
+	if sub.err != nil {
+		log.Fatal(sub.err)
 	}
 
 	// Set pending limits
-	SubscribeLimitHandle(sub.sub, 10000000, 1048576)
+	SubscribeLimitHandle(sub.sub, sub.MsgLimit, sub.BytesLimit)
 
 	// Flush connection to server, returns when all messages have been processed.
 	FlushAndCheckLastError(sub.Conn)
@@ -119,7 +140,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	})
 }
 
-// init handle old data
+// init handle old data.
 func (sub *SubscriberFastCache) init(ctx context.Context) {
 	if sub.Hand == nil {
 		return
@@ -199,7 +220,7 @@ func (sub *SubscriberFastCache) init(ctx context.Context) {
 	}
 }
 
-// run handle new data
+// run handle new data.
 func (sub *SubscriberFastCache) hand(ctx context.Context) {
 	if sub.Hand == nil {
 		return
@@ -214,9 +235,9 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 		var handData [BulkSize][]byte
 		count, handRecords := atomic.LoadUint64(&sub.Count), 0
 		if count <= runCount {
-			if sub.Index <= delIndex && time.Now().Format("150405") == "030000" {
-				sub.Count, sub.Index = 0, 0
-				runCount, delIndex = 0, 0
+			// reset handle
+			if 0 < count && 3 == time.Now().Hour() && sub.Index <= delIndex {
+				sub.Count, runCount, sub.Index, delIndex = 0, 0, 0, 0
 			}
 			return
 		}
@@ -245,6 +266,7 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 		if handRecords == 0 {
 			return
 		}
+
 		// delete old data
 		go func(index, handRecords uint64) {
 			for i, n := index-handRecords+1, index; i <= n; i++ {
@@ -294,11 +316,10 @@ func (sub *SubscriberFastCache) filenames(since string, index, count uint64) str
 }
 
 func (sub *SubscriberFastCache) Save(cacheDir string) {
-	if sub.saved || sub.Count == 0 || sub.Hand == nil || sub.Index == sub.Count {
+	if sub.Count == 0 || sub.Hand == nil || sub.Index == sub.Count {
 		return
 	}
 
-	sub.saved = true
 	saveFastCache(sub.Cache, cacheDir, sub.Dirname(), sub.Filename())
 }
 
