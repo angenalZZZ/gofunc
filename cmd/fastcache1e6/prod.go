@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/angenalZZZ/gofunc/g"
+	. "github.com/angenalZZZ/gofunc/g"
 )
 
 func Prod() {
@@ -10,15 +10,15 @@ func Prod() {
 
 	// IO transmission mode SHM(SharedMemory)/gRPC/TCP/WS(WebSocket)/NatS
 	switch *flagSvc {
-	case g.Io2SHM:
+	case Io2SHM:
 		ProdSHM()
-	case g.Io2gRPC:
+	case Io2gRPC:
 		ProdGRPC()
-	case g.Io2TCP:
+	case Io2TCP:
 		ProdTCP()
-	case g.Io2WS:
+	case Io2WS:
 		ProdWS()
-	case g.Io2NatS:
+	case Io2NatS:
 		ProdNatS()
 	}
 }

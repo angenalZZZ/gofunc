@@ -1,7 +1,7 @@
-//go:generate protoc -I ../../../../../rpc/proto --go_out=plugins=grpc:. ../../../../../rpc/proto/cache.proto
-//!go:generate protoc -I ../../../../../rpc/proto --csharp_out=. ../../../../../rpc/proto/cache.proto
-// go get github.com/angenalZZZ/gofunc/data/cache/fastcache/cmd/fastcache1e6
-// go build -ldflags "-s -w" -o A:/test/ .
+//go:generate protoc -I ../../rpc/proto --go_out=plugins=grpc:. ../../rpc/proto/cache.proto
+///go:generate protoc -I ../../rpc/proto --csharp_out=. ../../rpc/proto/cache.proto
+///go get github.com/angenalZZZ/gofunc/cmd/fastcache1e6
+///go build -ldflags "-s -w" -o A:/test/ .
 
 // TEST: fastcache1e6 -c 2 -d 128 -t 10000000
 // cache1(4CPU+16G+MHD).benchmark GET:20Mq/s SET:2Mq/s FLUSH:0.4s
