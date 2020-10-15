@@ -2,8 +2,23 @@ package f_test
 
 import (
 	"github.com/angenalZZZ/gofunc/f"
+	"io/ioutil"
 	"testing"
 )
+
+func TestGbkToUtf8(t *testing.T) {
+	data, err := ioutil.ReadFile("../test/temp/encoding-gbk.txt")
+	if err != nil {
+		t.Fatal(err)
+	} else {
+		t.Logf("%s", data)
+	}
+	if data, err = f.GbkToUtf8(data); err != nil {
+		t.Fatal(err)
+	} else {
+		t.Logf("%s", data)
+	}
+}
 
 func TestToInt(t *testing.T) {
 	// ToInt parse string to int64
