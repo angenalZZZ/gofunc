@@ -81,14 +81,14 @@ func SubscribeLimitHandle(sub *nats.Subscription, msgLimit, bytesLimitOfMsg int)
 	// Delivered returns the number of delivered messages for this subscription.
 	if deliveredNum, err := sub.Delivered(); err != nil {
 		Log.Error().Msgf("[nats] number of messages deliver > %s", err)
-	} else {
+	} else if deliveredNum > 0 {
 		Log.Info().Msgf("[nats] number of messages deliver: %d", deliveredNum)
 	}
 
 	// Dropped returns the number of known dropped messages for this subscription.
 	if droppedNum, err := sub.Dropped(); err != nil {
 		Log.Error().Msgf("[nats] number of messages dropped > %s", err)
-	} else {
+	} else if droppedNum > 0 {
 		Log.Info().Msgf("[nats] number of messages dropped: %d", droppedNum)
 	}
 }
