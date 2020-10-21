@@ -15,7 +15,7 @@ func String(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
-// ToString convert number to string
+// ToString convert number to string.
 func ToString(val interface{}) (str string) {
 	switch tVal := val.(type) {
 	case int:
@@ -61,13 +61,69 @@ func ToString(val interface{}) (str string) {
 	return
 }
 
-// ToJSON convert the input to a valid JSON string
+// ToJSON convert the input to a valid JSON string.
 func ToJSON(obj interface{}) (string, error) {
 	res, err := EncodeJson(obj)
 	if err != nil {
 		res = []byte("")
 	}
 	return string(res), err
+}
+
+// ToMap convert the input to a map[string]interface{}.
+func ToMap(obj interface{}) (map[string]interface{}, error) {
+	out := map[string]interface{}{}
+	v := reflect.ValueOf(obj)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("f.ToMap(obj) accepts only structs; got %T", v)
+	}
+	t := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		f := t.Field(i)
+		if v.Field(i).Kind() == reflect.Struct {
+			innerOut, err := ToMap(v.Field(i).Interface())
+			if err != nil {
+				return nil, err
+			}
+			out[f.Name] = innerOut
+		} else {
+			out[f.Name] = v.Field(i).Interface()
+		}
+	}
+	return out, nil
+}
+
+// ToMapOfTag convert the input to a map[string]interface{} and a map with the tag's value.
+func ToMapOfTag(obj interface{}, tag string) (map[string]interface{}, map[string]interface{}, error) {
+	out := map[string]interface{}{}
+	tags := map[string]interface{}{}
+
+	v := reflect.ValueOf(obj)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return nil, nil, fmt.Errorf("f.ToMapOfTag(obj,tag) accepts only structs; got %T", v)
+	}
+	t := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		f := t.Field(i)
+		if v.Field(i).Kind() == reflect.Struct {
+			innerOut, innerTags, err := ToMapOfTag(v.Field(i).Interface(), tag)
+			if err != nil {
+				return nil, nil, err
+			}
+			out[f.Name] = innerOut
+			tags[f.Name] = innerTags
+		} else {
+			out[f.Name] = v.Field(i).Interface()
+			tags[f.Name] = f.Tag.Get(tag)
+		}
+	}
+	return out, tags, nil
 }
 
 // ToFloat convert the input string to a float, or 0.0 if the input is not a float.
