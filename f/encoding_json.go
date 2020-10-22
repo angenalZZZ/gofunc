@@ -152,7 +152,17 @@ func EncodedJson(v interface{}) []byte {
 	}
 }
 
-// EncodedMap returns json data.
+// DecodedJson decode json data to a object v.
+func DecodedJson(data []byte) interface{} {
+	var v interface{}
+	if err := json.Unmarshal(data, v); err != nil {
+		return nil
+	} else {
+		return v
+	}
+}
+
+// EncodedMap returns map data.
 func EncodedMap(v interface{}) []byte {
 	if m1, ok := v.(map[string]interface{}); ok {
 		m := make(map[string]interface{})
@@ -173,6 +183,16 @@ func EncodedMap(v interface{}) []byte {
 		return EncodedJson(m)
 	}
 	return EncodedJson(v)
+}
+
+// DecodedJson decode map data to a object v.
+func DecodedMap(data []byte) interface{} {
+	var v interface{}
+	if err := json.Unmarshal(data, v); err != nil {
+		return nil
+	} else {
+		return v
+	}
 }
 
 // EncodeJson encode a object v to json data.

@@ -8,7 +8,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"github.com/angenalZZZ/gofunc/g"
 	json "github.com/json-iterator/go"
 	"html"
 	"io/ioutil"
@@ -426,9 +425,9 @@ func IsStrings(val interface{}) bool {
 	if _, ok := val.([]string); ok {
 		return true
 	}
-	if _, ok := val.(g.Strings); ok {
-		return true
-	}
+	//if _, ok := val.(g.Strings); ok {
+	//	return true
+	//}
 	return false
 }
 
@@ -438,10 +437,9 @@ func IsMap(val interface{}) (ok bool) {
 		return false
 	}
 
-	if _, ok = val.(g.Map); ok {
-		return true
-	}
-
+	//if _, ok = val.(g.Map); ok {
+	//	return true
+	//}
 	var rv reflect.Value
 	if rv, ok = val.(reflect.Value); !ok {
 		rv = reflect.ValueOf(val)

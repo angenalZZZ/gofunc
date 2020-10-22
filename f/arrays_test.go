@@ -26,13 +26,13 @@ func ExampleEach() {
 	f.Each(data, fn)
 }
 
-func TestMap(t *testing.T) {
+func TestMaps(t *testing.T) {
 	t.Parallel()
 	data := []interface{}{1, 2, 3, 4, 5}
 	var fn f.ResultIterator = func(value interface{}, index int) interface{} {
 		return value.(int) * 3
 	}
-	result := f.Map(data, fn)
+	result := f.Maps(data, fn)
 	for i, d := range result {
 		if d != fn(data[i], i) {
 			t.Errorf("Expected Map(..) to be %v, got %v", fn(data[i], i), d)
@@ -40,12 +40,12 @@ func TestMap(t *testing.T) {
 	}
 }
 
-func ExampleMap() {
+func ExampleMaps() {
 	data := []interface{}{1, 2, 3, 4, 5}
 	var fn f.ResultIterator = func(value interface{}, index int) interface{} {
 		return value.(int) * 3
 	}
-	_ = f.Map(data, fn) // result = []interface{}{1, 6, 9, 12, 15}
+	_ = f.Maps(data, fn) // result = []interface{}{1, 6, 9, 12, 15}
 }
 
 func TestFind(t *testing.T) {

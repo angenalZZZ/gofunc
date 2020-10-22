@@ -70,7 +70,52 @@ func ToJSON(obj interface{}) (string, error) {
 	return string(res), err
 }
 
-// ToMap convert the input to a map[string]interface{}.
+// Map check and convert the Map or Ptr to a map[string]interface{}.
+func Map(obj interface{}) (map[string]interface{}, bool) {
+	if obj == nil {
+		return nil, false
+	}
+
+	var (
+		rv reflect.Value
+		ok bool
+	)
+
+	if rv, ok = obj.(reflect.Value); !ok {
+		rv = reflect.ValueOf(obj)
+	}
+
+	if rv.Kind() == reflect.Ptr {
+		rv = rv.Elem()
+	}
+
+	if rv.Kind() == reflect.Map {
+		m := map[string]interface{}{}
+		for _, k := range rv.MapKeys() {
+			m[k.String()] = rv.MapIndex(k).Interface()
+		}
+		return m, true
+	}
+	return nil, false
+}
+
+// MapMerge recursively merges the src and dst maps. Key conflicts are resolved by
+// preferring src, or recursively descending, if both src and dst are maps.
+func MapMerge(dst, src map[string]interface{}) map[string]interface{} {
+	for key, srcVal := range src {
+		if dstVal, ok := dst[key]; ok {
+			srcMap, srcMapOk := Map(srcVal)
+			dstMap, dstMapOk := Map(dstVal)
+			if srcMapOk && dstMapOk {
+				srcVal = MapMerge(dstMap, srcMap)
+			}
+		}
+		dst[key] = srcVal
+	}
+	return dst
+}
+
+// ToMap convert the struct to a map[string]interface{}.
 func ToMap(obj interface{}) (map[string]interface{}, error) {
 	out := map[string]interface{}{}
 	v := reflect.ValueOf(obj)
@@ -96,7 +141,7 @@ func ToMap(obj interface{}) (map[string]interface{}, error) {
 	return out, nil
 }
 
-// ToMapOfTag convert the input to a map[string]interface{} and a map with the tag's value.
+// ToMapOfTag convert the struct to a map[string]interface{} and a map with the tag's value.
 func ToMapOfTag(obj interface{}, tag string) (map[string]interface{}, map[string]interface{}, error) {
 	out := map[string]interface{}{}
 	tags := map[string]interface{}{}
