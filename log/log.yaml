@@ -7,4 +7,4 @@ log: # 日志跟踪
   timeformat: 2006-01-02 15:04:05.000
   compress: false # 压缩备份gzip
   writers: file,stdout # 输出位置(选项:file,stdout)
-  level: info # 日志级别(选项:debug,info,warn,error,fatal,panic,trace)
+  level: info # 日志级别(选项:trace,debug,info,warn,error,fatal,panic,no,disabled)

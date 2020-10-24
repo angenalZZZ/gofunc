@@ -9,8 +9,8 @@ func (hub *handler) Handle(list [nat.BulkSize][]byte) error {
 		if len(item) == 0 {
 			break
 		}
-		if item[0] != '{' {
-			nat.Log.Info().Msgf("[nats] received test message on %q: %s", subject, string(item))
+		if item[0] == '{' {
+			nat.Log.Info().Msgf("[nats] received on %q: %s", subject, string(item))
 		}
 	}
 

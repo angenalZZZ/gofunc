@@ -61,7 +61,7 @@ func Init(c *Config) *Logger {
 	z := zerolog.New(w).With().Timestamp()
 	l := z.Logger()
 	if level, err := zerolog.ParseLevel(c.Level); err == nil {
-		l.Level(level)
+		l = l.Level(level)
 	}
 	return &l
 }

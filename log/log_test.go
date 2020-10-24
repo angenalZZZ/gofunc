@@ -18,7 +18,7 @@ func TestYamlFileConfig(t *testing.T) {
 	Log = Init(logCfg.Log)
 
 	// 写日志
-	Log.Debug().Msgf("Yaml File: %s", filename)
+	Log.Debug().Msgf("Yaml File: %s, %d:%d", filename)
 	Log.Info().Str("Config", fmt.Sprintf("%+v", logCfg.Log)).Send()
 	Log.Info().Timestamp().Msg("Test finish.\n ok!")
 }

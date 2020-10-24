@@ -78,9 +78,9 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	defer func() {
 		err := recover()
 		if err != nil {
-			Log.Error().Msgf("[nats] stop receive new data with error > %v", err)
+			Log.Error().Msgf("[nats] stop receive new data with error.panic > %v", err)
 		} else {
-			Log.Info().Msgf("[nats] stop receive new data > %d/%d", sub.Index, sub.Count)
+			Log.Warn().Msgf("[nats] stop receive new data > %d/%d", sub.Index, sub.Count)
 		}
 
 		// Unsubscribe will remove interest in the given subject.
@@ -136,7 +136,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	death := f.NewDeath(syscall.SIGINT, syscall.SIGTERM)
 	// When you want to block for shutdown signals.
 	death.WaitForDeathWithFunc(func() {
-		Log.Error().Msg("[nats] run forced termination")
+		Log.Warn().Msg("[nats] run forced termination")
 	})
 }
 
@@ -216,7 +216,7 @@ func (sub *SubscriberFastCache) init(ctx context.Context) {
 
 	Log.Info().Msgf("[nats] init handle old data > %d records", handRecords)
 	if err := ctx.Err(); err != nil && err != context.Canceled {
-		Log.Info().Msgf("[nats] init handle old data err > %s", err)
+		Log.Warn().Msgf("[nats] init handle old data err > %s", err)
 	}
 }
 
@@ -261,7 +261,7 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 			}
 		}
 
-		Log.Info().Msgf("[nats] run handle new data > %d records", handRecords)
+		Log.Info().Msgf("[nats] run handle new data > %d/%d < %d records", sub.Index, sub.Count, handRecords)
 
 		if handRecords == 0 {
 			return
@@ -280,12 +280,12 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			if err := ctx.Err(); err != nil && err != context.Canceled {
-				Log.Info().Msgf("[nats] done handle new data err > %s", err)
+				Log.Warn().Msgf("[nats] done handle new data err > %s", err)
 			}
 			runHandle()
 			return
 		case <-time.After(time.Second):
-			Log.Info().Msgf("[nats] run receive new data > %d/%d", sub.Index, sub.Count)
+			Log.Debug().Msgf("[nats] run receive new data > %d/%d", sub.Index, sub.Count)
 			runHandle()
 		}
 	}

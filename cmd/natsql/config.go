@@ -25,6 +25,6 @@ type config struct {
 }
 
 func initConfig() error {
-	configInfo := new(config)
+	configInfo = new(config)
 	return configfile.YamlTo(configFile, configInfo)
 }
