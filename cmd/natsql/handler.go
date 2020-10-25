@@ -17,7 +17,7 @@ func (hub *handler) Handle(list [][]byte) error {
 	}
 
 	// gets records
-	records := make([]interface{}, 0, size)
+	records := make([]map[string]interface{}, 0, size)
 	for _, item := range list {
 		if len(item) == 0 {
 			break
@@ -25,8 +25,8 @@ func (hub *handler) Handle(list [][]byte) error {
 		if item[0] == '{' {
 			nat.Log.Debug().Msgf("[nats] received on %q: %s", subject, string(item))
 
-			var obj interface{}
-			if err := json.Unmarshal(item, obj); err != nil {
+			var obj map[string]interface{}
+			if err := json.Unmarshal(item, &obj); err != nil {
 				continue
 			}
 
@@ -52,17 +52,17 @@ func (hub *handler) Handle(list [][]byte) error {
 	defer func() { _ = db.Close() }()
 
 	bulkSize := configInfo.Db.Table.Bulk
-	bulkRecords, dataIndex := make([]interface{}, 0, bulkSize), 0
+	bulkRecords, dataIndex := make([]map[string]interface{}, 0, bulkSize), 0
 	for i := 0; i < count; i++ {
 		obj := records[i]
 		bulkRecords = append(bulkRecords, obj)
 		if dataIndex++; dataIndex == bulkSize || dataIndex == count {
 			// bulk handle
-			if err = bulk.BulkInsert(db, bulkRecords, bulkSize, 10*time.Millisecond); err != nil {
+			if err = bulk.InsertObjsByTbl(db, bulkRecords, configInfo.Db.Table.Name); err != nil {
 				return err
 			}
 			// reset data
-			bulkRecords, dataIndex = make([]interface{}, 0, bulkSize), 0
+			bulkRecords, dataIndex = make([]map[string]interface{}, 0, bulkSize), 0
 		}
 	}
 

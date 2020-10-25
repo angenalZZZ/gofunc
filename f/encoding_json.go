@@ -155,7 +155,7 @@ func EncodedJson(v interface{}) []byte {
 // DecodedJson decode json data to a object v.
 func DecodedJson(data []byte) interface{} {
 	var v interface{}
-	if err := json.Unmarshal(data, v); err != nil {
+	if err := json.Unmarshal(data, &v); err != nil {
 		return nil
 	} else {
 		return v
@@ -188,7 +188,7 @@ func EncodedMap(v interface{}) []byte {
 // DecodedJson decode map data to a object v.
 func DecodedMap(data []byte) interface{} {
 	var v interface{}
-	if err := json.Unmarshal(data, v); err != nil {
+	if err := json.Unmarshal(data, &v); err != nil {
 		return nil
 	} else {
 		return v

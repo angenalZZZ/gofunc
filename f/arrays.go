@@ -72,6 +72,21 @@ func SplitObjects(array []interface{}, size int) [][]interface{} {
 	return chunkSet
 }
 
+// SplitObjectMaps Separate objects into several size.
+func SplitObjectMaps(array []map[string]interface{}, size int) [][]map[string]interface{} {
+	var chunkSet [][]map[string]interface{}
+	var chunk []map[string]interface{}
+
+	for len(array) > size {
+		chunk, array = array[:size], array[size:]
+		chunkSet = append(chunkSet, chunk)
+	}
+	if len(array) > 0 {
+		chunkSet = append(chunkSet, array[:])
+	}
+	return chunkSet
+}
+
 // StringsContains Check if string value is contained in slice.
 func StringsContains(s []string, sub string) bool {
 	for _, v := range s {
