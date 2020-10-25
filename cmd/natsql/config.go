@@ -15,6 +15,7 @@ var (
 
 type config struct {
 	Db struct {
+		Type  string
 		Conn  string
 		Table struct {
 			Name string

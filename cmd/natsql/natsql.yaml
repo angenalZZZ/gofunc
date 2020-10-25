@@ -1,6 +1,7 @@
 db:
-  #     "mysql://root:HGJ766GR767FKJU0@tcp(localhost:3306)/AppAuth?charset=utf8"
-  conn: "sqlserver://sa:HGJ766GR767FKJU0@localhost?database=AppAuth&connection+timeout=3"
+  type: mysql
+  #     "sqlserver://sa:HGJ766GR767FKJU0@localhost?database=AppAuth&connection+timeout=3"
+  conn: "mysql://root:HGJ766GR767FKJU0@tcp(localhost:3306)/AppAuth?charset=utf8"
   table:
     name: log # 数据库表名
     bulk: 100 # 批量插入记录数<=2000
