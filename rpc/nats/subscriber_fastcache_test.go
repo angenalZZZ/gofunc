@@ -21,7 +21,7 @@ func TestSubscriberFastCache(t *testing.T) {
 
 	// Create a subscriber for Client Connect.
 	sub := NewSubscriberFastCache(nc, "TestSubscriberFastCache", data.RootDir)
-	sub.Hand = func(list [BulkSize][]byte) error {
+	sub.Hand = func(list [][]byte) error {
 		for _, item := range list {
 			if len(item) == 0 {
 				break
@@ -61,7 +61,7 @@ func TestBenchSubscriberFastCache(t *testing.T) {
 
 	// Create a subscriber for Client Connect.
 	sub := NewSubscriberFastCache(nc, "BenchmarkSubscriberFastCache", data.RootDir)
-	sub.Hand = func(list [BulkSize][]byte) error {
+	sub.Hand = func(list [][]byte) error {
 		var n int64
 		for _, item := range list {
 			//Log.Info().Msgf("[nats] received message on %q: %s", sub.Subj, string(item))
@@ -98,6 +98,7 @@ func TestBenchSubscriberFastCache(t *testing.T) {
 	f.NumIncrWait(&publishedNumber, &succeededNumber)
 	t2 := time.Now()
 	ts := t2.Sub(t1)
+	time.Sleep(time.Millisecond)
 	f.DoneContext(ctx)
 
 	t.Logf("Publish Number: %d, Successful Number: %d, Failed Number %d", publishedNumber, succeededNumber, failedNumber)

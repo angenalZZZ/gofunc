@@ -5,21 +5,28 @@ import (
 	"github.com/nats-io/nats.go"
 	"log"
 	"syscall"
+	"time"
 )
 
 type Subscriber struct {
 	*nats.Conn
-	sub  *nats.Subscription
-	Subj string
-	Hand nats.MsgHandler
+	sub        *nats.Subscription
+	Subj       string
+	Hand       nats.MsgHandler
+	Since      *f.TimeStamp
+	MsgLimit   int // sets the limits for pending messages for this subscription.
+	BytesLimit int // sets the limits for a message's bytes for this subscription.
 }
 
 // NewSubscriber Create a subscriber for Client Connect.
 func NewSubscriber(nc *nats.Conn, subject string, msgHandler nats.MsgHandler) *Subscriber {
 	sub := &Subscriber{
-		Conn: nc,
-		Subj: subject,
-		Hand: msgHandler,
+		Conn:       nc,
+		Subj:       subject,
+		Hand:       msgHandler,
+		Since:      f.TimeFrom(time.Now(), true),
+		MsgLimit:   100000000, // pending messages: 100 million
+		BytesLimit: 1048576,   // a message's size: 1MB
 	}
 	return sub
 }
@@ -33,6 +40,8 @@ func (sub *Subscriber) Run(waitFunc ...func()) {
 		err := recover()
 		if err != nil {
 			Log.Error().Msgf("[nats] run error > %v", err)
+		} else {
+			Log.Warn().Msg("[nats] stop receive new data")
 		}
 
 		// Unsubscribe will remove interest in the given subject.
@@ -55,7 +64,7 @@ func (sub *Subscriber) Run(waitFunc ...func()) {
 	}
 
 	// Set pending limits.
-	SubscribeLimitHandle(sub.sub, 10000000, 1048576)
+	SubscribeLimitHandle(sub.sub, sub.MsgLimit, sub.BytesLimit)
 
 	// Flush connection to server, returns when all messages have been processed.
 	FlushAndCheckLastError(sub.Conn)
@@ -69,6 +78,6 @@ func (sub *Subscriber) Run(waitFunc ...func()) {
 	death := f.NewDeath(syscall.SIGINT, syscall.SIGTERM)
 	// When you want to block for shutdown signals.
 	death.WaitForDeathWithFunc(func() {
-		Log.Error().Msg("[nats] run forced termination")
+		Log.Error().Msg("[nats] forced to shutdown.")
 	})
 }

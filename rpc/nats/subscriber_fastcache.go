@@ -20,35 +20,37 @@ import (
 	"time"
 )
 
-const BulkSize = 2000
-
 type SubscriberFastCache struct {
 	*nats.Conn
 	sub  *nats.Subscription
 	Subj string
-	Hand func([BulkSize][]byte) error
+	Hand func([][]byte) error
 	*fastcache.Cache
-	CacheDir   string // sets cache persist to disk directory
-	Index      uint64
-	Count      uint64
-	Since      *f.TimeStamp
-	MsgLimit   int // sets the limits for pending messages for this subscription.
-	BytesLimit int // sets the limits for a message's bytes for this subscription.
-	async      bool
-	err        error
-	pool       *f.Pool
+	CacheDir     string // sets cache persist to disk directory
+	Index        uint64
+	Count        uint64
+	Since        *f.TimeStamp
+	MsgLimit     int   // sets the limits for pending messages for this subscription.
+	BytesLimit   int   // sets the limits for a message's bytes for this subscription.
+	OnceAmount   int64 // sets amount allocated at one time
+	OnceInterval time.Duration
+	async        bool
+	err          error
+	pool         *f.Pool
 }
 
 // NewSubscriberFastCache Create a subscriber with cache store for Client Connect.
 func NewSubscriberFastCache(nc *nats.Conn, subject string, cacheDir ...string) *SubscriberFastCache {
 	sub := &SubscriberFastCache{
-		Conn:       nc,
-		Subj:       subject,
-		Cache:      fastcache.New(1073741824), // 1GB cache capacity
-		Since:      f.TimeFrom(time.Now(), true),
-		MsgLimit:   100000000, // pending messages: 100 million
-		BytesLimit: 10485760,  // a message's size: 10MB
-		async:      true,
+		Conn:         nc,
+		Subj:         subject,
+		Cache:        fastcache.New(1073741824), // 1GB cache capacity
+		Since:        f.TimeFrom(time.Now(), true),
+		MsgLimit:     100000000, // pending messages: 100 million
+		BytesLimit:   1048576,   // a message's size: 1MB
+		OnceAmount:   -1,
+		OnceInterval: time.Second,
+		async:        true,
 	}
 	sub.pool = f.NewPool(f.NumCPUx16, func() f.PoolWorker {
 		return &CachePoolWorker{
@@ -63,6 +65,18 @@ func NewSubscriberFastCache(nc *nats.Conn, subject string, cacheDir ...string) *
 	return sub
 }
 
+// Limit sets amount for pending messages for this subscription, and a message's bytes.
+// Defaults amountPendingMessages: 100 million, anMessageBytes: 1MB
+func (sub *SubscriberFastCache) LimitMessage(amountPendingMessages, anMessageBytes int) {
+	sub.MsgLimit, sub.BytesLimit = amountPendingMessages, anMessageBytes
+}
+
+// Limit sets amount allocated at one time, and the processing interval time.
+// Defaults onceAmount: -1, onceInterval: time.Second
+func (sub *SubscriberFastCache) LimitAmount(onceAmount int64, onceInterval time.Duration) {
+	sub.OnceAmount, sub.OnceInterval = onceAmount, onceInterval
+}
+
 // Process messages for this subscription.
 func (sub *SubscriberFastCache) Process(msg *CacheMsg) error {
 	key, val := msg.Key, msg.Val
@@ -74,7 +88,7 @@ func (sub *SubscriberFastCache) Process(msg *CacheMsg) error {
 func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Handle panic
+	// Handle panic.
 	defer func() {
 		err := recover()
 		if err != nil {
@@ -101,27 +115,28 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 		}
 	}()
 
-	// Async Subscriber
+	// Async Subscriber.
 	sub.sub, sub.err = sub.Conn.Subscribe(sub.Subj, func(msg *nats.Msg) {
 		key, val := atomic.AddUint64(&sub.Count, 1), msg.Data
 		//sub.pool.Process(&CacheMsg{Key: key, Val: val})
 		sub.Cache.Set(f.BytesUint64(key), val)
 	})
+	// Set listening.
 	SubscribeErrorHandle(sub.sub, sub.async, sub.err)
 	if sub.err != nil {
 		log.Fatal(sub.err)
 	}
 
-	// Set pending limits
+	// Set pending limits.
 	SubscribeLimitHandle(sub.sub, sub.MsgLimit, sub.BytesLimit)
 
 	// Flush connection to server, returns when all messages have been processed.
 	FlushAndCheckLastError(sub.Conn)
 
-	// init handle old data
+	// init handle old data.
 	go sub.init(ctx)
 
-	// run handle new data
+	// run handle new data.
 	go sub.hand(ctx)
 
 	if len(waitFunc) > 0 {
@@ -136,7 +151,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	death := f.NewDeath(syscall.SIGINT, syscall.SIGTERM)
 	// When you want to block for shutdown signals.
 	death.WaitForDeathWithFunc(func() {
-		Log.Warn().Msg("[nats] run forced termination")
+		Log.Warn().Msg("[nats] forced to shutdown.")
 	})
 }
 
@@ -157,7 +172,7 @@ func (sub *SubscriberFastCache) init(ctx context.Context) {
 		}
 	}
 
-	handRecords := 0
+	handRecords, onceRecords := 0, atomic.LoadInt64(&sub.OnceAmount)
 	for _, oldFile := range oldFiles {
 		dir, jsonFile := filepath.Split(oldFile)
 		if ok, _ := regexp.MatchString(`^\d+\.\d+\.\d+\.json$`, jsonFile); !ok {
@@ -179,13 +194,17 @@ func (sub *SubscriberFastCache) init(ctx context.Context) {
 		since := s[0]
 		index, _ := strconv.ParseInt(s[1], 10, 0)
 		count, _ := strconv.ParseInt(s[2], 10, 0)
-		indexZero := uint64(index) + 1
+		indexZero, indexSize := uint64(index)+1, count-index
+		if onceRecords > 0 {
+			indexSize = onceRecords
+		}
 
-		var handData [BulkSize][]byte
-		for i, c, dataIndex := indexZero, uint64(count), 0; i <= c; i++ {
+		var handData = make([][]byte, 0, indexSize)
+		for i, c, dataIndex := indexZero, uint64(count), int64(0); i <= c; i++ {
 			if key := f.BytesUint64(i); cache.Has(key) {
-				handData[dataIndex] = cache.Get(nil, key)
-				if dataIndex++; dataIndex == BulkSize || i == c {
+				val := cache.Get(nil, key)
+				handData = append(handData, val)
+				if dataIndex++; dataIndex == onceRecords || i == c {
 					// bulk handle
 					if err := sub.Hand(handData); err != nil {
 						// rollback
@@ -198,14 +217,15 @@ func (sub *SubscriberFastCache) init(ctx context.Context) {
 							_ = os.RemoveAll(filePath)
 						}
 						// reboot init handle old data
-						time.Sleep(time.Second)
+						time.Sleep(sub.OnceInterval)
 						sub.init(ctx)
 						return
 					}
 					handRecords += len(handData)
 					// reset data
 					dataIndex = 0
-					handData = [BulkSize][]byte{}
+					handData = make([][]byte, 0, indexSize)
+					time.Sleep(sub.OnceInterval)
 				}
 			}
 		}
@@ -227,13 +247,13 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 	}
 
 	var (
+		running  bool
 		runCount uint64
 		delIndex uint64
 	)
 
 	var runHandle = func() {
-		var handData [BulkSize][]byte
-		count, handRecords := atomic.LoadUint64(&sub.Count), 0
+		count := atomic.LoadUint64(&sub.Count)
 		if count <= runCount {
 			// reset handle
 			if 0 < count && 3 == time.Now().Hour() && sub.Index <= delIndex {
@@ -242,11 +262,19 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 			return
 		}
 
-		for dataIndex := 0; dataIndex < BulkSize && sub.Index < count; runCount++ {
+		handRecords, onceRecords := int64(0), atomic.LoadInt64(&sub.OnceAmount)
+		indexSize := int64(count - sub.Index)
+		if onceRecords > 0 {
+			indexSize = onceRecords
+		}
+
+		var handData = make([][]byte, 0, indexSize)
+		for dataIndex := int64(0); dataIndex < indexSize && sub.Index < count; runCount++ {
 			key := atomic.AddUint64(&sub.Index, 1)
-			handData[dataIndex] = sub.Cache.Get(nil, f.BytesUint64(key))
+			val := sub.Cache.Get(nil, f.BytesUint64(key))
+			handData = append(handData, val)
 			handRecords++
-			if dataIndex++; dataIndex == BulkSize || sub.Index == count {
+			if dataIndex++; dataIndex == indexSize || sub.Index == count {
 				// bulk handle
 				if err := sub.Hand(handData); err != nil {
 					// rollback
@@ -257,15 +285,15 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 				}
 				// reset data
 				dataIndex = 0
-				handData = [BulkSize][]byte{}
+				handData = make([][]byte, 0, indexSize)
 			}
 		}
-
-		Log.Info().Msgf("[nats] run handle new data > %d/%d < %d records", sub.Index, sub.Count, handRecords)
 
 		if handRecords == 0 {
 			return
 		}
+
+		Log.Info().Msgf("[nats] run handle new data > %d/%d < %d records", sub.Index, sub.Count, handRecords)
 
 		// delete old data
 		go func(index, handRecords uint64) {
@@ -282,11 +310,19 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 			if err := ctx.Err(); err != nil && err != context.Canceled {
 				Log.Warn().Msgf("[nats] done handle new data err > %s", err)
 			}
+			for running {
+				time.Sleep(time.Millisecond)
+			}
 			runHandle()
 			return
-		case <-time.After(time.Second):
+		case <-time.After(sub.OnceInterval):
+			if running {
+				continue
+			}
+			running = true
 			Log.Debug().Msgf("[nats] run receive new data > %d/%d", sub.Index, sub.Count)
 			runHandle()
+			running = false
 		}
 	}
 }
