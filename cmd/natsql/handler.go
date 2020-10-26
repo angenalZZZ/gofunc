@@ -58,7 +58,7 @@ func (hub *handler) Handle(list [][]byte) error {
 		bulkRecords = append(bulkRecords, obj)
 		if dataIndex++; dataIndex == bulkSize || dataIndex == count {
 			// bulk handle
-			if err = bulk.InsertObjsByTbl(db, bulkRecords, configInfo.Db.Table.Name); err != nil {
+			if err = bulk.BulkInsertByJs(db, bulkRecords, configInfo.Db.Table.Bulk, configInfo.Db.Table.Script, time.Microsecond); err != nil {
 				return err
 			}
 			// reset data

@@ -1,6 +1,6 @@
 module github.com/angenalZZZ/gofunc
 
-go 1.13
+go 1.14
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
@@ -10,8 +10,11 @@ require (
 	github.com/caddyserver/certmagic v0.10.11
 	github.com/cenkalti/backoff/v4 v4.0.2
 	github.com/cespare/xxhash/v2 v2.1.1
+	github.com/davecgh/go-spew v1.1.1
 	github.com/dgraph-io/badger/v2 v2.0.3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/dlclark/regexp2 v1.4.0 // indirect
+	github.com/dop251/goja v0.0.0-20201022115936-e21ccf39bfce
 	github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c // indirect
 	github.com/facebookgo/freeport v0.0.0-20150612182905-d4adf43b75b9 // indirect
 	github.com/facebookgo/grace v0.0.0-20180706040059-75cf19382434
@@ -19,6 +22,7 @@ require (
 	github.com/facebookgo/subset v0.0.0-20200203212716-c811ad88dec4 // indirect
 	github.com/go-redis/redis/v7 v7.4.0
 	github.com/go-resty/resty/v2 v2.2.0
+	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.0.3

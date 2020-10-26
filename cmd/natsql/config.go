@@ -18,8 +18,8 @@ type config struct {
 		Type  string
 		Conn  string
 		Table struct {
-			Name string
-			Bulk int
+			Bulk   int
+			Script string
 		}
 	}
 	Log *log.Config

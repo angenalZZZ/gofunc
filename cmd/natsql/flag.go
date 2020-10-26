@@ -44,9 +44,6 @@ func checkArgs() {
 
 	subject = *flagName
 	if subject == "" {
-		subject = configInfo.Db.Table.Name
-	}
-	if subject == "" {
 		panic("the subscription name can't be empty.")
 	}
 
