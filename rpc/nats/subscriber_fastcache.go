@@ -255,23 +255,23 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 	)
 
 	var runHandle = func() {
-		count := atomic.LoadUint64(&sub.Count)
+		count, index := atomic.LoadUint64(&sub.Count), atomic.LoadUint64(&sub.Index)
 		if count <= runCount {
 			// reset handle
-			if 0 < count && 3 == time.Now().Hour() && sub.Index <= delIndex {
+			if 0 < count && 3 == time.Now().Hour() && index <= delIndex {
 				sub.Count, runCount, sub.Index, delIndex = 0, 0, 0, 0
 			}
 			return
 		}
 
 		handRecords, onceRecords := int64(0), atomic.LoadInt64(&sub.OnceAmount)
-		indexSize := int64(count - sub.Index)
+		indexSize := int64(count - index)
 		if onceRecords > 0 {
 			indexSize = onceRecords
 		}
 
 		var handData = make([][]byte, 0, indexSize)
-		for dataIndex, index := int64(0), sub.Index; dataIndex < indexSize && index < count; runCount++ {
+		for dataIndex := int64(0); dataIndex < indexSize && index < count; runCount++ {
 			index++ // key equals index
 			val := sub.Cache.Get(nil, f.BytesUint64(index))
 			handData = append(handData, val)
@@ -281,7 +281,6 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 				if err := sub.Hand(handData); err != nil {
 					// rollback
 					Log.Error().Msgf("[nats] run handle new data err > %s", err)
-					sub.Index -= uint64(dataIndex)
 					handRecords -= dataIndex
 					break
 				}
