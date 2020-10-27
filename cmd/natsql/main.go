@@ -14,6 +14,7 @@ import (
 
 func main() {
 	// Your Arguments.
+	initArgs()
 	if len(os.Args) < 2 {
 		flag.Usage()
 		return
@@ -36,17 +37,6 @@ func main() {
 	//sub.MsgLimit = *flagMsgLimit
 	//sub.BytesLimit = *flagBytesLimit
 	sub.Hand = hd.Handle
-
-	// Ping a message.
-	//go func() {
-	//	time.Sleep(time.Millisecond)
-	//	err = nc.Publish(sub.Subj, []byte("ping"))
-	//	if err != nil {
-	//		nat.Log.Error().Msgf("[nats] failed publishing a test message\t>\t%s", err.Error())
-	//	} else {
-	//		nat.Log.Info().Msgf("[nats] successful publishing a test message")
-	//	}
-	//}()
 
 	// Waiting to exit.
 	sub.Run()

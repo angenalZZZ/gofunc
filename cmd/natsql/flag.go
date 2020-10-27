@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/dop251/goja"
+
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/log"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
@@ -23,7 +25,7 @@ var (
 	flagKey      = flag.String("key", "", "the TLS key file")
 )
 
-func init() {
+func initArgs() {
 	// Flag Parse
 	flag.Usage = func() {
 		fmt.Printf(" Usage of %s:\n", os.Args[0])
@@ -37,6 +39,7 @@ func checkArgs() {
 	if *flagConfig != "" {
 		configFile = *flagConfig
 	}
+
 	if err := initConfig(); err != nil {
 		panic(err)
 	}
@@ -52,5 +55,12 @@ func checkArgs() {
 	}
 	if cacheDir != "" && f.PathExists(cacheDir) == false {
 		panic("the cache disk directory isn't be exists.")
+	}
+
+	// Check Script
+	vm := goja.New()
+	vm.Set("records", []map[string]interface{}{})
+	if _, err := vm.RunString(configInfo.Db.Table.Script); err != nil {
+		panic("the table script error, must contain array 'records'.")
 	}
 }

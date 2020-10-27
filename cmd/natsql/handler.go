@@ -1,11 +1,12 @@
 package main
 
 import (
+	"time"
+
 	bulk "github.com/angenalZZZ/gofunc/data/bulk/gorm-bulk"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
 	"github.com/jinzhu/gorm"
 	json "github.com/json-iterator/go"
-	"time"
 )
 
 type handler struct{}

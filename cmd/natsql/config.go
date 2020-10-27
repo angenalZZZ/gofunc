@@ -7,13 +7,14 @@ import (
 )
 
 var (
-	configInfo *config
+	configInfo *Config
 	configFile = "natsql.yaml"
 	cacheDir   = data.CurrentDir
 	subject    = ""
 )
 
-type config struct {
+// Config The Config Info For natsql.yaml
+type Config struct {
 	Db struct {
 		Type  string
 		Conn  string
@@ -26,6 +27,6 @@ type config struct {
 }
 
 func initConfig() error {
-	configInfo = new(config)
+	configInfo = new(Config)
 	return configfile.YamlTo(configFile, configInfo)
 }

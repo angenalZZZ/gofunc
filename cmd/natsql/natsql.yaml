@@ -5,11 +5,12 @@ db:
   conn: "root:HGJ766GR767FKJU0@tcp(localhost:3306)/AppAuth?charset=utf8"
   table:
     bulk: 100 # 批量插入记录数<=2000
-    script: '"insert into test(name) values" + records.map(function(item){
-        return "("
-            + "'" + item.name.replace("''","") + "'"
-            + ")";
-    }).join(",") + ";"'
+    script: |
+      "insert into test(name) values" + records.map(function(item){
+          return "("
+              + "'" + item.name.replace("'","") + "'"
+              + ")";
+      }).join(",") + ";"
 
 log: # 日志跟踪
   filename: natsql.log # 日志文件
