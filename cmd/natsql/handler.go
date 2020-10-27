@@ -1,11 +1,15 @@
 package main
 
 import (
+	"strings"
 	"time"
 
 	bulk "github.com/angenalZZZ/gofunc/data/bulk/gorm-bulk"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
 	"github.com/jinzhu/gorm"
+
+	_ "github.com/jinzhu/gorm/dialects/mssql"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 	json "github.com/json-iterator/go"
 )
 
@@ -52,6 +56,9 @@ func (hub *handler) Handle(list [][]byte) error {
 	sqlDB.SetConnMaxLifetime(time.Minute)
 	defer func() { _ = db.Close() }()
 
+	script := configInfo.Db.Table.Script
+	isFunc := strings.Contains(script, "function sql(")
+
 	bulkSize := configInfo.Db.Table.Bulk
 	bulkRecords, dataIndex := make([]map[string]interface{}, 0, bulkSize), 0
 	for i := 0; i < count; i++ {
@@ -59,8 +66,14 @@ func (hub *handler) Handle(list [][]byte) error {
 		bulkRecords = append(bulkRecords, obj)
 		if dataIndex++; dataIndex == bulkSize || dataIndex == count {
 			// bulk handle
-			if err = bulk.BulkInsertByJs(db, bulkRecords, configInfo.Db.Table.Bulk, configInfo.Db.Table.Script, time.Microsecond); err != nil {
-				return err
+			if isFunc {
+				if err = bulk.BulkInsertByJs(db, bulkRecords, configInfo.Db.Table.Bulk, script, time.Microsecond); err != nil {
+					return err
+				}
+			} else {
+				if err = bulk.BulkInsertByJsFunction(db, bulkRecords, configInfo.Db.Table.Bulk, script, "sql", time.Microsecond); err != nil {
+					return err
+				}
 			}
 			// reset data
 			bulkRecords, dataIndex = make([]map[string]interface{}, 0, bulkSize), 0
