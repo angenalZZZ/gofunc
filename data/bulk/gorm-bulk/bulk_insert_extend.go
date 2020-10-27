@@ -18,6 +18,8 @@ func BulkInsertByJs(db *gorm.DB, objects []map[string]interface{}, chunkSize int
 		err error
 	)
 
+	defer func() { vm.ClearInterrupt() }()
+
 	// Split records with specified size not to exceed Database parameter limit
 	for _, records := range f.SplitObjectMaps(objects, chunkSize) {
 		// Input records
@@ -67,6 +69,8 @@ func BulkInsertByJsFunction(db *gorm.DB, objects []map[string]interface{}, chunk
 		vm = goja.New()
 		fn func([]map[string]interface{}) interface{}
 	)
+
+	defer func() { vm.ClearInterrupt() }()
 
 	if _, err := vm.RunString(javascript); err != nil {
 		return err
