@@ -3,10 +3,6 @@ package nats
 import (
 	"context"
 	"fmt"
-	"github.com/angenalZZZ/gofunc/data"
-	"github.com/angenalZZZ/gofunc/data/cache/fastcache"
-	"github.com/angenalZZZ/gofunc/f"
-	"github.com/nats-io/nats.go"
 	"io/ioutil"
 	"log"
 	"os"
@@ -18,8 +14,14 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"github.com/angenalZZZ/gofunc/data"
+	"github.com/angenalZZZ/gofunc/data/cache/fastcache"
+	"github.com/angenalZZZ/gofunc/f"
+	"github.com/nats-io/nats.go"
 )
 
+// SubscriberFastCache The NatS Subscriber with Fast Cache Temporary Storage.
 type SubscriberFastCache struct {
 	*nats.Conn
 	sub  *nats.Subscription
@@ -65,13 +67,13 @@ func NewSubscriberFastCache(nc *nats.Conn, subject string, cacheDir ...string) *
 	return sub
 }
 
-// Limit sets amount for pending messages for this subscription, and a message's bytes.
+// LimitMessage sets amount for pending messages for this subscription, and a message's bytes.
 // Defaults amountPendingMessages: 100 million, anMessageBytes: 1MB
 func (sub *SubscriberFastCache) LimitMessage(amountPendingMessages, anMessageBytes int) {
 	sub.MsgLimit, sub.BytesLimit = amountPendingMessages, anMessageBytes
 }
 
-// Limit sets amount allocated at one time, and the processing interval time.
+// LimitAmount sets amount allocated at one time, and the processing interval time.
 // Defaults onceAmount: -1, onceInterval: time.Second
 func (sub *SubscriberFastCache) LimitAmount(onceAmount int64, onceInterval time.Duration) {
 	sub.OnceAmount, sub.OnceInterval = onceAmount, onceInterval
@@ -94,7 +96,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 		if err != nil {
 			Log.Error().Msgf("[nats] stop receive new data with error.panic > %v", err)
 		} else {
-			Log.Warn().Msgf("[nats] stop receive new data > %d/%d", sub.Index, sub.Count)
+			Log.Warn().Msgf("[nats] stop receive new data > %d/%d < %d records not processed", sub.Index, sub.Count, sub.Count-sub.Index)
 		}
 
 		// Unsubscribe will remove interest in the given subject.
@@ -327,6 +329,7 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 	}
 }
 
+// Dirname gets the Cache Dirname.
 func (sub *SubscriberFastCache) Dirname() string {
 	return sub.dirname(sub.Since, sub.Index, sub.Count)
 }
@@ -339,6 +342,7 @@ func (sub *SubscriberFastCache) dirnames(since string, index, count uint64) stri
 	return fmt.Sprintf("%s.%d.%d", since, index, count)
 }
 
+// Filename gets the Cache Filename.
 func (sub *SubscriberFastCache) Filename() string {
 	return sub.filename(sub.Since, sub.Index, sub.Count)
 }
@@ -351,6 +355,7 @@ func (sub *SubscriberFastCache) filenames(since string, index, count uint64) str
 	return fmt.Sprintf("%s.%d.%d.json", since, index, count)
 }
 
+// Save the Cache Data of some records not processed.
 func (sub *SubscriberFastCache) Save(cacheDir string) {
 	if sub.Count == 0 || sub.Hand == nil || sub.Index == sub.Count {
 		return
