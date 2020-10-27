@@ -22,8 +22,9 @@ type Config struct {
 		Type  string
 		Conn  string
 		Table struct {
-			Bulk   int
-			Script string
+			Bulk     int
+			Interval int
+			Script   string
 		}
 	}
 	Log *log.Config

@@ -22,13 +22,16 @@ func (hub *handler) Handle(list [][]byte) error {
 	}
 
 	// gets records
+	debug := configInfo.Log.Level == "debug" || nat.Log.GetLevel() <= 0
 	records := make([]map[string]interface{}, 0, size)
 	for _, item := range list {
 		if len(item) == 0 {
 			break
 		}
 		if item[0] == '{' {
-			nat.Log.Debug().Msgf("[nats] received on %q: %s", subject, string(item))
+			if debug {
+				nat.Log.Debug().Msgf("[nats] received on %q: %s", subject, string(item))
+			}
 
 			var obj map[string]interface{}
 			if err := json.Unmarshal(item, &obj); err != nil {
@@ -50,6 +53,10 @@ func (hub *handler) Handle(list [][]byte) error {
 		return err
 	}
 
+	if debug {
+		db = db.Debug()
+	}
+
 	sqlDB := db.DB()
 	sqlDB.SetMaxIdleConns(20)
 	sqlDB.SetMaxOpenConns(100)
@@ -67,11 +74,11 @@ func (hub *handler) Handle(list [][]byte) error {
 		if dataIndex++; dataIndex == bulkSize || dataIndex == count {
 			// bulk handle
 			if isFunc {
-				if err = bulk.BulkInsertByJs(db, bulkRecords, configInfo.Db.Table.Bulk, script, time.Microsecond); err != nil {
+				if err = bulk.BulkInsertByJsFunction(db, bulkRecords, configInfo.Db.Table.Bulk, script, "sql", time.Microsecond); err != nil {
 					return err
 				}
 			} else {
-				if err = bulk.BulkInsertByJsFunction(db, bulkRecords, configInfo.Db.Table.Bulk, script, "sql", time.Microsecond); err != nil {
+				if err = bulk.BulkInsertByJs(db, bulkRecords, configInfo.Db.Table.Bulk, script, time.Microsecond); err != nil {
 					return err
 				}
 			}

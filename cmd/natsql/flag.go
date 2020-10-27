@@ -63,4 +63,8 @@ func checkArgs() {
 	if _, err := vm.RunString(configInfo.Db.Table.Script); err != nil {
 		panic("the table script error, must contain array 'records'.")
 	}
+
+	if configInfo.Db.Table.Interval < 10 {
+		configInfo.Db.Table.Interval = 10
+	}
 }

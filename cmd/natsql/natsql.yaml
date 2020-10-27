@@ -6,6 +6,7 @@ db:
   conn: "root:HGJ766GR767FKJU0@tcp(localhost:3306)/AppAuth?charset=utf8"
   table:
     bulk: 100 # 批量插入记录数<=2000
+    interval: 2000 # 间隔2000毫秒,批量处理一次
     # script: natsql.js # javascript: function sql(records)
     script: |
       "insert into test(name) values" + records.map(function(item){
