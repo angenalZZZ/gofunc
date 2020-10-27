@@ -1,3 +1,4 @@
+# > natsql -name Test -token HGJ766GR767FKJU0
 db:
   type: mysql
   #     mssql
