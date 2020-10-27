@@ -13,16 +13,16 @@ import (
 )
 
 var (
-	//flagMsgLimit = flag.Int("c", 100000000, "sets the limits for pending messages for this subscription")
-	//flagBytesLimit = flag.Int("d", 4096, "sets the limits for a message's bytes for this subscription")
+	//flagMsgLimit = flag.Int("c", 100000000, "the nats-Limits for pending messages for this subscription")
+	//flagBytesLimit = flag.Int("d", 4096, "the nats-Limits for a message's bytes for this subscription")
 	flagConfig   = flag.String("c", "natsql.yaml", "sets config file")
 	flagCacheDir = flag.String("d", "", "sets cache persist to disk directory")
-	flagAddr     = flag.String("a", "", "the server address")
-	flagName     = flag.String("name", "", "the subscription name [required]")
-	flagToken    = flag.String("token", "", "the Token auth string [required]")
-	flagCred     = flag.String("cred", "", "the Cred file")
-	flagCert     = flag.String("cert", "", "the TLS cert file")
-	flagKey      = flag.String("key", "", "the TLS key file")
+	flagAddr     = flag.String("a", "", "the NatS-Server address")
+	flagName     = flag.String("name", "", "the NatS-Subscription name [required]")
+	flagToken    = flag.String("token", "", "the NatS-Token auth string [required]")
+	flagCred     = flag.String("cred", "", "the NatS-Cred file")
+	flagCert     = flag.String("cert", "", "the NatS-TLS cert file")
+	flagKey      = flag.String("key", "", "the NatS-TLS key file")
 )
 
 func initArgs() {
