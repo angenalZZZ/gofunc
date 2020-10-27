@@ -39,7 +39,7 @@ func main() {
 	// Create a subscriber for Client Connect.
 	sub, hd := nat.NewSubscriberFastCache(nc, subject, cacheDir), new(handler)
 	sub.Hand = hd.Handle
-	sub.LimitAmount(int64(configInfo.Db.Table.Bulk), time.Duration(configInfo.Db.Table.Interval)*time.Millisecond)
+	sub.LimitAmount(int64(configInfo.Db.Table.Amount), time.Duration(configInfo.Db.Table.Interval)*time.Millisecond)
 	//sub.LimitMessage(*flagMsgLimit, *flagBytesLimit)
 	nat.Log.Debug().Msgf("NatS Config Info:\r\n {\"Subj\":%q,\"CacheDir\":%q,\"MsgLimit\":%d,\"BytesLimit\":%d,\"OnceAmount\":%d,\"OnceInterval\":%s}",
 		sub.Subj, sub.CacheDir, sub.MsgLimit, sub.BytesLimit, sub.OnceAmount, sub.OnceInterval)

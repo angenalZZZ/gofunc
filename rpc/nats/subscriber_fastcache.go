@@ -271,12 +271,12 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 		}
 
 		var handData = make([][]byte, 0, indexSize)
-		for dataIndex := int64(0); dataIndex < indexSize && sub.Index < count; runCount++ {
-			key := atomic.AddUint64(&sub.Index, 1)
-			val := sub.Cache.Get(nil, f.BytesUint64(key))
+		for dataIndex, index := int64(0), sub.Index; dataIndex < indexSize && index < count; runCount++ {
+			index++ // key equals index
+			val := sub.Cache.Get(nil, f.BytesUint64(index))
 			handData = append(handData, val)
 			handRecords++
-			if dataIndex++; dataIndex == indexSize || sub.Index == count {
+			if dataIndex++; dataIndex == indexSize || index == count {
 				// bulk handle
 				if err := sub.Hand(handData); err != nil {
 					// rollback
@@ -285,6 +285,7 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 					handRecords -= dataIndex
 					break
 				}
+				sub.Index += uint64(dataIndex)
 				// reset data
 				dataIndex = 0
 				handData = make([][]byte, 0, indexSize)

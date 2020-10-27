@@ -63,8 +63,8 @@ func (hub *handler) Handle(list [][]byte) error {
 	sqlDB.SetConnMaxLifetime(time.Minute)
 	defer func() { _ = db.Close() }()
 
-	script := configInfo.Db.Table.Script
-	isFunc := strings.Contains(script, "function sql(")
+	script, fn := configInfo.Db.Table.Script, "sql"
+	isFn := strings.Contains(script, "function "+fn)
 
 	bulkSize := configInfo.Db.Table.Bulk
 	bulkRecords, dataIndex := make([]map[string]interface{}, 0, bulkSize), 0
@@ -73,12 +73,12 @@ func (hub *handler) Handle(list [][]byte) error {
 		bulkRecords = append(bulkRecords, obj)
 		if dataIndex++; dataIndex == bulkSize || dataIndex == count {
 			// bulk handle
-			if isFunc {
-				if err = bulk.BulkInsertByJsFunction(db, bulkRecords, configInfo.Db.Table.Bulk, script, "sql", time.Microsecond); err != nil {
+			if isFn {
+				if err = bulk.BulkInsertByJsFunction(db, bulkRecords, bulkSize, script, fn, time.Microsecond); err != nil {
 					return err
 				}
 			} else {
-				if err = bulk.BulkInsertByJs(db, bulkRecords, configInfo.Db.Table.Bulk, script, time.Microsecond); err != nil {
+				if err = bulk.BulkInsertByJs(db, bulkRecords, bulkSize, script, time.Microsecond); err != nil {
 					return err
 				}
 			}

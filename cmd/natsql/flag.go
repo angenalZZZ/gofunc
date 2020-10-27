@@ -64,7 +64,16 @@ func checkArgs() {
 		panic("the table script error, must contain array 'records'.")
 	}
 
-	if configInfo.Db.Table.Interval < 10 {
-		configInfo.Db.Table.Interval = 10
+	if configInfo.Db.Table.Amount < 1 {
+		configInfo.Db.Table.Amount = -1
+	}
+	if configInfo.Db.Table.Bulk < 1 {
+		configInfo.Db.Table.Bulk = 1
+	}
+	if configInfo.Db.Table.Amount > 0 && configInfo.Db.Table.Amount < configInfo.Db.Table.Bulk {
+		configInfo.Db.Table.Amount = configInfo.Db.Table.Bulk
+	}
+	if configInfo.Db.Table.Interval < 1 {
+		configInfo.Db.Table.Interval = 1
 	}
 }

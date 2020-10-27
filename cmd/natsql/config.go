@@ -22,6 +22,7 @@ type Config struct {
 		Type  string
 		Conn  string
 		Table struct {
+			Amount   int
 			Bulk     int
 			Interval int
 			Script   string
