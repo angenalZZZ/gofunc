@@ -34,15 +34,23 @@ func CurrentUserHomeDir() string {
 	return currentUser.HomeDir
 }
 
+// CurrentFile gets compiled executable file name.
+func CurrentFile() string {
+	p, _ := filepath.Abs(os.Args[0])
+	_, p = path.Split(filepath.ToSlash(p))
+	return p
+}
+
 // CurrentPath gets compiled executable file absolute path.
-func CurrentPath() (p string) {
-	p, _ = filepath.Abs(os.Args[0])
-	return
+func CurrentPath() string {
+	p, _ := filepath.Abs(os.Args[0])
+	return p
 }
 
 // CurrentDir gets compiled executable file directory.
 func CurrentDir() string {
-	return filepath.Dir(CurrentPath())
+	p, _ := filepath.Abs(os.Args[0])
+	return filepath.Dir(p)
 }
 
 // RelativePath gets relative path.
@@ -89,6 +97,8 @@ func IsFile(path string) bool {
 	return false
 }
 
+// IsExeFile returns true if searches for an executable named file in the
+// directories named by the PATH environment variable.
 func IsExeFile(name string) bool {
 	if name == "" {
 		return false
