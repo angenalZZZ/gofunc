@@ -87,7 +87,7 @@ func checkArgs() {
 		panic(err)
 	}
 
-	nat.Log.Debug().Msgf("NatSql Config Info:\r\n %s \r\n", f.EncodedJson(configInfo))
+	nat.Log.Debug().Msgf("NatSql Config Info:\r\n%s\r\n", f.EncodedJson(configInfo))
 
 	// run SQL test
 	if isTest {
@@ -96,11 +96,18 @@ func checkArgs() {
 			panic(fmt.Errorf("test json file %q not opened: %s", jsonFile, err.Error()))
 		}
 
-		nat.Log.Debug().Msgf("test json file:\r\n %s \r\n", item)
-
 		list, err := data.ListData(item)
 		if err != nil {
 			panic(err)
+		}
+		if len(list) == 0 {
+			panic(fmt.Errorf("test json file can't be empty"))
+		}
+
+		nat.Log.Debug().Msgf("test json file: %q %d records\r\n", jsonFile, len(list))
+
+		if subject == "" {
+			subject = "test"
 		}
 		if err = hd.Handle(list); err != nil {
 			panic(err)

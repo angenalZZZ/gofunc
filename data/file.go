@@ -24,6 +24,9 @@ func ListJSON(buf []byte) ([]map[string]interface{}, error) {
 func ListData(buf []byte) ([][]byte, error) {
 	var s [][]byte
 	buf = bytes.TrimSpace(buf)
+	if c0 := bytes.IndexByte(buf, '['); c0 > 0 {
+		buf = buf[c0:]
+	}
 	if buf[0] == '[' && buf[len(buf)-1] == ']' {
 		var records []map[string]interface{}
 		err := json.Unmarshal(buf, &records)

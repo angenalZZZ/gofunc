@@ -25,15 +25,15 @@ func (hub *handler) Handle(list [][]byte) error {
 	}
 
 	// gets records
-	debug := configInfo.Log.Level == "debug" || nat.Log.GetLevel() <= 0
 	records := make([]map[string]interface{}, 0, size)
+	debug := configInfo.Log.Level == "debug" || nat.Log.GetLevel() < 1
 	for _, item := range list {
 		if len(item) == 0 {
 			break
 		}
 		if item[0] == '{' {
 			if debug {
-				nat.Log.Debug().Msgf("[nats] received on %q: %s", subject, string(item))
+				nat.Log.Debug().Msgf("[nats] received on %q: %s", subject, item)
 			}
 
 			var obj map[string]interface{}

@@ -1,6 +1,8 @@
 package data
 
-import "testing"
+import (
+	"testing"
+)
 
 var testBufJSON = `{"Code":"用户登录","Type":2,"Message":"【管理员】登录","Exception":null,"ActionName":"Account.LoginWithCode","Data":"{\"Name\":\"admin\",\"Pwd\":\"96e79218965eb72c92a549dd5a330112\"}","CreateTime":"2020-10-01 16:49:32"}`
 
@@ -27,6 +29,8 @@ func TestListData(t *testing.T) {
 	if list, err := ListData([]byte(buf)); err != nil {
 		t.Fatal(err)
 	} else {
-		t.Logf("%s", list)
+		for index, item := range list {
+			t.Logf("%d: %s", index, item)
+		}
 	}
 }
