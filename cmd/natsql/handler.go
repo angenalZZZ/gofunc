@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
 	bulk "github.com/angenalZZZ/gofunc/data/bulk/gorm-bulk"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
+	"github.com/dop251/goja"
 	"github.com/jinzhu/gorm"
 
 	_ "github.com/jinzhu/gorm/dialects/mssql"
@@ -15,6 +17,7 @@ import (
 
 type handler struct{}
 
+// Handle run default handler
 func (hub *handler) Handle(list [][]byte) error {
 	size := len(list)
 	if size == 0 {
@@ -84,6 +87,81 @@ func (hub *handler) Handle(list [][]byte) error {
 			}
 			// reset data
 			bulkRecords, dataIndex = make([]map[string]interface{}, 0, bulkSize), 0
+		}
+	}
+
+	return nil
+}
+
+// CheckJs run check javascript
+func (hub *handler) CheckJs(script string) error {
+	var (
+		fnName  = "sql"
+		isFn    = strings.Contains(script, "function "+fnName)
+		objects []map[string]interface{}
+		vm      = goja.New()
+	)
+
+	defer func() { vm.ClearInterrupt() }()
+
+	if isFn {
+		if _, err := vm.RunString(script); err != nil {
+			return err
+		}
+
+		val := vm.Get(fnName)
+		if val == nil {
+			return fmt.Errorf("js function %q not found", fnName)
+		}
+
+		var fn func([]map[string]interface{}) interface{}
+		if err := vm.ExportTo(val, &fn); err != nil {
+			return fmt.Errorf("js function %q not exported %s", fnName, err.Error())
+		}
+
+		v := fn(objects)
+		if v == nil {
+			return nil
+		}
+
+		switch sql := v.(type) {
+		case string:
+			if sql != "" {
+				return fmt.Errorf("js function %q return string must be empty", fnName)
+			}
+		case []string:
+			if len(sql) > 0 {
+				return fmt.Errorf("js function %q return string array must be empty", fnName)
+			}
+		default:
+			return fmt.Errorf("js function %q return type must be string or string array", fnName)
+		}
+	} else {
+		fnName = "records"
+		vm.Set(fnName, objects)
+
+		if res, err := vm.RunString(script); err != nil {
+			return fmt.Errorf("the table script error, must contain array %q, error: %s", fnName, err.Error())
+		} else if res == nil {
+			return nil
+		} else {
+			v := res.Export()
+			if v == nil {
+				return nil
+			}
+
+			switch sql := v.(type) {
+			case string:
+				if sql != "" {
+					return fmt.Errorf("js with array %q return string must be empty", fnName)
+				}
+			case []string:
+				if len(sql) > 0 {
+					return fmt.Errorf("js with array %q return string array must be empty", fnName)
+				}
+			default:
+				return fmt.Errorf("js with array %q return type must be string or string array", fnName)
+			}
 		}
 	}
 

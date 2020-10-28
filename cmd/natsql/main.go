@@ -1,5 +1,6 @@
 ///go get github.com/angenalZZZ/gofunc/cmd/natsql
 ///go build -ldflags "-s -w" -o A:/test/ ./cmd/natsql
+///start A:/test/natsql.exe -t data.json
 ///start A:/test/natsql.exe -name Test -token HGJ766GR767FKJU0
 
 package main
@@ -9,8 +10,6 @@ import (
 	"os"
 	"runtime"
 	"time"
-
-	"github.com/angenalZZZ/gofunc/f"
 
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
 )
@@ -26,7 +25,6 @@ func main() {
 	// Check Arguments And Init Config.
 	checkArgs()
 	defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(runtime.NumCPU()))
-	nat.Log.Debug().Msgf("NatSql Config Info:\r\n %s", f.EncodedJson(configInfo))
 
 	// New Client Connect.
 	nc, err := nat.New(subject, *flagAddr, *flagCred, *flagToken, *flagCert, *flagKey)

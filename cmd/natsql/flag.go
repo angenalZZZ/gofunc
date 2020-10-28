@@ -3,9 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
-
-	"github.com/dop251/goja"
 
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/log"
@@ -17,6 +16,7 @@ var (
 	//flagBytesLimit = flag.Int("d", 4096, "the nats-Limits for a message's bytes for this subscription")
 	flagConfig   = flag.String("c", "natsql.yaml", "sets config file")
 	flagCacheDir = flag.String("d", "", "sets cache persist to disk directory")
+	flagTest     = flag.String("t", "", "sets json file and run SQL test")
 	flagAddr     = flag.String("a", "", "the NatS-Server address")
 	flagName     = flag.String("name", "", "the NatS-Subscription name [required]")
 	flagToken    = flag.String("token", "", "the NatS-Token auth string [required]")
@@ -25,8 +25,8 @@ var (
 	flagKey      = flag.String("key", "", "the NatS-TLS key file")
 )
 
+// Flag Parse
 func initArgs() {
-	// Flag Parse
 	flag.Usage = func() {
 		fmt.Printf(" Usage of %s:\n", os.Args[0])
 		flag.PrintDefaults()
@@ -34,8 +34,8 @@ func initArgs() {
 	flag.Parse()
 }
 
+// Init Config
 func checkArgs() {
-	// Init Config
 	if *flagConfig != "" {
 		configFile = *flagConfig
 	}
@@ -43,25 +43,28 @@ func checkArgs() {
 	if err := initConfig(); err != nil {
 		panic(err)
 	}
+
+	jsonFile := *flagTest
+	isTest := jsonFile != ""
+	if isTest {
+		if f.PathExists(jsonFile) == false {
+			panic(fmt.Errorf("test json file %q not found", jsonFile))
+		}
+		configInfo.Log.Level = "debug"
+	}
+
 	nat.Log = log.Init(configInfo.Log)
 
 	subject = *flagName
-	if subject == "" {
+	if subject == "" && !isTest {
 		panic("the subscription name can't be empty.")
 	}
 
 	if *flagCacheDir != "" {
 		cacheDir = *flagCacheDir
 	}
-	if cacheDir != "" && f.PathExists(cacheDir) == false {
-		panic("the cache disk directory isn't be exists.")
-	}
-
-	// Check Script
-	vm := goja.New()
-	vm.Set("records", []map[string]interface{}{})
-	if _, err := vm.RunString(configInfo.Db.Table.Script); err != nil {
-		panic("the table script error, must contain array 'records'.")
+	if cacheDir != "" && !isTest && f.PathExists(cacheDir) == false {
+		panic("the cache disk directory is not found.")
 	}
 
 	if configInfo.Db.Table.Amount < 1 {
@@ -75,5 +78,31 @@ func checkArgs() {
 	}
 	if configInfo.Db.Table.Interval < 1 {
 		configInfo.Db.Table.Interval = 1
+	}
+
+	// Check Script
+	hd := new(handler)
+	if err := hd.CheckJs(configInfo.Db.Table.Script); err != nil {
+		panic(err)
+	}
+
+	nat.Log.Debug().Msgf("NatSql Config Info:\r\n %s \r\n", f.EncodedJson(configInfo))
+
+	// run SQL test
+	if isTest {
+		item, err := ioutil.ReadFile(jsonFile)
+		if err != nil {
+			panic(fmt.Errorf("test json file %q not opened: %s", jsonFile, err.Error()))
+		}
+
+		nat.Log.Debug().Msgf("test json file:\r\n %s \r\n", item)
+
+		list := [][]byte{item}
+		if err := hd.Handle(list); err != nil {
+			panic(err)
+		}
+
+		nat.Log.Debug().Msg("test finished.")
+		os.Exit(0)
 	}
 }

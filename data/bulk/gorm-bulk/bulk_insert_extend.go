@@ -11,23 +11,28 @@ import (
 )
 
 // BulkInsertByJs executes the query to insert multiple records at once.
-func BulkInsertByJs(db *gorm.DB, objects []map[string]interface{}, chunkSize int, javascript string, interval time.Duration) error {
+func BulkInsertByJs(db *gorm.DB, objects []map[string]interface{}, chunkSize int, javascript string, interval time.Duration, varRecords ...string) error {
 	var (
-		vm  = goja.New()
-		res goja.Value
-		err error
+		fnName = "records"
+		vm     = goja.New()
+		res    goja.Value
+		err    error
 	)
+
+	if len(varRecords) > 0 {
+		fnName = varRecords[0]
+	}
 
 	defer func() { vm.ClearInterrupt() }()
 
 	// Split records with specified size not to exceed Database parameter limit
 	for _, records := range f.SplitObjectMaps(objects, chunkSize) {
 		// Input records
-		vm.Set("records", records)
+		vm.Set(fnName, records)
 
 		// Output sql
 		if res, err = vm.RunString(javascript); err != nil {
-			return err
+			return fmt.Errorf("the table script error, must contain array %q, error: %s", fnName, err.Error())
 		} else if res == nil {
 			continue
 		}
@@ -75,12 +80,14 @@ func BulkInsertByJsFunction(db *gorm.DB, objects []map[string]interface{}, chunk
 	if _, err := vm.RunString(javascript); err != nil {
 		return err
 	}
+
 	val := vm.Get(functionName)
 	if val == nil {
-		return fmt.Errorf("js function %s not found", functionName)
+		return fmt.Errorf("js function %q not found", functionName)
 	}
+
 	if err := vm.ExportTo(val, &fn); err != nil {
-		return fmt.Errorf("js function %s not exported %s", functionName, err.Error())
+		return fmt.Errorf("js function %q not exported %s", functionName, err.Error())
 	}
 
 	// Split records with specified size not to exceed Database parameter limit
