@@ -6,9 +6,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
-	"github.com/angenalZZZ/gofunc/f"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"mime"
 	"mime/multipart"
@@ -19,7 +17,8 @@ import (
 	"sync"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/angenalZZZ/gofunc/f"
+	json "github.com/json-iterator/go"
 	"github.com/valyala/fasthttp"
 )
 
@@ -267,7 +266,7 @@ func (ctx *Ctx) BodyParser(out interface{}) error {
 	ct := GetString(ctx.C.Request.Header.ContentType())
 	// application/json
 	if strings.HasPrefix(ct, "application/json") && ctx.C.Request.IsBodyStream() {
-		return jsoniter.Unmarshal(ctx.C.Request.Body(), out)
+		return json.Unmarshal(ctx.C.Request.Body(), out)
 	}
 	// application/xml text/xml
 	if strings.HasPrefix(ct, "application/xml") || strings.HasPrefix(ct, "text/xml") {
@@ -490,7 +489,7 @@ func (ctx *Ctx) Is(extension string) (match bool) {
 	return
 }
 
-// JSON converts any interface or string to JSON using Jsoniter.
+// JSON converts any interface or string to JSON.
 // This method also sets the content header to application/json.
 func (ctx *Ctx) JSON(json interface{}) error {
 	// GetHeader stream from pool
@@ -708,7 +707,7 @@ func (ctx *Ctx) Render(file string, bind interface{}) error {
 	if ctx.app.Settings.TemplateExtension != "" {
 		file = file + ctx.app.Settings.TemplateExtension
 	}
-	if raw, err = ioutil.ReadFile(filepath.Clean(file)); err != nil {
+	if raw, err = f.ReadFile(filepath.Clean(file)); err != nil {
 		return err
 	}
 	if ctx.app.Settings.TemplateEngine != nil {

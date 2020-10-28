@@ -2,6 +2,8 @@ package data
 
 import (
 	"testing"
+
+	"github.com/angenalZZZ/gofunc/f"
 )
 
 var testBufJSON = `{"Code":"用户登录","Type":2,"Message":"【管理员】登录","Exception":null,"ActionName":"Account.LoginWithCode","Data":"{\"Name\":\"admin\",\"Pwd\":\"96e79218965eb72c92a549dd5a330112\"}","CreateTime":"2020-10-01 16:49:32"}`
@@ -27,6 +29,20 @@ func TestListJSON(t *testing.T) {
 func TestListData(t *testing.T) {
 	buf := "[" + testBufJSON + "]"
 	if list, err := ListData([]byte(buf)); err != nil {
+		t.Fatal(err)
+	} else {
+		for index, item := range list {
+			t.Logf("%d: %s", index, item)
+		}
+	}
+}
+
+func TestListData2(t *testing.T) {
+	buf, err := f.ReadFile("../test/temp/test-list-data.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if list, err := ListData(buf); err != nil {
 		t.Fatal(err)
 	} else {
 		for index, item := range list {

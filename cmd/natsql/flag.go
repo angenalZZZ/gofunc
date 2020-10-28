@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/angenalZZZ/gofunc/data"
@@ -91,7 +90,7 @@ func checkArgs() {
 
 	// run SQL test
 	if isTest {
-		item, err := ioutil.ReadFile(jsonFile)
+		item, err := f.ReadFile(jsonFile)
 		if err != nil {
 			panic(fmt.Errorf("test json file %q not opened: %s", jsonFile, err.Error()))
 		}

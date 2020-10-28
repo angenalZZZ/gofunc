@@ -1,11 +1,11 @@
 package main
 
 import (
-	"io/ioutil"
 	"strings"
 
 	"github.com/angenalZZZ/gofunc/configfile"
 	"github.com/angenalZZZ/gofunc/data"
+	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/log"
 )
 
@@ -39,7 +39,7 @@ func initConfig() error {
 	}
 
 	if filename := configInfo.Db.Table.Script; strings.HasSuffix(filename, ".js") {
-		script, err := ioutil.ReadFile(filename)
+		script, err := f.ReadFile(filename)
 		if err != nil {
 			return err
 		}

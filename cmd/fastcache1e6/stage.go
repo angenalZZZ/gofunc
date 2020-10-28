@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/angenalZZZ/gofunc/data"
-	"github.com/angenalZZZ/gofunc/data/cache/fastcache"
-	"github.com/angenalZZZ/gofunc/data/random"
-	"io/ioutil"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/angenalZZZ/gofunc/data"
+	"github.com/angenalZZZ/gofunc/data/cache/fastcache"
+	"github.com/angenalZZZ/gofunc/data/random"
+	"github.com/angenalZZZ/gofunc/f"
 )
 
 func Stage() {
@@ -37,7 +38,7 @@ func Stage() {
 	fmt.Printf(" every time %d bytes data request \n", l)
 	fmt.Printf(" take requested time %s \n", t2.Sub(t1))
 	fmt.Printf(" take saved time %s \n", time.Now().Sub(t2))
-	s, e := ioutil.ReadFile(filepath.Join(tl.CacheDir, tl.Frames[0].Filename()))
+	s, e := f.ReadFile(filepath.Join(tl.CacheDir, tl.Frames[0].Filename()))
 	fmt.Printf(" %s %v \n", s, e)
 	if *flagRemove {
 		tl.RemoveAll()

@@ -2,13 +2,13 @@ package f_test
 
 import (
 	"bytes"
-	"github.com/angenalZZZ/gofunc/f"
-	"io/ioutil"
 	"testing"
+
+	"github.com/angenalZZZ/gofunc/f"
 )
 
 func TestGbkToUtf8(t *testing.T) {
-	data, err := ioutil.ReadFile("../test/temp/encoding-gbk.txt")
+	data, err := f.ReadFile("../test/temp/encoding-gbk.txt")
 	if err != nil {
 		t.Fatal(err)
 	} else {
