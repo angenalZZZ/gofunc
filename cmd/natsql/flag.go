@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/angenalZZZ/gofunc/data"
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/log"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
@@ -97,8 +98,11 @@ func checkArgs() {
 
 		nat.Log.Debug().Msgf("test json file:\r\n %s \r\n", item)
 
-		list := [][]byte{item}
-		if err := hd.Handle(list); err != nil {
+		list, err := data.ListData(item)
+		if err != nil {
+			panic(err)
+		}
+		if err = hd.Handle(list); err != nil {
 			panic(err)
 		}
 

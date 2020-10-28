@@ -1,6 +1,8 @@
 package data
 
 import (
+	"bytes"
+
 	json "github.com/json-iterator/go"
 )
 
@@ -16,4 +18,24 @@ func ListJSON(buf []byte) ([]map[string]interface{}, error) {
 	var records []map[string]interface{}
 	err := json.Unmarshal(buf, &records)
 	return records, err
+}
+
+// ListData gets json list of item RawMessage []byte
+func ListData(buf []byte) ([][]byte, error) {
+	var s [][]byte
+	buf = bytes.TrimSpace(buf)
+	if buf[0] == '[' && buf[len(buf)-1] == ']' {
+		var records []map[string]interface{}
+		err := json.Unmarshal(buf, &records)
+		if err != nil {
+			return s, err
+		}
+		for _, item := range records {
+			b, _ := json.Marshal(item)
+			s = append(s, b)
+		}
+	} else {
+		s = append(s, buf)
+	}
+	return s, nil
 }
