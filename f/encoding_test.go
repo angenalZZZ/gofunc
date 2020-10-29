@@ -1,10 +1,22 @@
 package f_test
 
 import (
-	"github.com/angenalZZZ/gofunc/f"
 	"net/http"
 	"testing"
+
+	"github.com/angenalZZZ/gofunc/f"
 )
+
+func TestReadFile(t *testing.T) {
+	filename := "../test/temp/test-list-data.json"
+	enc := f.ReadFileEncoding(filename)
+	t.Logf("Reads file and detected encoding: %s", enc)
+	buf, err := f.ReadFileAndTrimSpace(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Reads file and trim head-tail space: %c %c", buf[0], buf[len(buf)-1])
+}
 
 func TestHtml_Decode(t *testing.T) {
 	type example struct {
