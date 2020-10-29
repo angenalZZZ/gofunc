@@ -1,9 +1,10 @@
 package nats
 
 import (
+	"time"
+
 	"github.com/angenalZZZ/gofunc/log"
 	"github.com/nats-io/nats.go"
-	"time"
 )
 
 // Logger for Client Connect.
@@ -47,6 +48,9 @@ func New(name, flagAddr, flagCred, flagToken string, flagCert, flagKey string) (
 		nats.MaxReconnects(1200),
 		nats.PingInterval(time.Minute),
 		nats.ReconnectWait(2*time.Second),
+		nats.PingInterval(time.Minute),
+		nats.Timeout(2*time.Second),
+		nats.SyncQueueLen(100000000),     // sets number of messages will buffer internally.
 		nats.ReconnectBufSize(104857600), // 100Mb size of messages kept while busy reconnecting.
 		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) {
 			Log.Error().Msgf("[nats] disconnected due to: %s, will attempt reconnects for 10 minutes", err)
