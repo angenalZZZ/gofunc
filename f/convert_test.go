@@ -21,6 +21,18 @@ func TestGbkToUtf8(t *testing.T) {
 	}
 }
 
+func TestToUtf8(t *testing.T) {
+	data, err := f.ReadFile("../test/temp/encoding-gbk.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if data, err = f.ToUtf8(data, "gbk"); err != nil {
+		t.Fatal(err)
+	} else {
+		t.Logf("%s", data)
+	}
+}
+
 func TestToInt(t *testing.T) {
 	// ToInt parse string to int64
 	if i, err := f.ToInt("123"); err != nil {
