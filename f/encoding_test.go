@@ -11,6 +11,8 @@ func TestReadFile(t *testing.T) {
 	filename := "../test/temp/test-list-data.json"
 	enc := f.ReadFileEncoding(filename)
 	t.Logf("Reads file and detected encoding: %s", enc)
+	chr := f.ReadFileCharset(filename)
+	t.Logf("Reads file and detected charset: %+v", chr.Result)
 	buf, err := f.ReadFileAndTrimSpace(filename)
 	if err != nil {
 		t.Fatal(err)

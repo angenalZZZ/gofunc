@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"io/ioutil"
 	"os"
+
+	"github.com/saintfish/chardet"
 )
 
 // Encoding is type alias for detected UTF encoding.
@@ -49,6 +52,10 @@ func (e Encoding) String() string {
 	default:
 		return "UnknownEncoding"
 	}
+}
+
+type Charset struct {
+	*chardet.Result
 }
 
 // ReadFile reads the file named by filename and returns the contents.
@@ -132,6 +139,19 @@ func ReadFileEncoding(filename string) Encoding {
 		return enc
 	}
 	return UnknownEncoding
+}
+
+// ReadFileCharset reads the file and returns detected charset.
+func ReadFileCharset(filename string) *Charset {
+	src, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil
+	}
+	detector := chardet.NewTextDetector()
+	if result, err := detector.DetectBest(src); err == nil {
+		return &Charset{result}
+	}
+	return nil
 }
 
 // SkipBOM creates Reader which automatically detects BOM (Unicode Byte Order Mark) and removes it as necessary.
