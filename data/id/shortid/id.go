@@ -254,6 +254,9 @@ func (abc *Abc) Encode(val, symbols, digits uint) ([]rune, error) {
 	for i := range res {
 		shift := digits * uint(i)
 		index := (int(val>>shift) & mask) | rdm[i]
+		if 62 <= index {
+			index = random.R.Intn(60)
+		}
 		res[i] = abc.alphabet[index]
 	}
 	return res, nil
