@@ -3,9 +3,8 @@ package js
 import (
 	"testing"
 
-	"github.com/angenalZZZ/gofunc/f"
-
 	"github.com/angenalZZZ/gofunc/configfile"
+	"github.com/angenalZZZ/gofunc/f"
 	"github.com/dop251/goja"
 	"github.com/jmoiron/sqlx"
 

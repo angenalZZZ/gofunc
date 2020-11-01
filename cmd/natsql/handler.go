@@ -5,14 +5,14 @@ import (
 	"strings"
 	"time"
 
-	bulk "github.com/angenalZZZ/gofunc/data/bulk/gorm-bulk"
+	bulk "github.com/angenalZZZ/gofunc/data/bulk/sqlx-bulk"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
 	"github.com/dop251/goja"
-	"github.com/jinzhu/gorm"
-
-	_ "github.com/jinzhu/gorm/dialects/mssql"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"github.com/jmoiron/sqlx"
 	json "github.com/json-iterator/go"
+
+	_ "github.com/denisenkom/go-mssqldb"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type handler struct{}
@@ -51,19 +51,14 @@ func (hub *handler) Handle(list [][]byte) error {
 	}
 
 	// save database
-	db, err := gorm.Open(configInfo.Db.Type, configInfo.Db.Conn)
+	db, err := sqlx.Connect(configInfo.Db.Type, configInfo.Db.Conn)
 	if err != nil {
 		return err
 	}
 
-	if debug {
-		db = db.Debug()
-	}
-
-	sqlDB := db.DB()
-	sqlDB.SetMaxIdleConns(20)
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetConnMaxLifetime(time.Minute)
+	db.SetMaxIdleConns(20)
+	db.SetMaxOpenConns(100)
+	db.SetConnMaxLifetime(time.Minute)
 	defer func() { _ = db.Close() }()
 
 	script, fn := configInfo.Db.Table.Script, "sql"
