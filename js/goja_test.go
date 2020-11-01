@@ -16,7 +16,7 @@ func TestConsole(t *testing.T) {
 	defer func() { r.ClearInterrupt() }()
 	Console(r)
 
-	if v, err := r.RunString(`console.log('hello world,', new Date)`); err != nil {
+	if v, err := r.RunString(`console.log('hello world')`); err != nil {
 		t.Fatal(err)
 	} else if !v.Equals(goja.Undefined()) {
 		t.Fail()
