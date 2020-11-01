@@ -2,12 +2,11 @@ package gormbulk
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/dop251/goja"
 	"github.com/jinzhu/gorm"
-
-	"time"
 )
 
 // BulkInsertByJs executes the query to insert multiple records at once.

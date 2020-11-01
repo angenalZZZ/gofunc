@@ -11,6 +11,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.0.2
 	github.com/cespare/xxhash/v2 v2.1.1
 	github.com/davecgh/go-spew v1.1.1
+	github.com/denisenkom/go-mssqldb v0.0.0-20191124224453-732737034ffd
 	github.com/dgraph-io/badger/v2 v2.0.3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dlclark/regexp2 v1.4.0 // indirect
@@ -23,6 +24,7 @@ require (
 	github.com/go-redis/redis/v7 v7.4.0
 	github.com/go-resty/resty/v2 v2.2.0
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.0.3
@@ -31,6 +33,7 @@ require (
 	github.com/gorilla/schema v1.1.0
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/now v1.1.1 // indirect
+	github.com/jmoiron/sqlx v1.2.0
 	github.com/json-iterator/go v1.1.10
 	github.com/klauspost/compress v1.8.2
 	github.com/klauspost/crc32 v1.2.0
