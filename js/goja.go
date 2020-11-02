@@ -6,14 +6,11 @@ import (
 	"time"
 
 	"github.com/angenalZZZ/gofunc/f"
-
 	"github.com/angenalZZZ/gofunc/http"
-
 	"github.com/dop251/goja"
 	"github.com/jmoiron/sqlx"
-	"github.com/nats-io/nats.go"
-
 	json "github.com/json-iterator/go"
+	"github.com/nats-io/nats.go"
 )
 
 // Console console.log in javascript.
@@ -248,6 +245,7 @@ func Nats(r *goja.Runtime, nc *nats.Conn, subj string) {
 }
 
 // Jquery $.get,getJSON in javascript.
+// 	$.get(url,data,function(res,status)
 func Jquery(r *goja.Runtime) {
 	jObj := r.NewObject()
 
