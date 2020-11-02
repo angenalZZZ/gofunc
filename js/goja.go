@@ -2,6 +2,7 @@ package js
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/dop251/goja"
 	"github.com/jmoiron/sqlx"
@@ -172,7 +173,7 @@ func Db(r *goja.Runtime, d *sqlx.DB) {
 	r.Set("db", dbObj)
 }
 
-// Nats nats.pub in javascript.
+// Nats nats.pub,nats.req in javascript.
 func Nats(r *goja.Runtime, nc *nats.Conn, subj string) {
 	natsObj := r.NewObject()
 
@@ -190,6 +191,42 @@ func Nats(r *goja.Runtime, nc *nats.Conn, subj string) {
 				return r.ToValue(err)
 			}
 			return r.ToValue(0)
+		}
+		return v
+	})
+
+	_ = natsObj.Set("req", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l == 1 && subj != "" {
+			data := c.Arguments[0].String()
+			msg, err := nc.Request(subj, []byte(data), 3*time.Second)
+			if err != nil {
+				return r.ToValue(err)
+			}
+			if msg.Data == nil {
+				return v
+			}
+			return r.ToValue(string(msg.Data))
+		} else if l == 2 && subj != "" {
+			data, ms := c.Arguments[0].String(), c.Arguments[1].ToInteger()
+			msg, err := nc.Request(subj, []byte(data), time.Duration(ms)*time.Microsecond)
+			if err != nil {
+				return r.ToValue(err)
+			}
+			if msg.Data == nil {
+				return v
+			}
+			return r.ToValue(string(msg.Data))
+		} else if l == 3 {
+			subj, data, ms := c.Arguments[0].String(), c.Arguments[1].String(), c.Arguments[2].ToInteger()
+			msg, err := nc.Request(subj, []byte(data), time.Duration(ms)*time.Microsecond)
+			if err != nil {
+				return r.ToValue(err)
+			}
+			if msg.Data == nil {
+				return v
+			}
+			return r.ToValue(string(msg.Data))
 		}
 		return v
 	})
