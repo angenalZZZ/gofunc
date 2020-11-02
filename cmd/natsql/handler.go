@@ -10,12 +10,16 @@ import (
 	"github.com/dop251/goja"
 	"github.com/jmoiron/sqlx"
 	json "github.com/json-iterator/go"
+	"github.com/nats-io/nats.go"
 
 	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type handler struct{}
+type handler struct {
+	nc   *nats.Conn
+	subj string
+}
 
 // Handle run default handler
 func (hub *handler) Handle(list [][]byte) error {
@@ -72,11 +76,11 @@ func (hub *handler) Handle(list [][]byte) error {
 		if dataIndex++; dataIndex == bulkSize || dataIndex == count {
 			// bulk handle
 			if isFn {
-				if err = bulk.BulkInsertByJsFunction(db, bulkRecords, bulkSize, script, fn, time.Microsecond); err != nil {
+				if err = bulk.BulkInsertByJsFunction(db, bulkRecords, bulkSize, script, fn, time.Microsecond, hub.nc, hub.subj); err != nil {
 					return err
 				}
 			} else {
-				if err = bulk.BulkInsertByJs(db, bulkRecords, bulkSize, script, time.Microsecond); err != nil {
+				if err = bulk.BulkInsertByJs(db, bulkRecords, bulkSize, script, time.Microsecond, hub.nc, hub.subj); err != nil {
 					return err
 				}
 			}
