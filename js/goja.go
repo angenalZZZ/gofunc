@@ -1,12 +1,19 @@
 package js
 
 import (
+	"bytes"
 	"fmt"
 	"time"
+
+	"github.com/angenalZZZ/gofunc/f"
+
+	"github.com/angenalZZZ/gofunc/http"
 
 	"github.com/dop251/goja"
 	"github.com/jmoiron/sqlx"
 	"github.com/nats-io/nats.go"
+
+	json "github.com/json-iterator/go"
 )
 
 // Console console.log in javascript.
@@ -37,6 +44,8 @@ func Console(r *goja.Runtime) {
 //  db.x('update table1 set name=:name where id=:id',{id:1,name:'test'})
 func Db(r *goja.Runtime, d *sqlx.DB) {
 	dbObj := r.NewObject()
+
+	_ = dbObj.Set("driverName", d.DriverName())
 
 	_ = dbObj.Set("q", func(c goja.FunctionCall) goja.Value {
 		v, l := goja.Null(), len(c.Arguments)
@@ -177,6 +186,10 @@ func Db(r *goja.Runtime, d *sqlx.DB) {
 func Nats(r *goja.Runtime, nc *nats.Conn, subj string) {
 	natsObj := r.NewObject()
 
+	_ = natsObj.Set("name", nc.Opts.Name)
+	_ = natsObj.Set("subj", subj)
+	_ = natsObj.Set("subject", subj)
+
 	_ = natsObj.Set("pub", func(c goja.FunctionCall) goja.Value {
 		v, l := goja.Null(), len(c.Arguments)
 		if l == 1 && subj != "" {
@@ -232,4 +245,136 @@ func Nats(r *goja.Runtime, nc *nats.Conn, subj string) {
 	})
 
 	r.Set("nats", natsObj)
+}
+
+// Jquery $.get,getJSON in javascript.
+func Jquery(r *goja.Runtime) {
+	jObj := r.NewObject()
+
+	_ = jObj.Set("token", "")
+	_ = jObj.Set("body", "")
+	_ = jObj.Set("header", make(map[string]interface{}))
+
+	_ = jObj.Set("get", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l < 2 {
+			return v
+		}
+
+		url, data := c.Arguments[0].String(), c.Arguments[1].Export()
+		if url == "" || data == nil {
+			return v
+		}
+
+		var fn func(map[string]interface{}, int)
+		if l == 3 {
+			if err := r.ExportTo(c.Arguments[2], &fn); err != nil {
+				return r.ToValue(err)
+			}
+		}
+
+		token, header := jObj.Get("token").String(), jObj.Get("header").Export().(map[string]interface{})
+		req := http.NewRestFormRequest(token)
+		for name, val := range header {
+			req.SetHeader(name, f.ToString(val))
+		}
+		if body := jObj.Get("body").String(); body != "" {
+			req.SetBody(body)
+		}
+
+		result := make(map[string]interface{})
+		res, err := req.Get(url)
+		if err != nil {
+			result["error"] = err.Error()
+			result["code"] = -1
+			result["data"] = nil
+			fn(result, -1)
+			return v
+		}
+
+		statusCode := res.StatusCode()
+		result["error"] = res.Status()
+		result["code"] = statusCode
+		result["data"] = nil
+		buf := res.Body()
+		if buf == nil || statusCode >= 400 {
+			fn(result, statusCode)
+			return v
+		}
+
+		result["data"] = f.String(buf)
+
+		fn(result, statusCode)
+		return v
+	})
+
+	_ = jObj.Set("getJSON", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l < 2 {
+			return v
+		}
+
+		url, data := c.Arguments[0].String(), c.Arguments[1].Export()
+		if url == "" || data == nil {
+			return v
+		}
+
+		var fn func(map[string]interface{}, int)
+		if l == 3 {
+			if err := r.ExportTo(c.Arguments[2], &fn); err != nil {
+				return r.ToValue(err)
+			}
+		}
+
+		token, header := jObj.Get("token").String(), jObj.Get("header").Export().(map[string]interface{})
+		req := http.NewRestJsonRequest(token)
+		for name, val := range header {
+			req.SetHeader(name, f.ToString(val))
+		}
+		if body := jObj.Get("body").String(); body != "" {
+			req.SetBody(body)
+		}
+
+		result := make(map[string]interface{})
+		res, err := req.Get(url)
+		if err != nil {
+			result["error"] = err.Error()
+			result["code"] = -1
+			result["data"] = nil
+			fn(result, -1)
+			return v
+		}
+
+		statusCode := res.StatusCode()
+		result["error"] = res.Status()
+		result["code"] = statusCode
+		result["data"] = nil
+		buf := res.Body()
+		if buf == nil || statusCode >= 400 {
+			fn(result, statusCode)
+			return v
+		}
+
+		buf = bytes.TrimSpace(buf)
+		if buf[0] == '[' && buf[len(buf)-1] == ']' {
+			var records []map[string]interface{}
+			if err := json.Unmarshal(buf, &records); err == nil {
+				result["data"] = records
+			} else {
+				result["data"] = f.String(buf)
+			}
+		} else {
+			var record map[string]interface{}
+			if err := json.Unmarshal(buf, &record); err == nil {
+				result["data"] = record
+			} else {
+				result["data"] = f.String(buf)
+			}
+		}
+
+		fn(result, statusCode)
+		return v
+	})
+
+	r.Set("$", jObj)
 }
