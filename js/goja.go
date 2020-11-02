@@ -5,22 +5,23 @@ import (
 
 	"github.com/dop251/goja"
 	"github.com/jmoiron/sqlx"
+	"github.com/nats-io/nats.go"
 )
 
 // Console console.log in javascript.
 func Console(r *goja.Runtime) {
-	console := r.NewObject()
+	consoleObj := r.NewObject()
 
-	_ = console.Set("log", func(c goja.FunctionCall) goja.Value {
+	_ = consoleObj.Set("log", func(c goja.FunctionCall) goja.Value {
 		values := make([]interface{}, 0, len(c.Arguments))
 		for _, a := range c.Arguments {
 			values = append(values, a.Export())
 		}
-		fmt.Printf("    console.log: %+v\n", values...)
+		fmt.Printf("    console.log: %+v\r\n", values...)
 		return goja.Undefined()
 	})
 
-	r.Set("console", console)
+	r.Set("console", consoleObj)
 }
 
 // Db execute sql in javascript.
@@ -34,9 +35,9 @@ func Console(r *goja.Runtime) {
 //  db.x('update table1 set name=? where id=?','test',1)
 //  db.x('update table1 set name=:name where id=:id',{id:1,name:'test'})
 func Db(r *goja.Runtime, d *sqlx.DB) {
-	db := r.NewObject()
+	dbObj := r.NewObject()
 
-	_ = db.Set("q", func(c goja.FunctionCall) goja.Value {
+	_ = dbObj.Set("q", func(c goja.FunctionCall) goja.Value {
 		v, l := goja.Null(), len(c.Arguments)
 		if l == 0 {
 			return v
@@ -86,7 +87,7 @@ func Db(r *goja.Runtime, d *sqlx.DB) {
 		return v
 	})
 
-	_ = db.Set("i", func(c goja.FunctionCall) goja.Value {
+	_ = dbObj.Set("i", func(c goja.FunctionCall) goja.Value {
 		v, l := r.ToValue(-1), len(c.Arguments)
 		if l == 0 {
 			return v
@@ -94,7 +95,7 @@ func Db(r *goja.Runtime, d *sqlx.DB) {
 
 		var (
 			sql      = c.Arguments[0].String()
-			insertId int64
+			insertID int64
 			value    map[string]interface{}
 			hasValue bool
 		)
@@ -104,11 +105,11 @@ func Db(r *goja.Runtime, d *sqlx.DB) {
 		}
 
 		if hasValue {
-			if rows, err := d.Exec(sql, value); err != nil {
+			rows, err := d.Exec(sql, value)
+			if err != nil {
 				return r.ToValue(err)
-			} else {
-				insertId, _ = rows.LastInsertId()
 			}
+			insertID, _ = rows.LastInsertId()
 		} else {
 			values := make([]interface{}, 0, l-1)
 			if l > 1 {
@@ -116,18 +117,18 @@ func Db(r *goja.Runtime, d *sqlx.DB) {
 					values = append(values, a.Export())
 				}
 			}
-			if rows, err := d.Exec(sql, values...); err != nil {
+			rows, err := d.Exec(sql, values...)
+			if err != nil {
 				return r.ToValue(err)
-			} else {
-				insertId, _ = rows.LastInsertId()
 			}
+			insertID, _ = rows.LastInsertId()
 		}
-		v = r.ToValue(insertId)
+		v = r.ToValue(insertID)
 
 		return v
 	})
 
-	_ = db.Set("x", func(c goja.FunctionCall) goja.Value {
+	_ = dbObj.Set("x", func(c goja.FunctionCall) goja.Value {
 		v, l := r.ToValue(-1), len(c.Arguments)
 		if l == 0 {
 			return v
@@ -145,11 +146,11 @@ func Db(r *goja.Runtime, d *sqlx.DB) {
 		}
 
 		if hasValue {
-			if rows, err := d.Exec(sql, value); err != nil {
+			rows, err := d.Exec(sql, value)
+			if err != nil {
 				return r.ToValue(err)
-			} else {
-				affected, _ = rows.RowsAffected()
 			}
+			affected, _ = rows.RowsAffected()
 		} else {
 			values := make([]interface{}, 0, l-1)
 			if l > 1 {
@@ -157,16 +158,41 @@ func Db(r *goja.Runtime, d *sqlx.DB) {
 					values = append(values, a.Export())
 				}
 			}
-			if rows, err := d.Exec(sql, values...); err != nil {
+			rows, err := d.Exec(sql, values...)
+			if err != nil {
 				return r.ToValue(err)
-			} else {
-				affected, _ = rows.RowsAffected()
 			}
+			affected, _ = rows.RowsAffected()
 		}
 		v = r.ToValue(affected)
 
 		return v
 	})
 
-	r.Set("db", db)
+	r.Set("db", dbObj)
+}
+
+// Nats nats.pub in javascript.
+func Nats(r *goja.Runtime, nc *nats.Conn, subj string) {
+	natsObj := r.NewObject()
+
+	_ = natsObj.Set("pub", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l == 1 && subj != "" {
+			data := c.Arguments[0].String()
+			if err := nc.Publish(subj, []byte(data)); err != nil {
+				return r.ToValue(err)
+			}
+			return r.ToValue(0)
+		} else if l == 2 {
+			subj, data := c.Arguments[0].String(), c.Arguments[1].String()
+			if err := nc.Publish(subj, []byte(data)); err != nil {
+				return r.ToValue(err)
+			}
+			return r.ToValue(0)
+		}
+		return v
+	})
+
+	r.Set("nats", natsObj)
 }
