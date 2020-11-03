@@ -25,7 +25,7 @@ func Console(r *goja.Runtime) {
 	// console.log output content
 	_ = consoleObj.Set("log", func(c goja.FunctionCall) goja.Value {
 		for _, a := range c.Arguments {
-			fmt.Printf("    console.log: %+v\r\n", a.Export())
+			fmt.Printf("    console.log: %+v\n", a.Export())
 		}
 		return goja.Undefined()
 	})
@@ -34,9 +34,11 @@ func Console(r *goja.Runtime) {
 
 	// dump output content
 	r.Set("dump", func(c goja.FunctionCall) goja.Value {
+		fmt.Println()
 		for _, a := range c.Arguments {
-			fmt.Printf("\n\t%+v\r\n", a.Export())
+			fmt.Printf("%+v\n", a.Export())
 		}
+		fmt.Println()
 		return goja.Undefined()
 	})
 }
@@ -327,13 +329,9 @@ func Nats(r *goja.Runtime, nc *nats.Conn, subj string) {
 }
 
 // Ajax $ in javascript.
-// 	console.log($.header)
-// 	console.log($.user)
-// 	console.log($.body)
-// 	console.log($.cookie)
-// 	console.log($.token)
-// 	console.log($.trace)
-// 	var res = $.q("get",url,param,"")
+// 	dump($.header, $.user, $.trace, $.body, $.cookie, $.token)
+// 	var res = $.q("get",url)
+// 	var res = $.q("get",url,param)
 // 	var res = $.q("post",url,param,"json")
 // 	$.q("get",url,param,"",function(data,status))
 // 	$.q("post",url,param,"json",function(data,status))
@@ -416,7 +414,7 @@ func Ajax(r *goja.Runtime) {
 					if buf, err := xml.Marshal(tVal); err == nil {
 						req.SetBody(buf)
 					}
-				case "application/x-www-form-urlencoded":
+				default:
 					items := make([]string, 0, len(tVal))
 					for k, v := range tVal {
 						items = append(items, url.QueryEscape(k)+"="+url.QueryEscape(f.ToString(v)))
@@ -433,7 +431,7 @@ func Ajax(r *goja.Runtime) {
 					if buf, err := xml.Marshal(tVal); err == nil {
 						req.SetBody(buf)
 					}
-				case "application/x-www-form-urlencoded":
+				default:
 					items := make([]string, 0, len(tVal))
 					for k, v := range tVal {
 						items = append(items, url.QueryEscape(f.ToString(k))+"="+url.QueryEscape(f.ToString(v)))
@@ -459,7 +457,7 @@ func Ajax(r *goja.Runtime) {
 
 	_ = jObj.Set("q", func(c goja.FunctionCall) goja.Value {
 		v, l := goja.Null(), len(c.Arguments)
-		if l < 5 {
+		if l < 2 {
 			return v
 		}
 
@@ -476,19 +474,38 @@ func Ajax(r *goja.Runtime) {
 			}
 		}
 
-		req := ht.NewRestRequest()
-		data, contentType := c.Arguments[2].Export(), c.Arguments[3].String()
+		var (
+			cont string
+			data interface{}
+			req  = ht.NewRestRequest()
+		)
+		if l > 3 {
+			data = c.Arguments[2].Export()
+			if err := r.ExportTo(c.Arguments[3], &fn); err == nil {
+				callback = true
+			} else {
+				cont = c.Arguments[3].String()
+			}
+		} else if l > 2 {
+			if err := r.ExportTo(c.Arguments[2], &fn); err == nil {
+				callback = true
+			} else {
+				data = c.Arguments[2].Export()
+			}
+		}
 
-		if strings.Contains(contentType, "json") {
+		if strings.Contains(cont, "json") {
 			req.SetHeader("Content-Type", "application/json")
-		} else if strings.Contains(contentType, "xml") {
+		} else if strings.Contains(cont, "xml") {
 			req.SetHeader("Content-Type", "application/xml")
-		} else if strings.Contains(contentType, "url") {
+		} else if strings.Contains(cont, "form") || strings.Contains(cont, "url") {
 			req.SetHeader("Content-Type", "application/x-www-form-urlencoded")
-		} else if strings.Contains(contentType, "data") {
+		} else if strings.Contains(cont, "file") || strings.Contains(cont, "data") {
 			req.SetHeader("Content-Type", "multipart/form-data")
-		} else if len(contentType) > 10 {
-			req.SetHeader("Content-Type", contentType)
+		} else if strings.Contains(cont, "text") {
+			req.SetHeader("Content-Type", "text/plain")
+		} else if len(cont) > 10 {
+			req.SetHeader("Content-Type", cont)
 		}
 
 		if token := jObj.Get("token").String(); token != "" {
@@ -551,6 +568,7 @@ func Ajax(r *goja.Runtime) {
 			result["data"] = f.String(buf)
 		}
 
+		result["error"] = nil
 		trace(req, res, result)
 		if callback {
 			fn(result, statusCode)
