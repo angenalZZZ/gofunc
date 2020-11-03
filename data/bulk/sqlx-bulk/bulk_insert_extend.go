@@ -6,13 +6,13 @@ import (
 
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/js"
+	nat "github.com/angenalZZZ/gofunc/rpc/nats"
 	"github.com/dop251/goja"
 	"github.com/jmoiron/sqlx"
-	"github.com/nats-io/nats.go"
 )
 
 // BulkInsertByJs executes the query to insert multiple records at once.
-func BulkInsertByJs(db *sqlx.DB, objects []map[string]interface{}, chunkSize int, javascript string, interval time.Duration, nc *nats.Conn, subj string, varRecords ...string) error {
+func BulkInsertByJs(db *sqlx.DB, objects []map[string]interface{}, chunkSize int, javascript string, interval time.Duration, jsObj map[string]interface{}, varRecords ...string) error {
 	var (
 		fnName = "records"
 		vm     = goja.New()
@@ -26,9 +26,14 @@ func BulkInsertByJs(db *sqlx.DB, objects []map[string]interface{}, chunkSize int
 
 	js.Console(vm)
 	js.Db(vm, db)
-	js.Jquery(vm)
-	if nc != nil && subj != "" {
-		js.Nats(vm, nc, subj)
+	js.Ajax(vm)
+	if nat.Conn != nil && nat.Subject != "" {
+		js.Nats(vm, nat.Conn, nat.Subject)
+	}
+	if jsObj != nil {
+		for k, v := range jsObj {
+			vm.Set(k, v)
+		}
 	}
 
 	defer func() { vm.ClearInterrupt() }()
@@ -77,7 +82,7 @@ func BulkInsertByJs(db *sqlx.DB, objects []map[string]interface{}, chunkSize int
 }
 
 // BulkInsertByJsFunction executes the query to insert multiple records at once.
-func BulkInsertByJsFunction(db *sqlx.DB, objects []map[string]interface{}, chunkSize int, javascript, functionName string, interval time.Duration, nc *nats.Conn, subj string) error {
+func BulkInsertByJsFunction(db *sqlx.DB, objects []map[string]interface{}, chunkSize int, javascript, functionName string, interval time.Duration, jsObj map[string]interface{}) error {
 	var (
 		vm = goja.New()
 		fn func([]map[string]interface{}) interface{}
@@ -85,9 +90,14 @@ func BulkInsertByJsFunction(db *sqlx.DB, objects []map[string]interface{}, chunk
 
 	js.Console(vm)
 	js.Db(vm, db)
-	js.Jquery(vm)
-	if nc != nil && subj != "" {
-		js.Nats(vm, nc, subj)
+	js.Ajax(vm)
+	if nat.Conn != nil && nat.Subject != "" {
+		js.Nats(vm, nat.Conn, nat.Subject)
+	}
+	if jsObj != nil {
+		for k, v := range jsObj {
+			vm.Set(k, v)
+		}
 	}
 
 	defer func() { vm.ClearInterrupt() }()

@@ -7,18 +7,15 @@ import (
 
 	bulk "github.com/angenalZZZ/gofunc/data/bulk/sqlx-bulk"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
+	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/dop251/goja"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	json "github.com/json-iterator/go"
-	"github.com/nats-io/nats.go"
-
-	_ "github.com/denisenkom/go-mssqldb"
-	_ "github.com/go-sql-driver/mysql"
 )
 
 type handler struct {
-	nc   *nats.Conn
-	subj string
+	jsObj map[string]interface{}
 }
 
 // Handle run default handler
@@ -76,11 +73,11 @@ func (hub *handler) Handle(list [][]byte) error {
 		if dataIndex++; dataIndex == bulkSize || dataIndex == count {
 			// bulk handle
 			if isFn {
-				if err = bulk.BulkInsertByJsFunction(db, bulkRecords, bulkSize, script, fn, time.Microsecond, hub.nc, hub.subj); err != nil {
+				if err = bulk.BulkInsertByJsFunction(db, bulkRecords, bulkSize, script, fn, time.Microsecond, hub.jsObj); err != nil {
 					return err
 				}
 			} else {
-				if err = bulk.BulkInsertByJs(db, bulkRecords, bulkSize, script, time.Microsecond, hub.nc, hub.subj); err != nil {
+				if err = bulk.BulkInsertByJs(db, bulkRecords, bulkSize, script, time.Microsecond, hub.jsObj); err != nil {
 					return err
 				}
 			}

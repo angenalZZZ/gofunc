@@ -7,7 +7,15 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// Logger for Client Connect.
+// Conn represents a bare connection to global nats-server.
+// The connection is safe to use in multiple Go routines concurrently.
+var Conn *nats.Conn
+
+// Subject global subscription. This can be different
+// than the received subject inside a Msg if this is a wildcard.
+var Subject string
+
+// Log logger for global Conn.
 var Log *log.Logger
 
 // New Client Connect.
@@ -67,7 +75,7 @@ func New(name, flagAddr, flagCred, flagToken string, flagCert, flagKey string) (
 	return
 }
 
-// Flush connection to server, returns when all messages have been processed.
+// FlushAndCheckLastError Flush connection to server, returns when all messages have been processed.
 func FlushAndCheckLastError(nc *nats.Conn) {
 	if err := nc.Flush(); err != nil {
 		Log.Error().Msgf("[nats] flush messages > %s", err)
@@ -76,7 +84,7 @@ func FlushAndCheckLastError(nc *nats.Conn) {
 	}
 }
 
-// Set pending limits error handle.
+// SubscribeLimitHandle Set pending limits error handle.
 func SubscribeLimitHandle(sub *nats.Subscription, msgLimit, bytesLimitOfMsg int) {
 	if err := sub.SetPendingLimits(msgLimit, msgLimit*bytesLimitOfMsg); err != nil {
 		Log.Error().Msgf("[nats] set pending limits > %s", err)
@@ -97,7 +105,7 @@ func SubscribeLimitHandle(sub *nats.Subscription, msgLimit, bytesLimitOfMsg int)
 	}
 }
 
-// Set listening error handle.
+// SubscribeErrorHandle Set listening error handle.
 func SubscribeErrorHandle(sub *nats.Subscription, async bool, err error) {
 	if err != nil {
 		Log.Error().Msgf("[nats] failed listening on %q > %s", sub.Subject, err)

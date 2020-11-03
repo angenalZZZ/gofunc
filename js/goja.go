@@ -33,21 +33,83 @@ func Console(r *goja.Runtime) {
 }
 
 // Db execute sql in javascript.
-// 	db.q: return ResultObject
+// 	db.q: return ResultObject or Array of all rows
 // 	db.q('select * from table1 where id=?',1)
 // 	db.q('select * from table1 where id=:id',{id:1})
-// 	db.i: return LastInsertId
+// 	db.g: return ResultValue of first column in first row
+// 	db.g('select name from table1 where id=?',1)
+// 	db.g('select name from table1 where id=:id',{id:1})
+// 	db.i: return LastInsertId must int in number-id-column
 // 	db.i('insert into table1 values(?,?)',1,'test')
 // 	db.i('insert into table1 values(:id,:name)',{id:1,name:'test'})
-//  db.x: return RowsAffected
+//  db.x: return RowsAffected all inserted,updated,deleted
 //  db.x('update table1 set name=? where id=?','test',1)
 //  db.x('update table1 set name=:name where id=:id',{id:1,name:'test'})
 func Db(r *goja.Runtime, d *sqlx.DB) {
 	dbObj := r.NewObject()
 
-	_ = dbObj.Set("driverName", d.DriverName())
+	driver := make(map[string]interface{})
+	driver["name"] = d.DriverName()
+	_ = dbObj.Set("driver", driver)
 
 	_ = dbObj.Set("q", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l == 0 {
+			return v
+		}
+
+		var (
+			sql      = c.Arguments[0].String()
+			rows     *sqlx.Rows
+			err      error
+			value    map[string]interface{}
+			hasValue bool
+		)
+
+		if l == 2 {
+			value, hasValue = c.Arguments[1].Export().(map[string]interface{})
+		}
+
+		if hasValue {
+			if rows, err = d.NamedQuery(sql, value); err != nil {
+				return r.ToValue(err)
+			}
+		} else {
+			values := make([]interface{}, 0, l-1)
+			if l > 1 {
+				for _, a := range c.Arguments[1:] {
+					values = append(values, a.Export())
+				}
+			}
+			if rows, err = d.Queryx(sql, values...); err != nil {
+				return r.ToValue(err)
+			}
+		}
+
+		results := make([]map[string]interface{}, 0)
+		for rows.Next() {
+			result := make(map[string]interface{})
+			if err = rows.MapScan(result); err != nil {
+				return r.ToValue(err)
+			}
+			for k, v := range result {
+				if s, ok := v.([]byte); ok {
+					result[k] = string(s)
+				}
+			}
+			results = append(results, result)
+		}
+
+		if len(results) == 1 {
+			v = r.ToValue(results[0])
+		} else {
+			v = r.ToValue(results)
+		}
+
+		return v
+	})
+
+	_ = dbObj.Set("g", func(c goja.FunctionCall) goja.Value {
 		v, l := goja.Null(), len(c.Arguments)
 		if l == 0 {
 			return v
@@ -91,7 +153,12 @@ func Db(r *goja.Runtime, d *sqlx.DB) {
 					result[k] = string(s)
 				}
 			}
-			v = r.ToValue(result)
+			if cols, err := rows.Columns(); err != nil {
+				v = r.ToValue(result)
+			} else if len(cols) > 0 {
+				v = r.ToValue(result[cols[0]])
+			}
+			break
 		}
 
 		return v
@@ -249,10 +316,10 @@ func Nats(r *goja.Runtime, nc *nats.Conn, subj string) {
 	r.Set("nats", natsObj)
 }
 
-// Jquery $.get,getJSON in javascript.
+// Ajax $ in javascript.
 // 	$.q("get",url,data,"",function(res,statusCode)
 // 	$.q("post",url,data,"json",function(res,statusCode)
-func Jquery(r *goja.Runtime) {
+func Ajax(r *goja.Runtime) {
 	jObj := r.NewObject()
 
 	_ = jObj.Set("trace", false)

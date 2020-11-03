@@ -1,18 +1,21 @@
-package nats
+package nats_test
 
 import (
 	"context"
-	"github.com/angenalZZZ/gofunc/data"
-	"github.com/angenalZZZ/gofunc/data/random"
-	"github.com/angenalZZZ/gofunc/f"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/angenalZZZ/gofunc/data"
+	"github.com/angenalZZZ/gofunc/data/random"
+	"github.com/angenalZZZ/gofunc/f"
+	nat "github.com/angenalZZZ/gofunc/rpc/nats"
 )
 
 func TestSubscriberFastCache(t *testing.T) {
 	// New Client Connect.
-	nc, err := newTestClientConnect()
+	nat.Subject = "TestSubscriberFastCache"
+	nat.Conn, err = nat.New("nats.go", "", "", "HGJ766GR767FKJU0", "", "")
 	if err != nil {
 		t.Fatalf("[nats] failed to connect: %s\n", err.Error())
 	}
@@ -20,7 +23,7 @@ func TestSubscriberFastCache(t *testing.T) {
 	ctx, wait := f.ContextWithWait(context.Background())
 
 	// Create a subscriber for Client Connect.
-	sub := NewSubscriberFastCache(nc, "TestSubscriberFastCache", data.RootDir)
+	sub := nat.NewSubscriberFastCache(nat.Conn, nat.Subject, data.RootDir)
 	sub.Hand = func(list [][]byte) error {
 		for _, item := range list {
 			if len(item) == 0 {
@@ -39,7 +42,7 @@ func TestSubscriberFastCache(t *testing.T) {
 	// Ping a message.
 	go func() {
 		time.Sleep(time.Millisecond)
-		err = nc.Publish(sub.Subj, []byte("ping"))
+		err = nat.Conn.Publish(sub.Subj, []byte("ping"))
 		if err != nil {
 			t.Fatalf("[nats] failed publishing a test message\t>\t%s", err.Error())
 		} else {
@@ -52,7 +55,8 @@ func TestSubscriberFastCache(t *testing.T) {
 
 func TestBenchSubscriberFastCache(t *testing.T) {
 	// New Client Connect.
-	nc, err := newTestClientConnect()
+	nat.Subject = "BenchmarkSubscriberFastCache"
+	nat.Conn, err = nat.New("nats.go", "", "", "HGJ766GR767FKJU0", "", "")
 	if err != nil {
 		t.Fatalf("[nats] failed to connect: %s\n", err.Error())
 	}
@@ -60,7 +64,7 @@ func TestBenchSubscriberFastCache(t *testing.T) {
 	var publishedNumber, succeededNumber, failedNumber int64
 
 	// Create a subscriber for Client Connect.
-	sub := NewSubscriberFastCache(nc, "BenchmarkSubscriberFastCache", data.RootDir)
+	sub := nat.NewSubscriberFastCache(nat.Conn, nat.Subject, data.RootDir)
 	sub.Hand = func(list [][]byte) error {
 		var n int64
 		for _, item := range list {
@@ -86,7 +90,7 @@ func TestBenchSubscriberFastCache(t *testing.T) {
 
 	// test publish pressure
 	for i := 0; i < 1000000; i++ {
-		err = nc.Publish(sub.Subj, bufferData)
+		err = nat.Conn.Publish(sub.Subj, bufferData)
 		if err != nil {
 			atomic.AddInt64(&failedNumber, 1)
 		} else {

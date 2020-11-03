@@ -1,22 +1,23 @@
-package nats
+package nats_test
 
 import (
 	"context"
-	"github.com/angenalZZZ/gofunc/data/random"
-	"github.com/angenalZZZ/gofunc/f"
-	"github.com/nats-io/nats.go"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/angenalZZZ/gofunc/data/random"
+	"github.com/angenalZZZ/gofunc/f"
+	nat "github.com/angenalZZZ/gofunc/rpc/nats"
+	"github.com/nats-io/nats.go"
 )
 
-func newTestClientConnect() (nc *nats.Conn, err error) {
-	return New("nats.go", "", "", "HGJ766GR767FKJU0", "", "")
-}
+var err error
 
 func TestSubscriber(t *testing.T) {
 	// New Client Connect.
-	nc, err := newTestClientConnect()
+	nat.Subject = "TestSubscriber"
+	nat.Conn, err = nat.New("nats.go", "", "", "HGJ766GR767FKJU0", "", "")
 	if err != nil {
 		t.Fatalf("[nats] failed to connect: %s\n", err.Error())
 	}
@@ -24,7 +25,7 @@ func TestSubscriber(t *testing.T) {
 	ctx, wait := f.ContextWithWait(context.Background())
 
 	// Create a subscriber for Client Connect.
-	sub := NewSubscriber(nc, "TestSubscriber", func(msg *nats.Msg) {
+	sub := nat.NewSubscriber(nat.Conn, nat.Subject, func(msg *nats.Msg) {
 		if msg.Data[0] != '{' {
 			t.Logf("[nats] received test message on %q: %s", msg.Subject, string(msg.Data))
 		}
@@ -34,7 +35,7 @@ func TestSubscriber(t *testing.T) {
 	// Ping a message.
 	go func() {
 		time.Sleep(time.Millisecond)
-		err = nc.Publish(sub.Subj, []byte("ping"))
+		err = nat.Conn.Publish(sub.Subj, []byte("ping"))
 		if err != nil {
 			t.Fatalf("[nats] failed publishing a test message > %s", err.Error())
 		} else {
@@ -47,7 +48,8 @@ func TestSubscriber(t *testing.T) {
 
 func BenchmarkPublisher(b *testing.B) {
 	// New Client Connect.
-	nc, err := newTestClientConnect()
+	nat.Subject = "BenchmarkPublisher"
+	nat.Conn, err = nat.New("nats.go", "", "", "HGJ766GR767FKJU0", "", "")
 	if err != nil {
 		b.Fatalf("[nats] failed to connect: %s\n", err.Error())
 	}
@@ -55,7 +57,7 @@ func BenchmarkPublisher(b *testing.B) {
 	var publishedNumber, succeededNumber, failedNumber int64
 
 	// Create a subscriber for Client Connect.
-	sub := NewSubscriber(nc, "BenchmarkPublisher", func(msg *nats.Msg) {
+	sub := nat.NewSubscriber(nat.Conn, nat.Subject, func(msg *nats.Msg) {
 		atomic.AddInt64(&succeededNumber, 1)
 	})
 
@@ -70,7 +72,7 @@ func BenchmarkPublisher(b *testing.B) {
 
 	// test publish pressure
 	for i := 0; i < b.N; i++ {
-		err = nc.Publish(sub.Subj, bufferData)
+		err = nat.Conn.Publish(sub.Subj, bufferData)
 		if err != nil {
 			atomic.AddInt64(&failedNumber, 1)
 		} else {

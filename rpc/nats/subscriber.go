@@ -1,13 +1,15 @@
 package nats
 
 import (
-	"github.com/angenalZZZ/gofunc/f"
-	"github.com/nats-io/nats.go"
 	"log"
 	"syscall"
 	"time"
+
+	"github.com/angenalZZZ/gofunc/f"
+	"github.com/nats-io/nats.go"
 )
 
+// Subscriber a subscriber for Client Connect.
 type Subscriber struct {
 	*nats.Conn
 	sub        *nats.Subscription
