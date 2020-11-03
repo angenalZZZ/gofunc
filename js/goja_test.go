@@ -5,8 +5,10 @@ import (
 	"testing"
 
 	"github.com/angenalZZZ/gofunc/configfile"
+	"github.com/angenalZZZ/gofunc/data/cache/store"
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/dop251/goja"
+	"github.com/go-redis/redis/v7"
 	"github.com/go-resty/resty/v2"
 	"github.com/jmoiron/sqlx"
 
@@ -93,8 +95,31 @@ var res = $.q("get","https://postman-echo.com/time/now")
 dump(res)
 res = $.q("post","https://postman-echo.com/post","hello","text")
 dump(res)
+$.trace = true
 res = $.q("post","https://postman-echo.com/post",{strange:'boom'},"url")
 dump(res)
+`
+
+	if _, err := r.RunString(script); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRedis(t *testing.T) {
+	r := goja.New()
+	defer func() { r.ClearInterrupt() }()
+	Console(r)
+	store.RedisClient = redis.NewClient(&redis.Options{Addr: "127.0.0.1:6379"})
+	Redis(r, store.RedisClient)
+
+	script := `
+var k = 'key-123'
+redis.setNX(k,'value-123',86400) // 1 days
+var res = redis.get(k)
+console.log(k+' =', res)
+//redis.del(k)
+//res = redis.get(k)
+//console.log(k+':', res)
 `
 
 	if _, err := r.RunString(script); err != nil {

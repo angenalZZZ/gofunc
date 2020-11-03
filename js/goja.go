@@ -25,9 +25,11 @@ func Console(r *goja.Runtime) {
 
 	// console.log output content
 	_ = consoleObj.Set("log", func(c goja.FunctionCall) goja.Value {
+		fmt.Printf("    console.log:")
 		for _, a := range c.Arguments {
-			fmt.Printf("    console.log: %+v\n", a.Export())
+			fmt.Printf(" %+v", a.Export())
 		}
+		fmt.Println()
 		return goja.Undefined()
 	})
 
@@ -35,9 +37,13 @@ func Console(r *goja.Runtime) {
 
 	// dump output content
 	r.Set("dump", func(c goja.FunctionCall) goja.Value {
+		l := len(c.Arguments) - 1
 		fmt.Println()
-		for _, a := range c.Arguments {
-			fmt.Printf("%+v\n", a.Export())
+		for i, a := range c.Arguments {
+			fmt.Printf("%+v", a.Export())
+			if i < l {
+				fmt.Println()
+			}
 		}
 		fmt.Println()
 		return goja.Undefined()
@@ -356,8 +362,13 @@ func Ajax(r *goja.Runtime) {
 
 	var trace = func(req *resty.Request, res *resty.Response, result map[string]interface{}) {
 		if jObj.Get("trace").ToBoolean() {
-			dump := "\r\n---- %s: %s \r\n%+v\r\n%+v\r\n%+v\r\n\n%+v\r\n\n%+v\r\n\n%s\r\n\n%+v\r\n\n"
-			fmt.Printf(dump, req.Method, req.URL, jObj.Get("header").Export(), jObj.Get("cookie").Export(), req.Body, req.TraceInfo(), result, res.Body(), jObj.Get("cookie").Export())
+			cookies := make(map[string]interface{})
+			for _, cookie := range req.Cookies {
+				name, val := cookie.Name, cookie.Value
+				cookies[name] = val
+			}
+			dump := "\r\n---- %s: %s\r\n---- trace: %+v\r\n---- request-header: %+v\r\n---- request-cookie: %+v\r\n---- request-body: %s\r\n---- response-body: %s\r\n---- response-cookie: %+v\r\n---- response-result: %+v\r\n"
+			fmt.Printf(dump, req.Method, req.URL, req.TraceInfo(), jObj.Get("header").Export(), cookies, req.Body, res.Body(), jObj.Get("cookie").Export(), result)
 		}
 	}
 
@@ -390,7 +401,8 @@ func Ajax(r *goja.Runtime) {
 			case string:
 				for _, line := range strings.Split(strings.TrimSpace(tVal), "\n") {
 					if str := strings.Split(strings.TrimSpace(line), ":"); len(str) == 2 {
-						req.SetCookie(&http.Cookie{Name: strings.TrimSpace(str[0]), Value: strings.TrimSpace(str[1])})
+						name, val := strings.TrimSpace(str[0]), strings.TrimSpace(str[1])
+						req.SetCookie(&http.Cookie{Name: name, Value: val})
 					}
 				}
 			}
@@ -582,17 +594,18 @@ func Ajax(r *goja.Runtime) {
 }
 
 // Redis use redis in javascript.
-// 	get(key)
-// 	del(key,key1,key2)
-// 	set(key,value,86400) // 1 days
-// 	setNX(key,value,86400)
-// 	incr(key), incr(key,2)
-// 	lpush(key,1,2,3)
-// 	rpush(key,1,2,3)
-// 	sort(key,0,10,'asc')
-// 	list(key,0,10)
-// 	do('SET', key, value)
-// 	eval('...') http://www.runoob.com/redis/redis-tutorial.html
+// 	redis.get(key)
+// 	redis.del(key,key1,key2)
+// 	redis.set(key,value,86400) // 1 days
+// 	redis.setNX(key,value,86400)
+// 	redis.incr(key), incr(key,2)
+// 	redis.lpush(key,1,2,3)
+// 	redis.rpush(key,1,2,3)
+// 	redis.sort(key,0,10,'asc')
+// 	redis.list(key,0,10)
+// 	redis.do('SET', key, value)
+// 	redis.eval('...')
+//  http://www.runoob.com/redis/redis-tutorial.html
 func Redis(r *goja.Runtime, client *redis.Client) {
 	rObj := r.NewObject()
 
@@ -808,5 +821,5 @@ func Redis(r *goja.Runtime, client *redis.Client) {
 		return r.ToValue(res)
 	})
 
-	_ = rObj.Set("redis", rObj)
+	r.Set("redis", rObj)
 }
