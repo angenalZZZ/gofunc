@@ -2,8 +2,10 @@ package js
 
 import (
 	"bytes"
+	"encoding/xml"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -16,20 +18,27 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// Console console.log in javascript.
+// Console console.log,dump in javascript.
 func Console(r *goja.Runtime) {
 	consoleObj := r.NewObject()
 
+	// console.log output content
 	_ = consoleObj.Set("log", func(c goja.FunctionCall) goja.Value {
-		values := make([]interface{}, 0, len(c.Arguments))
 		for _, a := range c.Arguments {
-			values = append(values, a.Export())
+			fmt.Printf("    console.log: %+v\r\n", a.Export())
 		}
-		fmt.Printf("    console.log: %+v\r\n", values...)
 		return goja.Undefined()
 	})
 
 	r.Set("console", consoleObj)
+
+	// dump output content
+	r.Set("dump", func(c goja.FunctionCall) goja.Value {
+		for _, a := range c.Arguments {
+			fmt.Printf("\n\t%+v\r\n", a.Export())
+		}
+		return goja.Undefined()
+	})
 }
 
 // Db execute sql in javascript.
@@ -250,9 +259,10 @@ func Db(r *goja.Runtime, d *sqlx.DB) {
 }
 
 // Nats nats in javascript.
+//  console.log(nats.name)
 //  console.log(nats.subject)
 // 	nats.pub('data'); nats.pub('subj','data')
-// 	nats.req('data'); nats.pub('data',3); nats.pub('subj','data',3)
+// 	nats.req('data'); nats.pub('data',3); nats.pub('subj','data',3) // timeout:3s
 func Nats(r *goja.Runtime, nc *nats.Conn, subj string) {
 	natsObj := r.NewObject()
 
@@ -317,62 +327,134 @@ func Nats(r *goja.Runtime, nc *nats.Conn, subj string) {
 }
 
 // Ajax $ in javascript.
-// 	$.q("get",url,data,"",function(res,statusCode)
-// 	$.q("post",url,data,"json",function(res,statusCode)
+// 	console.log($.header)
+// 	console.log($.user)
+// 	console.log($.body)
+// 	console.log($.cookie)
+// 	console.log($.token)
+// 	console.log($.trace)
+// 	var res = $.q("get",url,param,"")
+// 	var res = $.q("post",url,param,"json")
+// 	$.q("get",url,param,"",function(data,status))
+// 	$.q("post",url,param,"json",function(data,status))
 func Ajax(r *goja.Runtime) {
 	jObj := r.NewObject()
 
-	_ = jObj.Set("trace", false)
-	_ = jObj.Set("token", "")
-	_ = jObj.Set("body", "")
-	_ = jObj.Set("header", make(map[string]interface{}))
-	_ = jObj.Set("cookie", make(map[string]interface{}))
+	header := make(map[string]interface{})
+	header["Accept"] = "*/*"
+	header["Accept-Language"] = "zh-CN,zh-TW,zh;q=0.9,zh;q=0.8,en;q=0.7"
+	header["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36"
+	_ = jObj.Set("header", header)
 
-	var trace = func(req *resty.Request) {
+	user := make(map[string]string)
+	user["username"] = ""
+	user["password"] = ""
+	_ = jObj.Set("user", user)
+	_ = jObj.Set("body", "")
+	_ = jObj.Set("cookie", "")
+	_ = jObj.Set("token", "")
+	_ = jObj.Set("trace", false)
+
+	var trace = func(req *resty.Request, res *resty.Response, result map[string]interface{}) {
 		if jObj.Get("trace").ToBoolean() {
-			fmt.Printf("\r\n\t--- %s: %s \r\n\t%+v \r\n", req.Method, req.URL, req.TraceInfo())
+			dump := "\r\n---- %s: %s \r\n%+v\r\n%+v\r\n%+v\r\n\n%+v\r\n\n%+v\r\n\n%s\r\n\n%+v\r\n\n"
+			fmt.Printf(dump, req.Method, req.URL, jObj.Get("header").Export(), jObj.Get("cookie").Export(), req.Body, req.TraceInfo(), result, res.Body(), jObj.Get("cookie").Export())
 		}
 	}
 
 	var setReq = func(req *resty.Request, data interface{}) {
-		if header, ok := jObj.Get("header").Export().(map[string]interface{}); ok {
-			for name, val := range header {
-				req.SetHeader(name, f.ToString(val))
-			}
+		if jObj.Get("trace").ToBoolean() {
+			req.EnableTrace()
 		}
-		if cookie, ok := jObj.Get("cookie").Export().(map[string]interface{}); ok {
-			for name, val := range cookie {
-				req.SetCookie(&http.Cookie{Name: name, Value: f.ToString(val)})
+
+		if tObj := jObj.Get("header").Export(); tObj != nil {
+			switch tVal := tObj.(type) {
+			case map[string]interface{}:
+				for name, val := range tVal {
+					req.SetHeader(name, f.ToString(val))
+				}
+			case string:
+				for _, line := range strings.Split(strings.TrimSpace(tVal), "\n") {
+					if str := strings.Split(strings.TrimSpace(line), ":"); len(str) == 2 {
+						req.SetHeader(strings.TrimSpace(str[0]), strings.TrimSpace(str[1]))
+					}
+				}
 			}
 		}
 
+		if tObj := jObj.Get("cookie").Export(); tObj != nil {
+			switch tVal := tObj.(type) {
+			case map[string]interface{}:
+				for name, val := range tVal {
+					req.SetCookie(&http.Cookie{Name: name, Value: f.ToString(val)})
+				}
+			case string:
+				for _, line := range strings.Split(strings.TrimSpace(tVal), "\n") {
+					if str := strings.Split(strings.TrimSpace(line), ":"); len(str) == 2 {
+						req.SetCookie(&http.Cookie{Name: strings.TrimSpace(str[0]), Value: strings.TrimSpace(str[1])})
+					}
+				}
+			}
+		}
+
+		if data == nil {
+			data = jObj.Get("body").Export()
+		}
 		if data != nil {
 			switch tVal := data.(type) {
 			case string:
-				req.SetBody([]byte(tVal))
+				if tVal != "" {
+					req.SetBody([]byte(tVal))
+				}
+			case map[string]interface{}:
+				switch req.Header.Get("Content-Type") {
+				case "application/json":
+					if buf, err := json.Marshal(tVal); err == nil {
+						req.SetBody(buf)
+					}
+				case "application/xml":
+					if buf, err := xml.Marshal(tVal); err == nil {
+						req.SetBody(buf)
+					}
+				case "application/x-www-form-urlencoded":
+					items := make([]string, 0, len(tVal))
+					for k, v := range tVal {
+						items = append(items, url.QueryEscape(k)+"="+url.QueryEscape(f.ToString(v)))
+					}
+					req.SetBody(f.Bytes(strings.Join(items, "&")))
+				}
+			case map[interface{}]interface{}:
+				switch req.Header.Get("Content-Type") {
+				case "application/json":
+					if buf, err := json.Marshal(tVal); err == nil {
+						req.SetBody(buf)
+					}
+				case "application/xml":
+					if buf, err := xml.Marshal(tVal); err == nil {
+						req.SetBody(buf)
+					}
+				case "application/x-www-form-urlencoded":
+					items := make([]string, 0, len(tVal))
+					for k, v := range tVal {
+						items = append(items, url.QueryEscape(f.ToString(k))+"="+url.QueryEscape(f.ToString(v)))
+					}
+					req.SetBody(f.Bytes(strings.Join(items, "&")))
+				}
 			default:
 				if buf, err := json.Marshal(tVal); err == nil {
 					req.SetBody(buf)
 				}
 			}
-		} else {
-			if body := jObj.Get("body").String(); body != "" {
-				req.SetBody(body)
-			}
-		}
-
-		if jObj.Get("trace").ToBoolean() {
-			req.EnableTrace()
 		}
 	}
 
 	var setRes = func(res *resty.Response) {
-		if cookie, ok := jObj.Get("cookie").Export().(map[string]interface{}); ok {
-			for _, cc := range res.Cookies() {
-				cookie[cc.Name] = cc.Value
-			}
-			_ = jObj.Set("cookie", cookie)
+		cookie := make(map[string]interface{})
+		for _, cc := range res.Cookies() {
+			cookie[cc.Name] = cc.Value
 		}
+		_ = jObj.Set("cookie", cookie)
+		_ = jObj.Set("body", "")
 	}
 
 	_ = jObj.Set("q", func(c goja.FunctionCall) goja.Value {
@@ -381,13 +463,14 @@ func Ajax(r *goja.Runtime) {
 			return v
 		}
 
-		method, url := c.Arguments[0].String(), c.Arguments[1].String()
-		if method == "" || url == "" {
+		method, urlStr := c.Arguments[0].String(), c.Arguments[1].String()
+		if method == "" || urlStr == "" {
 			return v
 		}
 
 		var fn func(map[string]interface{}, int)
-		if l == 5 {
+		callback := l == 5
+		if callback {
 			if err := r.ExportTo(c.Arguments[4], &fn); err != nil {
 				return r.ToValue(err)
 			}
@@ -395,38 +478,57 @@ func Ajax(r *goja.Runtime) {
 
 		req := ht.NewRestRequest()
 		data, contentType := c.Arguments[2].Export(), c.Arguments[3].String()
+
 		if strings.Contains(contentType, "json") {
 			req.SetHeader("Content-Type", "application/json")
+		} else if strings.Contains(contentType, "xml") {
+			req.SetHeader("Content-Type", "application/xml")
 		} else if strings.Contains(contentType, "url") {
 			req.SetHeader("Content-Type", "application/x-www-form-urlencoded")
+		} else if strings.Contains(contentType, "data") {
+			req.SetHeader("Content-Type", "multipart/form-data")
 		} else if len(contentType) > 10 {
 			req.SetHeader("Content-Type", contentType)
 		}
+
 		if token := jObj.Get("token").String(); token != "" {
 			req.SetAuthToken(token)
 		}
+
+		if user, ok := jObj.Get("user").Export().(map[string]string); ok && user != nil && user["username"] != "" {
+			req.SetBasicAuth(user["username"], user["password"])
+		}
+
 		setReq(req, data)
 		method = strings.ToUpper(method)
 		result := make(map[string]interface{})
-		res, err := req.Execute(method, url)
+		res, err := req.Execute(method, urlStr)
 		if err != nil {
 			result["error"] = err.Error()
 			result["code"] = -1
 			result["data"] = nil
-			fn(result, -1)
-			return v
+			// request did not occur and could not be traced
+			// trace(req, res, result)
+			if callback {
+				fn(result, -1)
+				return v
+			}
+			return r.ToValue(result)
 		}
 
 		statusCode := res.StatusCode()
 		result["error"] = res.Status()
 		result["code"] = statusCode
 		result["data"] = nil
-		trace(req)
 		setRes(res)
 		buf := res.Body()
 		if buf == nil || statusCode >= 400 {
-			fn(result, statusCode)
-			return v
+			trace(req, res, result)
+			if callback {
+				fn(result, statusCode)
+				return v
+			}
+			return r.ToValue(result)
 		}
 
 		buf = bytes.TrimSpace(buf)
@@ -449,8 +551,12 @@ func Ajax(r *goja.Runtime) {
 			result["data"] = f.String(buf)
 		}
 
-		fn(result, statusCode)
-		return v
+		trace(req, res, result)
+		if callback {
+			fn(result, statusCode)
+			return v
+		}
+		return r.ToValue(result)
 	})
 
 	r.Set("$", jObj)
