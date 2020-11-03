@@ -12,13 +12,14 @@ import (
 	"github.com/angenalZZZ/gofunc/f"
 	ht "github.com/angenalZZZ/gofunc/http"
 	"github.com/dop251/goja"
+	"github.com/go-redis/redis/v7"
 	"github.com/go-resty/resty/v2"
 	"github.com/jmoiron/sqlx"
 	json "github.com/json-iterator/go"
 	"github.com/nats-io/nats.go"
 )
 
-// Console console.log,dump in javascript.
+// Console use console.log,dump in javascript.
 func Console(r *goja.Runtime) {
 	consoleObj := r.NewObject()
 
@@ -43,7 +44,7 @@ func Console(r *goja.Runtime) {
 	})
 }
 
-// Db execute sql in javascript.
+// Db use database and execute sql in javascript.
 // 	db.q: return ResultObject or Array of all rows
 // 	db.q('select * from table1 where id=?',1)
 // 	db.q('select * from table1 where id=:id',{id:1})
@@ -260,7 +261,7 @@ func Db(r *goja.Runtime, d *sqlx.DB) {
 	r.Set("db", dbObj)
 }
 
-// Nats nats in javascript.
+// Nats use nats in javascript.
 //  console.log(nats.name)
 //  console.log(nats.subject)
 // 	nats.pub('data'); nats.pub('subj','data')
@@ -328,7 +329,7 @@ func Nats(r *goja.Runtime, nc *nats.Conn, subj string) {
 	r.Set("nats", natsObj)
 }
 
-// Ajax $ in javascript.
+// Ajax use $ in javascript.
 // 	dump($.header, $.user, $.trace, $.body, $.cookie, $.token)
 // 	var res = $.q("get",url)
 // 	var res = $.q("get",url,param)
@@ -578,4 +579,234 @@ func Ajax(r *goja.Runtime) {
 	})
 
 	r.Set("$", jObj)
+}
+
+// Redis use redis in javascript.
+// 	get(key)
+// 	del(key,key1,key2)
+// 	set(key,value,86400) // 1 days
+// 	setNX(key,value,86400)
+// 	incr(key), incr(key,2)
+// 	lpush(key,1,2,3)
+// 	rpush(key,1,2,3)
+// 	sort(key,0,10,'asc')
+// 	list(key,0,10)
+// 	do('SET', key, value)
+// 	eval('...') http://www.runoob.com/redis/redis-tutorial.html
+func Redis(r *goja.Runtime, client *redis.Client) {
+	rObj := r.NewObject()
+
+	// GET key
+	_ = rObj.Set("get", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l < 1 {
+			return v
+		}
+
+		res, err := client.Get(c.Arguments[0].String()).Result()
+		if err != nil {
+			return r.ToValue(err)
+		}
+
+		return r.ToValue(res)
+	})
+
+	// DEL key
+	_ = rObj.Set("del", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l < 1 {
+			return v
+		}
+
+		args := make([]string, 0, l)
+		for _, a := range c.Arguments {
+			args = append(args, a.String())
+		}
+		res, err := client.Del(args...).Result()
+		if err != nil {
+			return r.ToValue(err)
+		}
+
+		return r.ToValue(res)
+	})
+
+	// SET key value EX 10
+	_ = rObj.Set("set", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l < 3 {
+			return v
+		}
+
+		res, err := client.Set(c.Arguments[0].String(), c.Arguments[1].Export(), time.Duration(c.Arguments[2].ToInteger())*time.Second).Result()
+		if err != nil {
+			return r.ToValue(err)
+		}
+
+		return r.ToValue(res)
+	})
+
+	// SET key value EX 10 NX
+	_ = rObj.Set("setNX", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l < 3 {
+			return v
+		}
+
+		res, err := client.SetNX(c.Arguments[0].String(), c.Arguments[1].Export(), time.Duration(c.Arguments[2].ToInteger())*time.Second).Result()
+		if err != nil {
+			return r.ToValue(err)
+		}
+
+		return r.ToValue(res)
+	})
+
+	// INCR key, IncrBy key 10
+	_ = rObj.Set("incr", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l < 1 {
+			return v
+		}
+
+		if l == 1 {
+			res, err := client.Incr(c.Arguments[0].String()).Result()
+			if err != nil {
+				return r.ToValue(err)
+			}
+			return r.ToValue(res)
+		}
+
+		res, err := client.IncrBy(c.Arguments[0].String(), c.Arguments[1].ToInteger()).Result()
+		if err != nil {
+			return r.ToValue(err)
+		}
+		return r.ToValue(res)
+	})
+
+	// LPUSH list 1 10 100
+	_ = rObj.Set("lpush", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l < 2 {
+			return v
+		}
+
+		args := make([]interface{}, 0, l-1)
+		for i, a := range c.Arguments {
+			if i == 0 {
+				continue
+			}
+			args = append(args, a.Export())
+		}
+		res, err := client.LPush(c.Arguments[0].String(), args...).Result()
+		if err != nil {
+			return r.ToValue(err)
+		}
+
+		return r.ToValue(res)
+	})
+
+	// RPUSH list 1 10 100
+	_ = rObj.Set("rpush", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l < 2 {
+			return v
+		}
+
+		args := make([]interface{}, 0, l-1)
+		for i, a := range c.Arguments {
+			if i == 0 {
+				continue
+			}
+			args = append(args, a.Export())
+		}
+		res, err := client.RPush(c.Arguments[0].String(), args...).Result()
+		if err != nil {
+			return r.ToValue(err)
+		}
+
+		return r.ToValue(res)
+	})
+
+	// SORT list LIMIT 0 2 ASC
+	_ = rObj.Set("sort", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l < 4 {
+			return v
+		}
+
+		sort := redis.Sort{Offset: c.Arguments[1].ToInteger(), Count: c.Arguments[2].ToInteger(), Order: strings.ToUpper(c.Arguments[3].String())}
+		res, err := client.Sort(c.Arguments[0].String(), &sort).Result()
+		if err != nil {
+			return r.ToValue(err)
+		}
+
+		return r.ToValue(res)
+	})
+
+	// GetRange list 0 10
+	_ = rObj.Set("list", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l < 3 {
+			return v
+		}
+
+		res, err := client.GetRange(c.Arguments[0].String(), c.Arguments[1].ToInteger(), c.Arguments[2].ToInteger()).Result()
+		if err != nil {
+			return r.ToValue(err)
+		}
+
+		return r.ToValue(res)
+	})
+
+	_ = rObj.Set("do", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l < 2 {
+			return v
+		}
+
+		args := make([]interface{}, 0, l)
+		for _, a := range c.Arguments {
+			args = append(args, a.Export())
+		}
+
+		res, err := client.Do(args...).Result()
+		if err != nil {
+			return r.ToValue(err)
+		}
+
+		return r.ToValue(res)
+	})
+
+	_ = rObj.Set("eval", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l < 2 {
+			return v
+		}
+
+		var script string
+		keys, args := make([]string, 0, l-1), make([]interface{}, 0, l-2)
+		for i, a := range c.Arguments {
+			if i == 0 {
+				script = a.String()
+				continue
+			}
+			switch tVal := a.Export().(type) {
+			case string:
+				keys = append(keys, tVal)
+			default:
+				args = append(args, tVal)
+			}
+		}
+		if script == "" {
+			return v
+		}
+
+		res, err := client.Eval(script, keys, args...).Result()
+		if err != nil {
+			return r.ToValue(err)
+		}
+
+		return r.ToValue(res)
+	})
+
+	_ = rObj.Set("redis", rObj)
 }

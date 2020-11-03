@@ -5,8 +5,10 @@ import (
 
 	"github.com/angenalZZZ/gofunc/configfile"
 	"github.com/angenalZZZ/gofunc/data"
+	"github.com/angenalZZZ/gofunc/data/cache/store"
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/log"
+	"github.com/go-redis/redis/v7"
 )
 
 var (
@@ -28,7 +30,8 @@ type Config struct {
 			Script   string
 		}
 	}
-	Log *log.Config
+	Redis *redis.Options
+	Log   *log.Config
 }
 
 func initConfig() error {
@@ -46,6 +49,10 @@ func initConfig() error {
 		configInfo.Db.Table.Script = strings.TrimSpace(string(script))
 	} else {
 		configInfo.Db.Table.Script = strings.TrimSpace(filename)
+	}
+
+	if configInfo.Redis != nil && configInfo.Redis.Addr != "" {
+		store.RedisClient = redis.NewClient(configInfo.Redis)
 	}
 
 	return nil

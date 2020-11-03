@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/angenalZZZ/gofunc/data/cache/store"
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/js"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
@@ -29,6 +30,9 @@ func BulkInsertByJs(db *sqlx.DB, objects []map[string]interface{}, chunkSize int
 	js.Ajax(vm)
 	if nat.Conn != nil && nat.Subject != "" {
 		js.Nats(vm, nat.Conn, nat.Subject)
+	}
+	if store.RedisClient != nil {
+		js.Redis(vm, store.RedisClient)
 	}
 	if jsObj != nil {
 		for k, v := range jsObj {
@@ -93,6 +97,9 @@ func BulkInsertByJsFunction(db *sqlx.DB, objects []map[string]interface{}, chunk
 	js.Ajax(vm)
 	if nat.Conn != nil && nat.Subject != "" {
 		js.Nats(vm, nat.Conn, nat.Subject)
+	}
+	if store.RedisClient != nil {
+		js.Redis(vm, store.RedisClient)
 	}
 	if jsObj != nil {
 		for k, v := range jsObj {

@@ -17,6 +17,12 @@ db:
               + ")";
       }).join(",") + ";"
 
+redis: # 连接redis
+  addr: 192.168.100.20:1314
+  db: 0
+  password:
+  username:
+
 log: # 日志跟踪
   filename: natsql.log # 日志文件
   maxsize: 20 # 转存大小MB

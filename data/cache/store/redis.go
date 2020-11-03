@@ -8,6 +8,9 @@ import (
 	"github.com/go-redis/redis/v7"
 )
 
+// RedisClient global redis client
+var RedisClient *redis.Client
+
 const (
 	// RedisType represents the storage type as a string value
 	RedisType = "redis"
