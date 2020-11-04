@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/angenalZZZ/gofunc/data"
+
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/log"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
@@ -23,6 +24,11 @@ var (
 	flagCred     = flag.String("cred", "", "the NatS-Cred file")
 	flagCert     = flag.String("cert", "", "the NatS-TLS cert file")
 	flagKey      = flag.String("key", "", "the NatS-TLS key file")
+)
+
+var (
+	isTest   = false
+	jsonFile string
 )
 
 // Flag Parse
@@ -44,8 +50,8 @@ func checkArgs() {
 		panic(err)
 	}
 
-	jsonFile := *flagTest
-	isTest := jsonFile != ""
+	jsonFile = *flagTest
+	isTest = jsonFile != ""
 	if isTest {
 		if f.PathExists(jsonFile) == false {
 			panic(fmt.Errorf("test json file %q not found", jsonFile))
@@ -79,16 +85,16 @@ func checkArgs() {
 	if configInfo.Db.Table.Interval < 1 {
 		configInfo.Db.Table.Interval = 1
 	}
+}
 
+func runTest(hd *handler) {
 	// Check Script
-	hd := new(handler)
 	if err := hd.CheckJs(configInfo.Db.Table.Script); err != nil {
 		panic(err)
 	}
 
-	nat.Log.Debug().Msgf("NatSql Config Info:\r\n%s\r\n", f.EncodedJson(configInfo))
+	nat.Log.Debug().Msgf("configuration complete")
 
-	// run SQL test
 	if isTest {
 		item, err := f.ReadFile(jsonFile)
 		if err != nil {

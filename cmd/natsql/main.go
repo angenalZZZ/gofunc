@@ -38,8 +38,13 @@ func main() {
 	jsObj := make(map[string]interface{})
 	jsObj["config"] = configInfo
 
+	// Run script test.
+	hd := new(handler)
+	hd.jsObj = jsObj
+	runTest(hd)
+
 	// Create global subscriber for Client Connect.
-	sub, hd := nat.NewSubscriberFastCache(nat.Conn, subject, cacheDir), &handler{jsObj: jsObj}
+	sub := nat.NewSubscriberFastCache(nat.Conn, subject, cacheDir)
 	sub.Hand = hd.Handle
 	sub.LimitAmount(int64(configInfo.Db.Table.Amount), time.Duration(configInfo.Db.Table.Interval)*time.Millisecond)
 	//sub.LimitMessage(*flagMsgLimit, *flagBytesLimit)
