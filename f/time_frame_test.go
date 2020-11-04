@@ -1,9 +1,10 @@
 package f_test
 
 import (
-	"github.com/angenalZZZ/gofunc/f"
 	"testing"
 	"time"
+
+	"github.com/angenalZZZ/gofunc/f"
 )
 
 func TestNewTimeFrames(t *testing.T) {
@@ -11,4 +12,9 @@ func TestNewTimeFrames(t *testing.T) {
 	for i, frame := range frames {
 		t.Log(i+1, frame)
 	}
+}
+
+func TestNewTimeFrame(t *testing.T) {
+	var configMod time.Time
+	t.Log(configMod.Year() == 1)
 }

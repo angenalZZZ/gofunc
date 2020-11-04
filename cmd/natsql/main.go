@@ -34,13 +34,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	// New handler.
+	hd := new(handler)
+
 	// Create global js objects.
 	jsObj := make(map[string]interface{})
 	jsObj["config"] = configInfo
+	hd.jsObj = jsObj
 
 	// Run script test.
-	hd := new(handler)
-	hd.jsObj = jsObj
 	runTest(hd)
 
 	// Create global subscriber for Client Connect.
@@ -50,6 +52,21 @@ func main() {
 	//sub.LimitMessage(*flagMsgLimit, *flagBytesLimit)
 	dump := "NatS Config Info:\r\n {\"Subj\":%q,\"CacheDir\":%q,\"MsgLimit\":%d,\"BytesLimit\":%d,\"OnceAmount\":%d,\"OnceInterval\":%s}"
 	nat.Log.Debug().Msgf(dump, sub.Subj, sub.CacheDir, sub.MsgLimit, sub.BytesLimit, sub.OnceAmount, sub.OnceInterval)
+
+	// Hot update script file.
+	go func() {
+		ticket := time.NewTicker(1 * time.Second)
+		for range ticket.C {
+			if !isScriptMod() {
+				continue
+			}
+			if err := doScriptMod(); err == nil {
+				nat.Log.Info().Msg("Hot update script file.")
+			} else {
+				nat.Log.Info().Msg("Hot update script file error: " + err.Error())
+			}
+		}
+	}()
 
 	// Waiting to exit.
 	sub.Run()

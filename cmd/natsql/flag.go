@@ -59,7 +59,9 @@ func checkArgs() {
 		configInfo.Log.Level = "debug"
 	}
 
-	nat.Log = log.Init(configInfo.Log)
+	if nat.Log == nil {
+		nat.Log = log.Init(configInfo.Log)
+	}
 
 	subject = *flagName
 	if subject == "" && !isTest {
