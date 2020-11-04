@@ -5,6 +5,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/angenalZZZ/gofunc/data/cache/store"
+	"github.com/angenalZZZ/gofunc/js"
+
 	bulk "github.com/angenalZZZ/gofunc/data/bulk/sqlx-bulk"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
 	_ "github.com/denisenkom/go-mssqldb"
@@ -51,7 +54,7 @@ func (hub *handler) Handle(list [][]byte) error {
 		return nil
 	}
 
-	// save database
+	// database
 	db, err := sqlx.Connect(configInfo.Db.Type, configInfo.Db.Conn)
 	if err != nil {
 		return err
@@ -62,8 +65,8 @@ func (hub *handler) Handle(list [][]byte) error {
 	db.SetConnMaxLifetime(time.Minute)
 	defer func() { _ = db.Close() }()
 
-	script, fn := configInfo.Db.Table.Script, "sql"
-	isFn := strings.Contains(script, "function "+fn)
+	script, fnName := configInfo.Db.Table.Script, "sql"
+	isFn := strings.Contains(script, "function "+fnName)
 
 	bulkSize := configInfo.Db.Table.Bulk
 	bulkRecords, dataIndex := make([]map[string]interface{}, 0, bulkSize), 0
@@ -73,7 +76,7 @@ func (hub *handler) Handle(list [][]byte) error {
 		if dataIndex++; dataIndex == bulkSize || dataIndex == count {
 			// bulk handle
 			if isFn {
-				if err = bulk.BulkInsertByJsFunction(db, bulkRecords, bulkSize, script, fn, time.Microsecond, hub.jsObj); err != nil {
+				if err = bulk.BulkInsertByJsFunction(db, bulkRecords, bulkSize, script, fnName, time.Microsecond, hub.jsObj); err != nil {
 					return err
 				}
 			} else {
@@ -97,6 +100,30 @@ func (hub *handler) CheckJs(script string) error {
 		objects []map[string]interface{}
 		vm      = goja.New()
 	)
+
+	// database
+	db, err := sqlx.Connect(configInfo.Db.Type, configInfo.Db.Conn)
+	if err != nil {
+		return err
+	}
+
+	defer func() { _ = db.Close() }()
+
+	js.Console(vm)
+	js.ID(vm)
+	js.Db(vm, db)
+	js.Ajax(vm)
+	if nat.Conn != nil && nat.Subject != "" {
+		js.Nats(vm, nat.Conn, nat.Subject)
+	}
+	if store.RedisClient != nil {
+		js.Redis(vm, store.RedisClient)
+	}
+	if hub.jsObj != nil {
+		for k, v := range hub.jsObj {
+			vm.Set(k, v)
+		}
+	}
 
 	defer func() { vm.ClearInterrupt() }()
 
