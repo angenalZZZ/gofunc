@@ -26,6 +26,7 @@ func BulkInsertByJs(db *sqlx.DB, objects []map[string]interface{}, chunkSize int
 	}
 
 	js.Console(vm)
+	js.ID(vm)
 	js.Db(vm, db)
 	js.Ajax(vm)
 	if nat.Conn != nil && nat.Subject != "" {
@@ -93,6 +94,7 @@ func BulkInsertByJsFunction(db *sqlx.DB, objects []map[string]interface{}, chunk
 	)
 
 	js.Console(vm)
+	js.ID(vm)
 	js.Db(vm, db)
 	js.Ajax(vm)
 	if nat.Conn != nil && nat.Subject != "" {

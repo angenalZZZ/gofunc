@@ -114,12 +114,19 @@ func TestRedis(t *testing.T) {
 
 	script := `
 var k = 'key-123'
+console.log(k+' =>', redis.get(k))
 redis.setNX(k,'value-123',86400) // 1 days
 var res = redis.get(k)
-console.log(k+' =', res)
-//redis.del(k)
-//res = redis.get(k)
-//console.log(k+':', res)
+console.log(k+' =>', res, '( ttl =', redis.ttl(k), ')')
+if (redis.del(k)) {
+  console.log(k, 'is deleted.')
+  console.log(k, (!redis.get(k) ? 'has been deleted.' : 'delete operation failed!'))
+}
+k = 'key-count'
+res = redis.incr(k)
+console.log(k+' =>', res)
+res = redis.incr(k,2)
+console.log(k+' =>', res)
 `
 
 	if _, err := r.RunString(script); err != nil {

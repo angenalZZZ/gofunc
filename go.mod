@@ -30,6 +30,7 @@ require (
 	github.com/gobwas/ws v1.0.3
 	github.com/golang/protobuf v1.4.2
 	github.com/golang/snappy v0.0.1
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/schema v1.1.0
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jinzhu/now v1.1.1 // indirect

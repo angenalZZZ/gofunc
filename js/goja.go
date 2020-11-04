@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/angenalZZZ/gofunc/data/id"
 	"github.com/angenalZZZ/gofunc/f"
 	ht "github.com/angenalZZZ/gofunc/http"
 	"github.com/dop251/goja"
@@ -27,7 +28,11 @@ func Console(r *goja.Runtime) {
 	_ = consoleObj.Set("log", func(c goja.FunctionCall) goja.Value {
 		fmt.Printf("    console.log:")
 		for _, a := range c.Arguments {
-			fmt.Printf(" %+v", a.Export())
+			if v := a.Export(); v == nil {
+				fmt.Print(" null")
+			} else {
+				fmt.Printf(" %+v", v)
+			}
 		}
 		fmt.Println()
 		return goja.Undefined()
@@ -40,13 +45,41 @@ func Console(r *goja.Runtime) {
 		l := len(c.Arguments) - 1
 		fmt.Println()
 		for i, a := range c.Arguments {
-			fmt.Printf("%+v", a.Export())
+			if v := a.Export(); v == nil {
+				fmt.Print(" null")
+			} else {
+				fmt.Printf(" %+v", v)
+			}
 			if i < l {
 				fmt.Println()
 			}
 		}
 		fmt.Println()
 		return goja.Undefined()
+	})
+}
+
+// ID create a new random ID in javascript.
+func ID(r *goja.Runtime) {
+	r.Set("ID", func(c goja.FunctionCall) goja.Value {
+		var l int64 = 36
+		if len(c.Arguments) > 0 {
+			l = c.Arguments[0].ToInteger()
+		}
+		switch l {
+		case 9:
+			return r.ToValue(id.L9())
+		case 10:
+			return r.ToValue(id.L10())
+		case 20:
+			return r.ToValue(id.L20())
+		case 32:
+			return r.ToValue(id.L32())
+		case 36:
+			return r.ToValue(id.L36())
+		default:
+			return r.ToValue(id.L36())
+		}
 	})
 }
 
@@ -617,7 +650,26 @@ func Redis(r *goja.Runtime, client *redis.Client) {
 		}
 
 		res, err := client.Get(c.Arguments[0].String()).Result()
-		if err != nil {
+		if err == redis.Nil {
+			return v
+		} else if err != nil {
+			return r.ToValue(err)
+		}
+
+		return r.ToValue(res)
+	})
+
+	// TTL key
+	_ = rObj.Set("ttl", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l < 1 {
+			return v
+		}
+
+		res, err := client.TTL(c.Arguments[0].String()).Result()
+		if err == redis.Nil {
+			return v
+		} else if err != nil {
 			return r.ToValue(err)
 		}
 
@@ -636,7 +688,9 @@ func Redis(r *goja.Runtime, client *redis.Client) {
 			args = append(args, a.String())
 		}
 		res, err := client.Del(args...).Result()
-		if err != nil {
+		if err == redis.Nil {
+			return v
+		} else if err != nil {
 			return r.ToValue(err)
 		}
 
@@ -748,7 +802,9 @@ func Redis(r *goja.Runtime, client *redis.Client) {
 
 		sort := redis.Sort{Offset: c.Arguments[1].ToInteger(), Count: c.Arguments[2].ToInteger(), Order: strings.ToUpper(c.Arguments[3].String())}
 		res, err := client.Sort(c.Arguments[0].String(), &sort).Result()
-		if err != nil {
+		if err == redis.Nil {
+			return v
+		} else if err != nil {
 			return r.ToValue(err)
 		}
 
@@ -763,7 +819,9 @@ func Redis(r *goja.Runtime, client *redis.Client) {
 		}
 
 		res, err := client.GetRange(c.Arguments[0].String(), c.Arguments[1].ToInteger(), c.Arguments[2].ToInteger()).Result()
-		if err != nil {
+		if err == redis.Nil {
+			return v
+		} else if err != nil {
 			return r.ToValue(err)
 		}
 
@@ -782,7 +840,9 @@ func Redis(r *goja.Runtime, client *redis.Client) {
 		}
 
 		res, err := client.Do(args...).Result()
-		if err != nil {
+		if err == redis.Nil {
+			return v
+		} else if err != nil {
 			return r.ToValue(err)
 		}
 
@@ -814,7 +874,9 @@ func Redis(r *goja.Runtime, client *redis.Client) {
 		}
 
 		res, err := client.Eval(script, keys, args...).Result()
-		if err != nil {
+		if err == redis.Nil {
+			return v
+		} else if err != nil {
 			return r.ToValue(err)
 		}
 
