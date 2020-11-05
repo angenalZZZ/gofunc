@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/angenalZZZ/gofunc/data/random"
+
 	"github.com/angenalZZZ/gofunc/data/id"
 	"github.com/angenalZZZ/gofunc/f"
 	ht "github.com/angenalZZZ/gofunc/http"
@@ -21,7 +23,7 @@ import (
 )
 
 // Runtime vm for javascript
-// var Runtime *goja.Runtime
+var Runtime *goja.Runtime
 
 // Console use console.log,dump in javascript.
 func Console(r *goja.Runtime) {
@@ -63,6 +65,8 @@ func Console(r *goja.Runtime) {
 }
 
 // ID create a new random ID in javascript.
+// 	ID(): return a new random UUID.
+//  ID(9),ID(10),ID(20),ID(32),ID(36)
 func ID(r *goja.Runtime) {
 	r.Set("ID", func(c goja.FunctionCall) goja.Value {
 		var l int64 = 36
@@ -83,6 +87,24 @@ func ID(r *goja.Runtime) {
 		default:
 			return r.ToValue(id.L36())
 		}
+	})
+}
+
+// RD create a new random string in javascript.
+// 	RD(): return a new random string.
+//  RD(3),ID(4),ID(5),ID(6),ID(7)...
+func RD(r *goja.Runtime) {
+	r.Set("RD", func(c goja.FunctionCall) goja.Value {
+		var l int64 = 6
+		if len(c.Arguments) > 0 {
+			l = c.Arguments[0].ToInteger()
+			if l < 2 {
+				l = 2
+			} else if l > 200 {
+				l = 200
+			}
+		}
+		return r.ToValue(random.AlphaNumber(int(l)))
 	})
 }
 

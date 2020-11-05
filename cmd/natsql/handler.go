@@ -111,6 +111,7 @@ func (hub *handler) CheckJs(script string) error {
 
 	js.Console(vm)
 	js.ID(vm)
+	js.RD(vm)
 	js.Db(vm, db)
 	js.Ajax(vm)
 	if nat.Conn != nil && nat.Subject != "" {

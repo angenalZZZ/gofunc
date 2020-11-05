@@ -99,6 +99,7 @@ func getRuntime() *goja.Runtime {
 
 	js.Console(vm)
 	js.ID(vm)
+	js.RD(vm)
 	js.Db(vm, db)
 	js.Ajax(vm)
 	if nat.Conn != nil && nat.Subject != "" {

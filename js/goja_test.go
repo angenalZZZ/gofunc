@@ -6,6 +6,8 @@ import (
 
 	"github.com/angenalZZZ/gofunc/configfile"
 	"github.com/angenalZZZ/gofunc/data/cache/store"
+	"github.com/angenalZZZ/gofunc/data/id"
+	"github.com/angenalZZZ/gofunc/data/random"
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/dop251/goja"
 	"github.com/go-redis/redis/v7"
@@ -17,11 +19,11 @@ import (
 )
 
 func TestConsole(t *testing.T) {
-	r := goja.New()
-	defer func() { r.ClearInterrupt() }()
-	Console(r)
+	Runtime = goja.New()
+	defer func() { Runtime.ClearInterrupt() }()
+	Console(Runtime)
 
-	if v, err := r.RunString(`console.log('hello world')`); err != nil {
+	if v, err := Runtime.RunString(`console.log('hello world')`); err != nil {
 		t.Fatal(err)
 	} else if !v.Equals(goja.Undefined()) {
 		t.Fail()
@@ -29,8 +31,41 @@ func TestConsole(t *testing.T) {
 
 	if buf, err := xml.Marshal(&resty.User{Username: "Hi", Password: "***"}); err != nil {
 		t.Fatal(err)
-	} else if _, err := r.RunString(`dump('` + f.String(buf) + `')`); err != nil {
+	} else if _, err := Runtime.RunString(`dump('` + f.String(buf) + `')`); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestID(t *testing.T) {
+	Runtime = goja.New()
+	defer func() { Runtime.ClearInterrupt() }()
+	Console(Runtime)
+	ID(Runtime)
+	RD(Runtime)
+
+	shareObject := make(map[string]interface{})
+	shareObject["id"] = id.L36()
+	shareObject["name"] = random.AlphaNumber(10)
+	Runtime.Set("shareObject", shareObject)
+
+	script := `
+dump(shareObject)
+shareObject.id = ID()
+shareObject.rd = RD()
+shareObject.f1 = function (a) { console.log('this.id =', this.id, ', arguments =', a) };
+shareObject.f1(111)
+`
+
+	if _, err := Runtime.RunString(script); err != nil {
+		t.Fatal(err)
+	} else {
+		self := Runtime.Get("shareObject")
+		if obj, ok := self.Export().(map[string]interface{}); ok {
+			t.Logf("%+v", obj)
+			if f1, ok := obj["f1"].(func(goja.FunctionCall) goja.Value); ok {
+				f1(goja.FunctionCall{This: self, Arguments: []goja.Value{Runtime.ToValue(222)}})
+			}
+		}
 	}
 }
 
