@@ -70,13 +70,18 @@ func (j *JobJs) Run() {
 	}
 
 	j.LastRunTime = time.Now()
-	fmt.Printf("%s run script job %q ", j.LastRunTime.Format("15:04:05.000"), j.Name)
+	s := fmt.Sprintf("%s run script job %q", j.LastRunTime.Format("15:04:05.000"), j.Name)
+	fmt.Println(s)
 	res, err := r.RunString(j.Script)
-	fmt.Printf("takes %s ", time.Now().Sub(j.LastRunTime))
+	fmt.Printf("%s takes %s ", s, time.Now().Sub(j.LastRunTime))
 	if err != nil {
 		fmt.Printf("error: %v", err)
 	} else if res != nil {
-		fmt.Printf("return: %+v", res.Export())
+		if v := res.Export(); v != nil {
+			fmt.Printf("return: %+v", v)
+		} else {
+			fmt.Printf("return:")
+		}
 	} else {
 		fmt.Print("complete")
 	}
