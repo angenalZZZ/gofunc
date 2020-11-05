@@ -18,6 +18,12 @@ var Subject string
 // Log logger for global Conn.
 var Log *log.Logger
 
+// ConnToken addr and token to be used when connecting to a server.
+type ConnToken struct {
+	Addr  string
+	Token string
+}
+
 // New Client Connect.
 func New(name, flagAddr, flagCred, flagToken string, flagCert, flagKey string) (nc *nats.Conn, err error) {
 	var (

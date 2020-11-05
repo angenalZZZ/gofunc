@@ -46,6 +46,7 @@ require (
 	github.com/op/go-nanomsg v0.0.0-20160608204431-48d7bb6353de
 	github.com/panjf2000/ants/v2 v2.4.1
 	github.com/prometheus/client_golang v1.7.1
+	github.com/robfig/cron/v3 v3.0.0 // indirect
 	github.com/rs/xid v1.2.1
 	github.com/rs/zerolog v1.18.0
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca

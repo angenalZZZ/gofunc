@@ -20,6 +20,9 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+// Runtime vm for javascript
+var Runtime *goja.Runtime
+
 // Console use console.log,dump in javascript.
 func Console(r *goja.Runtime) {
 	consoleObj := r.NewObject()
