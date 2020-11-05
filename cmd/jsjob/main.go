@@ -12,19 +12,17 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/angenalZZZ/gofunc/data"
 	"github.com/angenalZZZ/gofunc/f"
-
 	"github.com/angenalZZZ/gofunc/log"
-
-	"github.com/robfig/cron/v3"
-
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
+	"github.com/robfig/cron/v3"
 )
 
 func main() {
 	// Your Arguments.
 	initArgs()
-	if len(os.Args) < 1 {
+	if len(os.Args) < 2 {
 		flag.Usage()
 		return
 	}
@@ -33,6 +31,10 @@ func main() {
 	checkArgs()
 	defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(runtime.NumCPU()))
 	var err error
+
+	// New DB Connect.
+	data.DbType, data.DbConn = configInfo.Db.Type, configInfo.Db.Conn
+
 	// New Client Connect.
 	nat.Subject = "jsjob"
 	nat.Conn, err = nat.New("jsjob", configInfo.Nats.Addr, "", configInfo.Nats.Token, "", "")
@@ -67,9 +69,9 @@ func main() {
 					continue
 				}
 				if err := job.FileMod(); err == nil {
-					log.Log.Info().Msg("Hot update script file.")
+					log.Log.Info().Msgf("Hot update script %q file.", job.Name)
 				} else {
-					log.Log.Info().Msg("Hot update script file error: " + err.Error())
+					log.Log.Info().Msgf("Hot update script %q file error: %v", job.Name, err)
 				}
 			}
 		}

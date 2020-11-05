@@ -5,16 +5,16 @@ import (
 	"strings"
 	"time"
 
+	bulk "github.com/angenalZZZ/gofunc/data/bulk/sqlx-bulk"
 	"github.com/angenalZZZ/gofunc/data/cache/store"
 	"github.com/angenalZZZ/gofunc/js"
-
-	bulk "github.com/angenalZZZ/gofunc/data/bulk/sqlx-bulk"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
-	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/dop251/goja"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	json "github.com/json-iterator/go"
+
+	_ "github.com/denisenkom/go-mssqldb"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type handler struct {

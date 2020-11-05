@@ -1,5 +1,5 @@
-# > jsjob -t
-# > jsjob -c jsjob.yaml
+# <test> jsjob -t
+# <run&> jsjob -c jsjob.yaml
 cron: # job list
   - name: Job001
     spec: "* * * * *" # every minutes

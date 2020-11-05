@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	flagConfig = flag.String("c", "natsql.yaml", "sets config file")
+	flagConfig = flag.String("c", "jsjob.yaml", "sets config file")
 	flagTest   = flag.Bool("t", false, "run test")
 )
 

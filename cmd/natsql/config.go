@@ -40,11 +40,12 @@ type Config struct {
 }
 
 func initConfig() error {
-	if configInfo == nil {
+	isConfig := configInfo != nil
+	if !isConfig {
 		configInfo = new(Config)
 	}
 
-	if 1 == configMod.Year() && isConfigMod() == false {
+	if !isConfig && isConfigMod() == false {
 		return os.ErrNotExist
 	}
 
@@ -55,7 +56,7 @@ func initConfig() error {
 	if filename := configInfo.Db.Table.Script; strings.HasSuffix(filename, ".js") {
 		scriptFile = filename
 
-		if 1 == scriptMod.Year() && isScriptMod() == false {
+		if !isConfig && isScriptMod() == false {
 			return os.ErrNotExist
 		}
 

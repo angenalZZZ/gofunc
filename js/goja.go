@@ -21,7 +21,7 @@ import (
 )
 
 // Runtime vm for javascript
-var Runtime *goja.Runtime
+// var Runtime *goja.Runtime
 
 // Console use console.log,dump in javascript.
 func Console(r *goja.Runtime) {

@@ -9,7 +9,12 @@ import (
 	"github.com/angenalZZZ/gofunc/js"
 	"github.com/angenalZZZ/gofunc/log"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
+	"github.com/dop251/goja"
 	"github.com/go-redis/redis/v7"
+	"github.com/jmoiron/sqlx"
+
+	_ "github.com/denisenkom/go-mssqldb"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 var (
@@ -18,7 +23,7 @@ var (
 	configMod  time.Time
 )
 
-// Config The Config Info For natsql.yaml
+// Config The Config Info For jsjob.yaml
 type Config struct {
 	Db struct {
 		Type string
@@ -36,7 +41,7 @@ func initConfig() error {
 		configInfo = new(Config)
 	}
 
-	if 1 == configMod.Year() && isConfigMod() == false {
+	if !isConfig && isConfigMod() == false {
 		return os.ErrNotExist
 	}
 
@@ -51,13 +56,12 @@ func initConfig() error {
 		if err := job.Init(); err != nil {
 			return err
 		}
+		job.R = getRuntime
 	}
 
 	if store.RedisClient == nil && configInfo.Redis != nil && configInfo.Redis.Addr != "" {
 		store.RedisClient = redis.NewClient(configInfo.Redis)
 	}
-
-	isConfig = true
 
 	return nil
 }
@@ -75,4 +79,34 @@ func isConfigMod() bool {
 		return true
 	}
 	return false
+}
+
+func getRuntime() *goja.Runtime {
+	var (
+		db  *sqlx.DB
+		vm  = goja.New()
+		err error
+	)
+
+	// database
+	db, err = sqlx.Connect(configInfo.Db.Type, configInfo.Db.Conn)
+	if err != nil {
+		log.Log.Error().Msgf("failed connect to db: %v\n", err)
+		os.Exit(1)
+	}
+
+	defer func() { _ = db.Close() }()
+
+	js.Console(vm)
+	js.ID(vm)
+	js.Db(vm, db)
+	js.Ajax(vm)
+	if nat.Conn != nil && nat.Subject != "" {
+		js.Nats(vm, nat.Conn, nat.Subject)
+	}
+	if store.RedisClient != nil {
+		js.Redis(vm, store.RedisClient)
+	}
+
+	return vm
 }

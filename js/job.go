@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dop251/goja"
+
 	"github.com/angenalZZZ/gofunc/f"
 )
 
@@ -45,6 +47,8 @@ type JobJs struct {
 	LastRunTime time.Time
 	// the job name
 	Name string
+	// R register
+	R func() *goja.Runtime
 }
 
 // Init the javascript job.
@@ -60,13 +64,14 @@ func (j *JobJs) Init() error {
 
 // Run implementation cron.Job interface.
 func (j *JobJs) Run() {
-	if Runtime == nil {
+	r := j.R()
+	if r == nil {
 		return
 	}
 
 	j.LastRunTime = time.Now()
 	fmt.Printf("%s run script job %q ", j.LastRunTime.Format("15:04:05.000"), j.Name)
-	res, err := Runtime.RunString(j.Script)
+	res, err := r.RunString(j.Script)
 	fmt.Printf("takes %s ", time.Now().Sub(j.LastRunTime))
 	if err != nil {
 		fmt.Printf("error: %v", err)
