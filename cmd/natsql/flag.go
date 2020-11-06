@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/angenalZZZ/gofunc/data"
-
 	"github.com/angenalZZZ/gofunc/f"
+	"github.com/angenalZZZ/gofunc/js"
 	"github.com/angenalZZZ/gofunc/log"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
 )
@@ -67,7 +67,9 @@ func checkArgs() {
 	}
 
 	jsonFile = *flagTest
-	isTest = jsonFile != ""
+	if jsonFile != "" {
+		isTest = true
+	}
 	if isTest {
 		if f.PathExists(jsonFile) == false {
 			panic(fmt.Errorf("test json file %q not found", jsonFile))
@@ -75,9 +77,13 @@ func checkArgs() {
 		configInfo.Log.Level = "debug"
 	}
 
-	if nat.Log == nil {
-		nat.Log = log.Init(configInfo.Log)
+	if log.Log == nil {
+		log.Log = log.Init(configInfo.Log)
 	}
+	if nat.Log == nil {
+		nat.Log = log.Log
+	}
+	js.RunLogTimeFormat = configInfo.Log.TimeFormat
 
 	subject = *flagName
 	if subject == "" && !isTest {
@@ -103,6 +109,8 @@ func checkArgs() {
 	if configInfo.Db.Table.Interval < 1 {
 		configInfo.Db.Table.Interval = 1
 	}
+
+	nat.Log.Debug().Msgf("configuration complete")
 }
 
 func runTest(hd *handler) {
@@ -111,32 +119,32 @@ func runTest(hd *handler) {
 		panic(err)
 	}
 
-	nat.Log.Debug().Msgf("configuration complete")
-
-	if isTest {
-		item, err := f.ReadFile(jsonFile)
-		if err != nil {
-			panic(fmt.Errorf("test json file %q not opened: %s", jsonFile, err.Error()))
-		}
-
-		list, err := data.ListData(item)
-		if err != nil {
-			panic(err)
-		}
-		if len(list) == 0 {
-			panic(fmt.Errorf("test json file can't be empty"))
-		}
-
-		nat.Log.Debug().Msgf("test json file: %q %d records\r\n", jsonFile, len(list))
-
-		if subject == "" {
-			subject = "test"
-		}
-		if err = hd.Handle(list); err != nil {
-			panic(err)
-		}
-
-		nat.Log.Debug().Msg("test finished.")
-		os.Exit(0)
+	if !isTest {
+		return
 	}
+
+	item, err := f.ReadFile(jsonFile)
+	if err != nil {
+		panic(fmt.Errorf("test json file %q not opened: %s", jsonFile, err.Error()))
+	}
+
+	list, err := data.ListData(item)
+	if err != nil {
+		panic(err)
+	}
+	if len(list) == 0 {
+		panic(fmt.Errorf("test json file can't be empty"))
+	}
+
+	nat.Log.Debug().Msgf("test json file: %q %d records\r\n", jsonFile, len(list))
+
+	if subject == "" {
+		subject = "test"
+	}
+	if err = hd.Handle(list); err != nil {
+		panic(err)
+	}
+
+	nat.Log.Debug().Msg("test finished.")
+	os.Exit(0)
 }

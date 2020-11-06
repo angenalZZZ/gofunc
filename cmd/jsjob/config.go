@@ -5,12 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/angenalZZZ/gofunc/f"
-
-	"github.com/angenalZZZ/gofunc/data"
-
 	"github.com/angenalZZZ/gofunc/configfile"
+	"github.com/angenalZZZ/gofunc/data"
 	"github.com/angenalZZZ/gofunc/data/cache/store"
+	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/js"
 	"github.com/angenalZZZ/gofunc/log"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
@@ -68,16 +66,6 @@ func initConfig() error {
 			return err
 		}
 	}
-
-	//for _, job := range configInfo.Cron {
-	//	if isConfig {
-	//		continue
-	//	}
-	//	if err := job.Init(); err != nil {
-	//		return err
-	//	}
-	//	job.R = getRuntime
-	//}
 
 	// New DB Connect.
 	data.DbType, data.DbConn = configInfo.Db.Type, configInfo.Db.Conn

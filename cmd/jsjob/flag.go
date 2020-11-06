@@ -15,6 +15,7 @@ import (
 
 var (
 	flagConfig = flag.String("c", "jsjob.yaml", "sets config file")
+	flagCron   = flag.String("n", "cron", "the cron variable name")
 	flagTest   = flag.Bool("t", false, "run test")
 	flagAddr   = flag.String("a", "", "the NatS-Server address")
 	flagToken  = flag.String("token", "", "the NatS-Token auth string [required]")
@@ -24,8 +25,10 @@ var (
 )
 
 var (
-	jobCron *cron.Cron
-	jobList []*js.JobJs
+	isTest   = false
+	cronName = "cron"
+	jobCron  *cron.Cron
+	jobList  []*js.JobJs
 )
 
 func initArgs() {
@@ -39,6 +42,9 @@ func initArgs() {
 func checkArgs() {
 	if *flagConfig != "" {
 		configFile = *flagConfig
+	}
+	if *flagCron != "" {
+		cronName = *flagCron
 	}
 
 	if err := initConfig(); err != nil {
@@ -61,13 +67,20 @@ func checkArgs() {
 		configInfo.Nats.Key = *flagKey
 	}
 
+	if *flagTest {
+		isTest = true
+	}
+	if isTest {
+		configInfo.Log.Level = "debug"
+	}
+
 	if log.Log == nil {
 		log.Log = log.Init(configInfo.Log)
 	}
 	if nat.Log == nil {
 		nat.Log = log.Log
 	}
-
+	js.RunLogTimeFormat = configInfo.Log.TimeFormat
 	log.Log.Debug().Msgf("configuration complete")
 }
 
@@ -84,7 +97,7 @@ func clientConnect() {
 }
 
 func runInit() {
-	if *flagTest == true {
+	if isTest {
 		return
 	}
 
@@ -95,7 +108,7 @@ func runInit() {
 	defer func() { r.ClearInterrupt() }()
 
 	// load js jobs
-	jobList, err = js.NewJobs(r, scriptFile, "cron", "")
+	jobList, err = js.NewJobs(r, scriptFile, cronName, "")
 	if err != nil {
 		log.Log.Error().Msgf("[jsjob] %v\n", err)
 		os.Exit(1)
@@ -120,7 +133,7 @@ func runInit() {
 }
 
 func runTest() {
-	if *flagTest == false {
+	if !isTest {
 		return
 	}
 
@@ -130,14 +143,16 @@ func runTest() {
 	)
 	defer func() { r.ClearInterrupt() }()
 
-	// load js jobs
-	jobList, err = js.NewJobs(r, scriptFile, "cron", "")
+	// load js
+	jobList, err = js.NewJobs(r, scriptFile, cronName, "")
 	if err != nil {
 		log.Log.Error().Msgf("[test] %v\n", err)
 		os.Exit(1)
+	} else {
+		log.Log.Debug().Msgf("load js %q finished.", scriptFile)
 	}
 
-	// adds jobs to the cron
+	// run jobs
 	for _, job := range jobList {
 		job.R = getRuntime
 		job.Run()

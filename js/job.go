@@ -58,6 +58,9 @@ type JobJs struct {
 	Self goja.Value
 }
 
+// RunLogTimeFormat the time layout.
+var RunLogTimeFormat = "15:04:05.000"
+
 // Run implementation cron.Job interface.
 func (j *JobJs) Run() {
 	if j.R == nil {
@@ -68,9 +71,10 @@ func (j *JobJs) Run() {
 	if r == nil {
 		return
 	}
+	defer func() { r.ClearInterrupt() }()
 
 	j.LastRunTime = time.Now()
-	s := fmt.Sprintf("%s run script job %q", j.LastRunTime.Format("15:04:05.000"), j.Name)
+	s := fmt.Sprintf("%s [job] run %q > ", j.LastRunTime.Format(RunLogTimeFormat), j.Name)
 
 	var (
 		res goja.Value
@@ -87,7 +91,7 @@ func (j *JobJs) Run() {
 			}
 			j1 := jobs[0] // a named job is found
 			fmt.Println(s)
-			res = j1.Func(goja.FunctionCall{This: j1.Self, Arguments: []goja.Value{Runtime.ToValue(j.LastRunTime)}})
+			res = j1.Func(goja.FunctionCall{This: j1.Self})
 		}
 	} else if j.Script != "" {
 		fmt.Println(s)
@@ -96,17 +100,18 @@ func (j *JobJs) Run() {
 		return
 	}
 
-	fmt.Printf("%s takes %s ", s, time.Now().Sub(j.LastRunTime))
+	ts := time.Now()
+	fmt.Printf("%s [job] takes %s ", ts.Format(RunLogTimeFormat), ts.Sub(j.LastRunTime))
 	if err != nil {
 		fmt.Printf("error: %v", err)
 	} else if res != nil {
 		if v := res.Export(); v != nil {
 			fmt.Printf("return: %+v", v)
 		} else {
-			fmt.Printf("return:")
+			fmt.Print("finished.")
 		}
 	} else {
-		fmt.Print("complete")
+		fmt.Print("finished.")
 	}
 	fmt.Println()
 
