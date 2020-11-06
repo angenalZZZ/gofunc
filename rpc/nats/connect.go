@@ -22,6 +22,9 @@ var Log *log.Logger
 type ConnToken struct {
 	Addr  string
 	Token string
+	Cred  string
+	Cert  string
+	Key   string
 }
 
 // New Client Connect.

@@ -2,7 +2,12 @@ package main
 
 import (
 	"os"
+	"strings"
 	"time"
+
+	"github.com/angenalZZZ/gofunc/f"
+
+	"github.com/angenalZZZ/gofunc/data"
 
 	"github.com/angenalZZZ/gofunc/configfile"
 	"github.com/angenalZZZ/gofunc/data/cache/store"
@@ -21,6 +26,8 @@ var (
 	configInfo *Config
 	configFile = "jsjob.yaml"
 	configMod  time.Time
+	scriptFile string
+	scriptMod  time.Time
 )
 
 // Config The Config Info For jsjob.yaml
@@ -29,10 +36,11 @@ type Config struct {
 		Type string
 		Conn string
 	}
-	Cron  []*js.JobJs
-	Nats  *nat.ConnToken
-	Redis *redis.Options
-	Log   *log.Config
+	Cron   string
+	Script string
+	Nats   *nat.ConnToken
+	Redis  *redis.Options
+	Log    *log.Config
 }
 
 func initConfig() error {
@@ -49,15 +57,30 @@ func initConfig() error {
 		return err
 	}
 
-	for _, job := range configInfo.Cron {
-		if isConfig {
-			continue
+	if filename := configInfo.Cron; strings.HasSuffix(filename, ".js") {
+		scriptFile = filename
+
+		if !isConfig && isScriptMod() == false {
+			return os.ErrNotExist
 		}
-		if err := job.Init(); err != nil {
+
+		if err := doScriptMod(); err != nil {
 			return err
 		}
-		job.R = getRuntime
 	}
+
+	//for _, job := range configInfo.Cron {
+	//	if isConfig {
+	//		continue
+	//	}
+	//	if err := job.Init(); err != nil {
+	//		return err
+	//	}
+	//	job.R = getRuntime
+	//}
+
+	// New DB Connect.
+	data.DbType, data.DbConn = configInfo.Db.Type, configInfo.Db.Conn
 
 	if store.RedisClient == nil && configInfo.Redis != nil && configInfo.Redis.Addr != "" {
 		store.RedisClient = redis.NewClient(configInfo.Redis)
@@ -79,6 +102,31 @@ func isConfigMod() bool {
 		return true
 	}
 	return false
+}
+
+func isScriptMod() bool {
+	if scriptFile == "" {
+		return false
+	}
+	info, err := os.Stat(scriptFile)
+	if os.IsNotExist(err) {
+		return false
+	}
+	if t := info.ModTime(); t.Unix() != scriptMod.Unix() {
+		scriptMod = t
+		return true
+	}
+	return false
+}
+
+func doScriptMod() error {
+	script, err := f.ReadFile(scriptFile)
+	if err != nil {
+		return err
+	}
+
+	configInfo.Script = strings.TrimSpace(string(script))
+	return nil
 }
 
 func getRuntime() *goja.Runtime {

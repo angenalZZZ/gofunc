@@ -50,6 +50,22 @@ func checkArgs() {
 		panic(err)
 	}
 
+	if *flagAddr != "" {
+		configInfo.Nats.Addr = *flagAddr
+	}
+	if *flagToken != "" {
+		configInfo.Nats.Token = *flagToken
+	}
+	if *flagCred != "" {
+		configInfo.Nats.Cred = *flagCred
+	}
+	if *flagCert != "" {
+		configInfo.Nats.Cert = *flagCert
+	}
+	if *flagKey != "" {
+		configInfo.Nats.Key = *flagKey
+	}
+
 	jsonFile = *flagTest
 	isTest = jsonFile != ""
 	if isTest {

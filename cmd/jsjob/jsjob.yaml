@@ -1,9 +1,6 @@
 # <test> jsjob -t
 # <run&> jsjob -c jsjob.yaml
-cron: # job list
-  - name: Job001
-    spec: "* * * * *" # every minutes
-    file: jsjob.js # javascript
+cron: jsjob.js # 配置计划任务"cron"
 
 db: # 连接database
   type: mysql

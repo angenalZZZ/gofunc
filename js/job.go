@@ -6,9 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dop251/goja"
-
 	"github.com/angenalZZZ/gofunc/f"
+	"github.com/dop251/goja"
 )
 
 // JobJs use cron job worker in javascript.
@@ -47,23 +46,24 @@ type JobJs struct {
 	LastRunTime time.Time
 	// the job name
 	Name string
+	// the job parent list
+	Parent []*JobJs
+	// the job parent var'name
+	ParentName string
 	// R register
 	R func() *goja.Runtime
-}
-
-// Init the javascript job.
-func (j *JobJs) Init() error {
-	if j.File != "" && !j.FileIsMod() {
-		return os.ErrNotExist
-	}
-	if err := j.FileMod(); err != nil {
-		return err
-	}
-	return nil
+	// Func func runner
+	Func func(goja.FunctionCall) goja.Value
+	// Self func this object
+	Self goja.Value
 }
 
 // Run implementation cron.Job interface.
 func (j *JobJs) Run() {
+	if j.R == nil {
+		return
+	}
+
 	r := j.R()
 	if r == nil {
 		return
@@ -71,8 +71,31 @@ func (j *JobJs) Run() {
 
 	j.LastRunTime = time.Now()
 	s := fmt.Sprintf("%s run script job %q", j.LastRunTime.Format("15:04:05.000"), j.Name)
-	fmt.Println(s)
-	res, err := r.RunString(j.Script)
+
+	var (
+		res goja.Value
+		err error
+	)
+
+	if j.Func != nil {
+		var jobs []*JobJs
+		jobs, err = NewJobs(r, j.Script, j.ParentName, j.Name)
+		if err == nil {
+			if len(jobs) == 0 {
+				j.RemoveFromParent()
+				return
+			}
+			j1 := jobs[0] // a named job is found
+			fmt.Println(s)
+			res = j1.Func(goja.FunctionCall{This: j1.Self, Arguments: []goja.Value{Runtime.ToValue(j.LastRunTime)}})
+		}
+	} else if j.Script != "" {
+		fmt.Println(s)
+		res, err = r.RunString(j.Script)
+	} else {
+		return
+	}
+
 	fmt.Printf("%s takes %s ", s, time.Now().Sub(j.LastRunTime))
 	if err != nil {
 		fmt.Printf("error: %v", err)
@@ -88,6 +111,20 @@ func (j *JobJs) Run() {
 	fmt.Println()
 
 	return
+}
+
+// Init the javascript job if file is not empty.
+func (j *JobJs) Init() error {
+	if j.File == "" {
+		return nil
+	}
+	if !j.FileIsMod() {
+		return os.ErrNotExist
+	}
+	if err := j.FileMod(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // FileIsMod check javascript file is modify.
@@ -106,7 +143,7 @@ func (j *JobJs) FileIsMod() bool {
 	return false
 }
 
-// FileMod read updated javascript file.
+// FileMod read updated javascript file content.
 func (j *JobJs) FileMod() error {
 	if j.File == "" {
 		return os.ErrNotExist
@@ -117,4 +154,23 @@ func (j *JobJs) FileMod() error {
 	}
 	j.Script = strings.TrimSpace(string(script))
 	return err
+}
+
+// RemoveFromParent remove self from parent.
+func (j *JobJs) RemoveFromParent() {
+	p := j.Parent
+	if p == nil {
+		return
+	}
+	for i, l := 0, len(p); i < l; i++ {
+		if j.Name != p[i].Name {
+			continue
+		}
+		// reset self object
+		j.Script, j.Func, j.R, j.Parent = "", nil, nil, nil
+		// update parent underlying array
+		p = append(p[:i], p[i+1:]...)
+		// maintain the correct index
+		return
+	}
 }

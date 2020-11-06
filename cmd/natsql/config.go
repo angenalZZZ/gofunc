@@ -10,6 +10,7 @@ import (
 	"github.com/angenalZZZ/gofunc/data/cache/store"
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/log"
+	nat "github.com/angenalZZZ/gofunc/rpc/nats"
 	"github.com/go-redis/redis/v7"
 )
 
@@ -35,6 +36,7 @@ type Config struct {
 			Script   string
 		}
 	}
+	Nats  *nat.ConnToken
 	Redis *redis.Options
 	Log   *log.Config
 }
