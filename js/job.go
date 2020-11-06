@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/angenalZZZ/gofunc/f"
@@ -44,6 +45,8 @@ type JobJs struct {
 	FileModTime time.Time
 	// the last run time
 	LastRunTime time.Time
+	// the last run id
+	LastRunID uint64
 	// the job name
 	Name string
 	// the job parent list
@@ -72,9 +75,10 @@ func (j *JobJs) Run() {
 		return
 	}
 	defer func() { r.ClearInterrupt() }()
+	id := atomic.AddUint64(&j.LastRunID, 1)
 
 	j.LastRunTime = time.Now()
-	s := fmt.Sprintf("%s [job] run %q > ", j.LastRunTime.Format(RunLogTimeFormat), j.Name)
+	s := fmt.Sprintf("%s [job] run %q #%d ", j.LastRunTime.Format(RunLogTimeFormat), j.Name, id)
 
 	var (
 		res goja.Value
@@ -101,7 +105,7 @@ func (j *JobJs) Run() {
 	}
 
 	ts := time.Now()
-	fmt.Printf("%s [job] takes %s ", ts.Format(RunLogTimeFormat), ts.Sub(j.LastRunTime))
+	fmt.Printf("%s [job] run %q #%d takes %s ", ts.Format(RunLogTimeFormat), j.Name, id, ts.Sub(j.LastRunTime))
 	if err != nil {
 		fmt.Printf("error: %v", err)
 	} else if res != nil {
