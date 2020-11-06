@@ -131,7 +131,7 @@ func runTest() {
 	defer func() { r.ClearInterrupt() }()
 
 	// load js jobs
-	jobList, err = js.NewJobs(r, configInfo.Script, "cron", "")
+	jobList, err = js.NewJobs(r, scriptFile, "cron", "")
 	if err != nil {
 		log.Log.Error().Msgf("[test] %v\n", err)
 		os.Exit(1)
