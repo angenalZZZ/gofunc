@@ -18,8 +18,9 @@ var Subject string
 // Log logger for global Conn.
 var Log *log.Logger
 
-// ConnToken addr and token to be used when connecting to a server.
-type ConnToken struct {
+// Connection addr and token, credentials, cert and key
+// to be used when connecting to a nats-server.
+type Connection struct {
 	Addr  string
 	Token string
 	Cred  string
@@ -27,8 +28,8 @@ type ConnToken struct {
 	Key   string
 }
 
-// New Client Connect.
-func New(name, flagAddr, flagCred, flagToken string, flagCert, flagKey string) (nc *nats.Conn, err error) {
+// New creates a client connect.
+func New(name, flagAddr, flagCred string, flagToken string, flagCert, flagKey string) (nc *nats.Conn, err error) {
 	var (
 		addr = nats.DefaultURL
 		ops  = []nats.Option{nats.Name(name)}

@@ -36,7 +36,7 @@ type Config struct {
 	}
 	Cron   string
 	Script string
-	Nats   *nat.ConnToken
+	Nats   *nat.Connection
 	Redis  *redis.Options
 	Log    *log.Config
 }

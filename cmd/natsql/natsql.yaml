@@ -5,21 +5,15 @@ db:
   #     mssql
   #     "sqlserver://sa:HGJ766GR767FKJU0@localhost?database=AppAuth&connection+timeout=3"
   conn: "root:HGJ766GR767FKJU0@tcp(localhost:3306)/AppAuth?charset=utf8"
-  table:
-    amount: 0 # 批量释放记录数限制
-    bulk: 100 # 批量插入记录数<=2000
-    interval: 2000 # 间隔2000毫秒,批量处理一次
-    # script: natsql.js # javascript: function sql(records)
-    script: |
-      "insert into test(name) values" + records.map(function(item){
-          return "("
-              + "'" + item.name.replace("'","") + "'"
-              + ")";
-      }).join(",") + ";"
 
 nats: # 连接nats
   addr: nats://127.0.0.1:4222
   token: HGJ766GR767FKJU0
+  subscribe: test- # 全局订阅前缀
+  amount: 0 # 批量释放记录数限制
+  bulk: 100 # 批量插入记录数<=2000
+  interval: 2000 # 间隔2000毫秒,批量处理一次
+  script: natsql.js # 配置订阅任务"subscribe" func: function(records)
 
 redis: # 连接redis
   addr: 192.168.100.20:1314
