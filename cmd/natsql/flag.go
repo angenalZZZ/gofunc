@@ -86,6 +86,9 @@ func checkArgs() {
 	js.RunLogTimeFormat = configInfo.Log.TimeFormat
 
 	subject = *flagName
+	if subject == "" {
+		subject = configInfo.Nats.Subscribe
+	}
 	if subject == "" && !isTest {
 		panic("the subscription name can't be empty.")
 	}
@@ -97,17 +100,17 @@ func checkArgs() {
 		panic("the cache disk directory is not found.")
 	}
 
-	if configInfo.Db.Table.Amount < 1 {
-		configInfo.Db.Table.Amount = -1
+	if configInfo.Nats.Amount < 1 {
+		configInfo.Nats.Amount = -1
 	}
-	if configInfo.Db.Table.Bulk < 1 {
-		configInfo.Db.Table.Bulk = 1
+	if configInfo.Nats.Bulk < 1 {
+		configInfo.Nats.Bulk = 1
 	}
-	if configInfo.Db.Table.Amount > 0 && configInfo.Db.Table.Amount < configInfo.Db.Table.Bulk {
-		configInfo.Db.Table.Amount = configInfo.Db.Table.Bulk
+	if configInfo.Nats.Amount > 0 && configInfo.Nats.Amount < configInfo.Nats.Bulk {
+		configInfo.Nats.Amount = configInfo.Nats.Bulk
 	}
-	if configInfo.Db.Table.Interval < 1 {
-		configInfo.Db.Table.Interval = 1
+	if configInfo.Nats.Interval < 1 {
+		configInfo.Nats.Interval = 1
 	}
 
 	nat.Log.Debug().Msgf("configuration complete")
@@ -115,7 +118,7 @@ func checkArgs() {
 
 func runTest(hd *handler) {
 	// Check Script
-	if err := hd.CheckJs(configInfo.Db.Table.Script); err != nil {
+	if err := hd.CheckJs(configInfo.Nats.Script); err != nil {
 		panic(err)
 	}
 

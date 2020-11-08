@@ -9,14 +9,10 @@ import (
 	"github.com/angenalZZZ/gofunc/data"
 	"github.com/angenalZZZ/gofunc/data/cache/store"
 	"github.com/angenalZZZ/gofunc/f"
-	"github.com/angenalZZZ/gofunc/js"
 	"github.com/angenalZZZ/gofunc/log"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
-	"github.com/dop251/goja"
-	"github.com/go-redis/redis/v7"
-	"github.com/jmoiron/sqlx"
-
 	_ "github.com/denisenkom/go-mssqldb"
+	"github.com/go-redis/redis/v7"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -65,9 +61,10 @@ func initConfig() error {
 		if err := doScriptMod(); err != nil {
 			return err
 		}
+	} else {
+		configInfo.Cron = strings.TrimSpace(filename)
 	}
 
-	// New DB Connect.
 	data.DbType, data.DbConn = configInfo.Db.Type, configInfo.Db.Conn
 
 	if store.RedisClient == nil && configInfo.Redis != nil && configInfo.Redis.Addr != "" {
@@ -115,35 +112,4 @@ func doScriptMod() error {
 
 	configInfo.Script = strings.TrimSpace(string(script))
 	return nil
-}
-
-func getRuntime() *goja.Runtime {
-	var (
-		db  *sqlx.DB
-		vm  = goja.New()
-		err error
-	)
-
-	// database
-	db, err = sqlx.Connect(configInfo.Db.Type, configInfo.Db.Conn)
-	if err != nil {
-		log.Log.Error().Msgf("failed connect to db: %v\n", err)
-		os.Exit(1)
-	}
-
-	defer func() { _ = db.Close() }()
-
-	js.Console(vm)
-	js.ID(vm)
-	js.RD(vm)
-	js.Db(vm, db)
-	js.Ajax(vm)
-	if nat.Conn != nil && nat.Subject != "" {
-		js.Nats(vm, nat.Conn, nat.Subject)
-	}
-	if store.RedisClient != nil {
-		js.Redis(vm, store.RedisClient)
-	}
-
-	return vm
 }

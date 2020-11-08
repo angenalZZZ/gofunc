@@ -9,11 +9,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/angenalZZZ/gofunc/data/random"
-
+	"github.com/angenalZZZ/gofunc/data"
+	"github.com/angenalZZZ/gofunc/data/cache/store"
 	"github.com/angenalZZZ/gofunc/data/id"
+	"github.com/angenalZZZ/gofunc/data/random"
 	"github.com/angenalZZZ/gofunc/f"
 	ht "github.com/angenalZZZ/gofunc/http"
+	"github.com/angenalZZZ/gofunc/log"
+	nat "github.com/angenalZZZ/gofunc/rpc/nats"
 	"github.com/dop251/goja"
 	"github.com/go-redis/redis/v7"
 	"github.com/go-resty/resty/v2"
@@ -22,8 +25,54 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// Runtime vm for javascript
-var Runtime *goja.Runtime
+// Runtime vm for goja javascript runtime and register
+var Runtime *GojaRuntime
+
+// GojaRuntime goja javascript runtime and register
+type GojaRuntime struct {
+	*sqlx.DB
+	*goja.Runtime
+}
+
+// Clear runtime interrupt and other clear.
+func (r *GojaRuntime) Clear() {
+	r.ClearInterrupt()
+	if r.DB != nil {
+		_ = r.DB.Close()
+	}
+}
+
+// NewRuntime create a javascript runtime and register
+func NewRuntime() *GojaRuntime {
+	var (
+		db  *sqlx.DB
+		vm  = goja.New()
+		err error
+	)
+
+	Console(vm)
+	ID(vm)
+	RD(vm)
+	Ajax(vm)
+
+	if data.DbType != "" && data.DbConn != "" {
+		db, err = sqlx.Connect(data.DbType, data.DbConn)
+		if err != nil && log.Log != nil {
+			log.Log.Error().Msgf("failed connect to db: %v\n", err)
+		}
+		Db(vm, db)
+	}
+
+	if nat.Conn != nil && nat.Subject != "" {
+		Nats(vm, nat.Conn, nat.Subject)
+	}
+
+	if store.RedisClient != nil {
+		Redis(vm, store.RedisClient)
+	}
+
+	return &GojaRuntime{DB: db, Runtime: vm}
+}
 
 // Console use console.log,dump in javascript.
 func Console(r *goja.Runtime) {

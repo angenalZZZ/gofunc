@@ -102,10 +102,10 @@ func runInit() {
 	}
 
 	var (
-		r   = getRuntime()
+		r   = js.NewRuntime()
 		err error
 	)
-	defer func() { r.ClearInterrupt() }()
+	defer func() { r.Clear() }()
 
 	// load js jobs
 	jobList, err = js.NewJobs(r, scriptFile, cronName, "")
@@ -122,7 +122,7 @@ func runInit() {
 
 	// adds jobs to the cron
 	for _, job := range jobList {
-		job.R = getRuntime
+		job.R = js.NewRuntime
 		if _, err = jobCron.AddJob(job.Spec, job); err != nil {
 			log.Log.Error().Msgf("[jsjob] failed add %q to cron: %v\n", job.Name, err)
 			os.Exit(1)
@@ -138,10 +138,10 @@ func runTest() {
 	}
 
 	var (
-		r   = getRuntime()
+		r   = js.NewRuntime()
 		err error
 	)
-	defer func() { r.ClearInterrupt() }()
+	defer func() { r.Clear() }()
 
 	// load js
 	jobList, err = js.NewJobs(r, scriptFile, cronName, "")
@@ -154,7 +154,7 @@ func runTest() {
 
 	// run jobs
 	for _, job := range jobList {
-		job.R = getRuntime
+		job.R = js.NewRuntime
 		job.Run()
 	}
 

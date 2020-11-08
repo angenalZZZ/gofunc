@@ -12,7 +12,7 @@ import (
 )
 
 // NewJobs create javascript jobs.
-func NewJobs(r *goja.Runtime, script string, parentName string, name string) ([]*JobJs, error) {
+func NewJobs(r *GojaRuntime, script string, parentName string, name string) ([]*JobJs, error) {
 	var (
 		filename    string
 		fileModTime time.Time
@@ -54,7 +54,7 @@ func NewJobs(r *goja.Runtime, script string, parentName string, name string) ([]
 		return errors.New(err)
 	}
 
-	self := r.Get(parentName)
+	self := r.Runtime.Get(parentName)
 	objs, ok := self.Export().([]interface{})
 	if !ok {
 		return nil, newErr(parentName, "must be an array")

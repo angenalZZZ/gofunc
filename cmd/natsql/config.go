@@ -27,16 +27,17 @@ var (
 // Config The Config Info For natsql.yaml
 type Config struct {
 	Db struct {
-		Type  string
-		Conn  string
-		Table struct {
-			Amount   int
-			Bulk     int
-			Interval int
-			Script   string
-		}
+		Type string
+		Conn string
 	}
-	Nats  *nat.Connection
+	Nats struct {
+		nat.Connection
+		Subscribe string
+		Amount    int
+		Bulk      int
+		Interval  int
+		Script    string
+	}
 	Redis *redis.Options
 	Log   *log.Config
 }
@@ -55,7 +56,7 @@ func initConfig() error {
 		return err
 	}
 
-	if filename := configInfo.Db.Table.Script; strings.HasSuffix(filename, ".js") {
+	if filename := configInfo.Nats.Script; strings.HasSuffix(filename, ".js") {
 		scriptFile = filename
 
 		if !isConfig && isScriptMod() == false {
@@ -66,8 +67,10 @@ func initConfig() error {
 			return err
 		}
 	} else {
-		configInfo.Db.Table.Script = strings.TrimSpace(filename)
+		configInfo.Nats.Script = strings.TrimSpace(filename)
 	}
+
+	data.DbType, data.DbConn = configInfo.Db.Type, configInfo.Db.Conn
 
 	if store.RedisClient == nil && configInfo.Redis != nil && configInfo.Redis.Addr != "" {
 		store.RedisClient = redis.NewClient(configInfo.Redis)
@@ -112,6 +115,6 @@ func doScriptMod() error {
 		return err
 	}
 
-	configInfo.Db.Table.Script = strings.TrimSpace(string(script))
+	configInfo.Nats.Script = strings.TrimSpace(string(script))
 	return nil
 }

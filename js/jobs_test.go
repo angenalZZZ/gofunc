@@ -2,14 +2,11 @@ package js
 
 import (
 	"testing"
-
-	"github.com/dop251/goja"
 )
 
 func TestNewJobs(t *testing.T) {
-	r := goja.New()
-	defer func() { r.ClearInterrupt() }()
-	//Console(r)
+	r := NewRuntime()
+	defer func() { r.Clear() }()
 
 	script := `
 cron = [

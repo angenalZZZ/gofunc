@@ -54,7 +54,7 @@ type JobJs struct {
 	// the job parent var'name
 	ParentName string
 	// R register
-	R func() *goja.Runtime
+	R func() *GojaRuntime
 	// Func func runner
 	Func func(goja.FunctionCall) goja.Value
 	// Self func this object
@@ -74,11 +74,11 @@ func (j *JobJs) Run() {
 	if r == nil {
 		return
 	}
-	defer func() { r.ClearInterrupt() }()
-	id := atomic.AddUint64(&j.LastRunID, 1)
+	defer func() { r.Clear() }()
 
+	id := atomic.AddUint64(&j.LastRunID, 1)
 	j.LastRunTime = time.Now()
-	s := fmt.Sprintf("%s [job] run %q #%d ", j.LastRunTime.Format(RunLogTimeFormat), j.Name, id)
+	s := fmt.Sprintf("%s [job] %q #%d run ", j.LastRunTime.Format(RunLogTimeFormat), j.Name, id)
 
 	var (
 		res goja.Value
@@ -105,17 +105,17 @@ func (j *JobJs) Run() {
 	}
 
 	ts := time.Now()
-	fmt.Printf("%s [job] run %q #%d takes %s ", ts.Format(RunLogTimeFormat), j.Name, id, ts.Sub(j.LastRunTime))
+	fmt.Printf("%s [job] %q #%d takes %s ", ts.Format(RunLogTimeFormat), j.Name, id, ts.Sub(j.LastRunTime))
 	if err != nil {
 		fmt.Printf("error: %v", err)
 	} else if res != nil {
 		if v := res.Export(); v != nil {
 			fmt.Printf("return: %+v", v)
 		} else {
-			fmt.Print("finished.")
+			fmt.Print("ok.")
 		}
 	} else {
-		fmt.Print("finished.")
+		fmt.Print("ok.")
 	}
 	fmt.Println()
 

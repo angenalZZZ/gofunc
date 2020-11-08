@@ -19,11 +19,11 @@ import (
 )
 
 func TestConsole(t *testing.T) {
-	Runtime = goja.New()
-	defer func() { Runtime.ClearInterrupt() }()
-	Console(Runtime)
+	vm := goja.New()
+	defer func() { vm.ClearInterrupt() }()
+	Console(vm)
 
-	if v, err := Runtime.RunString(`console.log('hello world')`); err != nil {
+	if v, err := vm.RunString(`console.log('hello world')`); err != nil {
 		t.Fatal(err)
 	} else if !v.Equals(goja.Undefined()) {
 		t.Fail()
@@ -31,22 +31,22 @@ func TestConsole(t *testing.T) {
 
 	if buf, err := xml.Marshal(&resty.User{Username: "Hi", Password: "***"}); err != nil {
 		t.Fatal(err)
-	} else if _, err := Runtime.RunString(`dump('` + f.String(buf) + `')`); err != nil {
+	} else if _, err := vm.RunString(`dump('` + f.String(buf) + `')`); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestID(t *testing.T) {
-	Runtime = goja.New()
-	defer func() { Runtime.ClearInterrupt() }()
-	Console(Runtime)
-	ID(Runtime)
-	RD(Runtime)
+	vm := goja.New()
+	defer func() { vm.ClearInterrupt() }()
+	Console(vm)
+	ID(vm)
+	RD(vm)
 
 	shareObject := make(map[string]interface{})
 	shareObject["id"] = id.L36()
 	shareObject["name"] = random.AlphaNumber(10)
-	Runtime.Set("shareObject", shareObject)
+	vm.Set("shareObject", shareObject)
 
 	script := `
 dump(shareObject)
@@ -56,14 +56,14 @@ shareObject.f1 = function (a) { console.log('this.id =', this.id, ', arguments =
 shareObject.f1(111)
 `
 
-	if _, err := Runtime.RunString(script); err != nil {
+	if _, err := vm.RunString(script); err != nil {
 		t.Fatal(err)
 	} else {
-		self := Runtime.Get("shareObject")
+		self := vm.Get("shareObject")
 		if obj, ok := self.Export().(map[string]interface{}); ok {
 			t.Logf("%+v", obj)
 			if f1, ok := obj["f1"].(func(goja.FunctionCall) goja.Value); ok {
-				f1(goja.FunctionCall{This: self, Arguments: []goja.Value{Runtime.ToValue(222)}})
+				f1(goja.FunctionCall{This: self, Arguments: []goja.Value{vm.ToValue(222)}})
 			}
 		}
 	}
