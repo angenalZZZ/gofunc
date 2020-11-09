@@ -1,3 +1,4 @@
 database:
   mssql: "sqlserver://sa:HGJ766GR767FKJU0@localhost?database=test&connection+timeout=3&log=8"
   mysql: "root:HGJ766GR767FKJU0@tcp(localhost:3306)/test?charset=utf8&parseTime=True&loc=Local&timeout=3s"
+  sqlite3: "file:A:/database/sqlite/data/test.db?cache=shared&mode=rwc" # ro,rw,rwc,memory

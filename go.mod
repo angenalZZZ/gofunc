@@ -40,6 +40,7 @@ require (
 	github.com/klauspost/crc32 v1.2.0
 	github.com/klauspost/pgzip v1.2.3
 	github.com/libp2p/go-reuseport v0.0.1
+	github.com/mattn/go-sqlite3 v1.14.4
 	github.com/nats-io/nats-server/v2 v2.1.7 // indirect
 	github.com/nats-io/nats.go v1.10.0
 	github.com/nsqio/go-nsq v1.0.8
