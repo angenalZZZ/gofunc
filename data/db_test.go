@@ -70,6 +70,6 @@ func TestDbo(t *testing.T) {
 		t.Fatal(err)
 	} else {
 		num, _ = res.LastInsertId()
-		t.Logf(`[%s] %q inserted rows [Id] %d`, DbType, tbl, num)
+		t.Logf(`[%s] %q inserted rows [Id=%d]`, DbType, tbl, num)
 	}
 }
