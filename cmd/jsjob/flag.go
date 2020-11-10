@@ -102,7 +102,7 @@ func runInit() {
 	}
 
 	var (
-		r   = js.NewRuntime()
+		r   = js.NewRuntime(nil)
 		err error
 	)
 	defer func() { r.Clear() }()
@@ -138,7 +138,7 @@ func runTest() {
 	}
 
 	var (
-		r   = js.NewRuntime()
+		r   = js.NewRuntime(nil)
 		err error
 	)
 	defer func() { r.Clear() }()

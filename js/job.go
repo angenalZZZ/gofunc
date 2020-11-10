@@ -54,7 +54,7 @@ type JobJs struct {
 	// the job parent var'name
 	ParentName string
 	// R register
-	R func() *GojaRuntime
+	R func() *GoRuntime
 	// Func func runner
 	Func func(goja.FunctionCall) goja.Value
 	// Self func this object

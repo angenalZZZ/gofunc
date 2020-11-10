@@ -12,7 +12,7 @@ import (
 )
 
 // NewJobs create javascript jobs.
-func NewJobs(r *GojaRuntime, script string, parentName string, name string) ([]*JobJs, error) {
+func NewJobs(r *GoRuntime, script string, parentName string, name string) ([]*JobJs, error) {
 	var (
 		filename    string
 		fileModTime time.Time

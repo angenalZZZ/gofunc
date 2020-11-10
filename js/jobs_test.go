@@ -5,7 +5,7 @@ import (
 )
 
 func TestNewJobs(t *testing.T) {
-	r := NewRuntime()
+	r := NewRuntime(nil)
 	defer func() { r.Clear() }()
 
 	script := `

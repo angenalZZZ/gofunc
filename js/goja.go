@@ -9,14 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/angenalZZZ/gofunc/data"
-	"github.com/angenalZZZ/gofunc/data/cache/store"
 	"github.com/angenalZZZ/gofunc/data/id"
 	"github.com/angenalZZZ/gofunc/data/random"
 	"github.com/angenalZZZ/gofunc/f"
 	ht "github.com/angenalZZZ/gofunc/http"
 	"github.com/angenalZZZ/gofunc/log"
-	nat "github.com/angenalZZZ/gofunc/rpc/nats"
 	"github.com/dop251/goja"
 	"github.com/go-redis/redis/v7"
 	"github.com/go-resty/resty/v2"
@@ -25,53 +22,110 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// Runtime vm for goja javascript runtime and register
-var Runtime *GojaRuntime
+// Logger use log in javascript.
+// 	log.debug('%d', 123)
+// 	log.info('%v', {name:'hello'})
+// 	log.warn()
+// 	log.error()
+// 	log.fatal()
+// 	log.panic()
+// 	log.log()
+func Logger(r *goja.Runtime, log *log.Logger) {
+	logObj := r.NewObject()
 
-// GojaRuntime goja javascript runtime and register
-type GojaRuntime struct {
-	*sqlx.DB
-	*goja.Runtime
-}
-
-// Clear runtime interrupt and other clear.
-func (r *GojaRuntime) Clear() {
-	r.ClearInterrupt()
-	if r.DB != nil {
-		_ = r.DB.Close()
-	}
-}
-
-// NewRuntime create a javascript runtime and register
-func NewRuntime() *GojaRuntime {
-	var (
-		db  *sqlx.DB
-		vm  = goja.New()
-		err error
-	)
-
-	Console(vm)
-	ID(vm)
-	RD(vm)
-	Ajax(vm)
-
-	if data.DbType != "" && data.DbConn != "" {
-		db, err = sqlx.Connect(data.DbType, data.DbConn)
-		if err != nil && log.Log != nil {
-			log.Log.Error().Msgf("failed connect to db: %v\n", err)
+	// log.debug output log
+	_ = logObj.Set("debug", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Undefined(), len(c.Arguments)
+		if l == 0 {
+			return v
 		}
-		Db(vm, db)
-	}
+		format, s := c.Arguments[0].String(), make([]interface{}, l-1)
+		for i := 1; i < l; i++ {
+			s = append(s, c.Arguments[i].Export())
+		}
+		log.Debug().Msgf(format, s...)
+		return v
+	})
+	// log.info output log
+	_ = logObj.Set("info", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Undefined(), len(c.Arguments)
+		if l == 0 {
+			return v
+		}
+		format, s := c.Arguments[0].String(), make([]interface{}, l-1)
+		for i := 1; i < l; i++ {
+			s = append(s, c.Arguments[i].Export())
+		}
+		log.Info().Msgf(format, s...)
+		return v
+	})
+	// log.warn output log
+	_ = logObj.Set("warn", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Undefined(), len(c.Arguments)
+		if l == 0 {
+			return v
+		}
+		format, s := c.Arguments[0].String(), make([]interface{}, l-1)
+		for i := 1; i < l; i++ {
+			s = append(s, c.Arguments[i].Export())
+		}
+		log.Warn().Msgf(format, s...)
+		return v
+	})
+	// log.error output log
+	_ = logObj.Set("error", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Undefined(), len(c.Arguments)
+		if l == 0 {
+			return v
+		}
+		format, s := c.Arguments[0].String(), make([]interface{}, l-1)
+		for i := 1; i < l; i++ {
+			s = append(s, c.Arguments[i].Export())
+		}
+		log.Error().Msgf(format, s...)
+		return v
+	})
+	// log.fatal output log
+	_ = logObj.Set("fatal", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Undefined(), len(c.Arguments)
+		if l == 0 {
+			return v
+		}
+		format, s := c.Arguments[0].String(), make([]interface{}, l-1)
+		for i := 1; i < l; i++ {
+			s = append(s, c.Arguments[i].Export())
+		}
+		log.Fatal().Msgf(format, s...)
+		return v
+	})
+	// log.panic output log
+	_ = logObj.Set("panic", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Undefined(), len(c.Arguments)
+		if l == 0 {
+			return v
+		}
+		format, s := c.Arguments[0].String(), make([]interface{}, l-1)
+		for i := 1; i < l; i++ {
+			s = append(s, c.Arguments[i].Export())
+		}
+		log.Panic().Msgf(format, s...)
+		return v
+	})
+	// log.log output log
+	_ = logObj.Set("log", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Undefined(), len(c.Arguments)
+		if l == 0 {
+			return v
+		}
+		format, s := c.Arguments[0].String(), make([]interface{}, l-1)
+		for i := 1; i < l; i++ {
+			s = append(s, c.Arguments[i].Export())
+		}
+		log.Log().Msgf(format, s...)
+		return v
+	})
 
-	if nat.Conn != nil && nat.Subject != "" {
-		Nats(vm, nat.Conn, nat.Subject)
-	}
-
-	if store.RedisClient != nil {
-		Redis(vm, store.RedisClient)
-	}
-
-	return &GojaRuntime{DB: db, Runtime: vm}
+	r.Set("log", logObj)
 }
 
 // Console use console.log,dump in javascript.
