@@ -274,6 +274,9 @@ func (sub *SubscriberFastCache) hand(ctx context.Context) {
 		for dataIndex := int64(0); dataIndex < indexSize && index < count; runCount++ {
 			index++ // key equals index
 			val := sub.Cache.Get(nil, f.BytesUint64(index))
+			if val == nil {
+				val = []byte{}
+			}
 			handData = append(handData, val)
 			handRecords++
 			if dataIndex++; dataIndex == indexSize || index == count {
