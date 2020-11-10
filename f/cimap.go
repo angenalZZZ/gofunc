@@ -2,46 +2,46 @@ package f
 
 import "sync"
 
-// CMapShardCount Map Shard Count
-var CMapShardCount = 32
+// CiMapShardCount Map Shard Count
+var CiMapShardCount = 32
 
-// CMap thread safe map of type string:Anything.
+// CiMap thread safe map of type uint64:Anything.
 // To avoid lock bottlenecks this map is dived to several (SHARD_COUNT) map shards.
-type CMap []*CMapShared
+type CiMap []*CiMapShared
 
-// CMapShared thread safe string to anything map.
-type CMapShared struct {
-	items        map[string]interface{}
+// CiMapShared thread safe uint64 to anything map.
+type CiMapShared struct {
+	items        map[uint64]interface{}
 	sync.RWMutex // Read Write mutex, guards access to internal map.
 }
 
-// NewConcurrentMap Creates a new concurrent map.
-func NewConcurrentMap() CMap {
-	m := make(CMap, CMapShardCount)
-	for i := 0; i < CMapShardCount; i++ {
-		m[i] = &CMapShared{items: make(map[string]interface{})}
+// NewCiMap Creates a new concurrent map.
+func NewCiMap() CiMap {
+	m := make(CiMap, CiMapShardCount)
+	for i := 0; i < CiMapShardCount; i++ {
+		m[i] = &CiMapShared{items: make(map[uint64]interface{})}
 	}
 	return m
 }
 
-// NewConcurrentMapFromJSON Creates a new concurrent map.
-func NewConcurrentMapFromJSON(json []byte) (m CMap, err error) {
-	tmp := make(map[string]interface{})
+// NewCiMapFromJSON Creates a new concurrent map.
+func NewCiMapFromJSON(json []byte) (m CiMap, err error) {
+	tmp := make(map[uint64]interface{})
 	err = DecodeJson(json, &tmp)
 	if err == nil {
-		m = NewConcurrentMap()
+		m = NewCiMap()
 		m.MSet(tmp)
 	}
 	return
 }
 
-// GetShard returns shard under given key.
-func (m CMap) GetShard(key string) *CMapShared {
-	return m[uint(fnv32(key))%uint(CMapShardCount)]
+// GetShard returns shard under given key
+func (m CiMap) GetShard(key uint64) *CiMapShared {
+	return m[key%uint64(CiMapShardCount)]
 }
 
 // MSet sets values.
-func (m CMap) MSet(data map[string]interface{}) {
+func (m CiMap) MSet(data map[uint64]interface{}) {
 	for key, value := range data {
 		shard := m.GetShard(key)
 		shard.Lock()
@@ -51,7 +51,7 @@ func (m CMap) MSet(data map[string]interface{}) {
 }
 
 // Set the given value under the specified key.
-func (m CMap) Set(key string, value interface{}) {
+func (m CiMap) Set(key uint64, value interface{}) {
 	// GetHeader map shard.
 	shard := m.GetShard(key)
 	shard.Lock()
@@ -59,14 +59,8 @@ func (m CMap) Set(key string, value interface{}) {
 	shard.Unlock()
 }
 
-// CMapUpCb Callback to return new element to be inserted into the map
-// It is called while lock is held, therefore it MUST NOT
-// try to access other keys in same map, as it can lead to deadlock since
-// Go sync.RWLock is not reentrant.
-type CMapUpCb func(exist bool, valueInMap interface{}, newValue interface{}) interface{}
-
 // Up Insert or Update - updates existing element or inserts a new one using CMapUpCb
-func (m CMap) Up(key string, value interface{}, cb CMapUpCb) (res interface{}) {
+func (m CiMap) Up(key uint64, value interface{}, cb CMapUpCb) (res interface{}) {
 	shard := m.GetShard(key)
 	shard.Lock()
 	v, ok := shard.items[key]
@@ -77,7 +71,7 @@ func (m CMap) Up(key string, value interface{}, cb CMapUpCb) (res interface{}) {
 }
 
 // SetIfAbsent Sets the given value under the specified key if no value was associated with it.
-func (m CMap) SetIfAbsent(key string, value interface{}) bool {
+func (m CiMap) SetIfAbsent(key uint64, value interface{}) bool {
 	// GetHeader map shard.
 	shard := m.GetShard(key)
 	shard.Lock()
@@ -90,7 +84,7 @@ func (m CMap) SetIfAbsent(key string, value interface{}) bool {
 }
 
 // Get retrieves an element from map under given key.
-func (m CMap) Get(key string) (interface{}, bool) {
+func (m CiMap) Get(key uint64) (interface{}, bool) {
 	// GetHeader shard
 	shard := m.GetShard(key)
 	shard.RLock()
@@ -101,9 +95,9 @@ func (m CMap) Get(key string) (interface{}, bool) {
 }
 
 // Count returns the number of elements within the map.
-func (m CMap) Count() int {
+func (m CiMap) Count() int {
 	count := 0
-	for i := 0; i < CMapShardCount; i++ {
+	for i := 0; i < CiMapShardCount; i++ {
 		shard := m[i]
 		shard.RLock()
 		count += len(shard.items)
@@ -113,7 +107,7 @@ func (m CMap) Count() int {
 }
 
 // Has Looks up an item under specified key
-func (m CMap) Has(key string) bool {
+func (m CiMap) Has(key uint64) bool {
 	// GetHeader shard
 	shard := m.GetShard(key)
 	shard.RLock()
@@ -124,7 +118,7 @@ func (m CMap) Has(key string) bool {
 }
 
 // Remove removes an element from the map.
-func (m CMap) Remove(key string) {
+func (m CiMap) Remove(key uint64) {
 	// Try to get shard.
 	shard := m.GetShard(key)
 	shard.Lock()
@@ -132,14 +126,14 @@ func (m CMap) Remove(key string) {
 	shard.Unlock()
 }
 
-// RemoveCb is a callback executed in a map.RemoveCb() call, while Lock is held
+// RemoveCbi is a callback executed in a map.RemoveCb() call, while Lock is held
 // If returns true, the element will be removed from the map
-type RemoveCb func(key string, v interface{}, exists bool) bool
+type RemoveCbi func(key uint64, v interface{}, exists bool) bool
 
 // RemoveCb locks the shard containing the key, retrieves its current value and calls the callback with those params
 // If callback returns true and element exists, it will remove it from the map
 // Returns the value returned by the callback (even if element was not present in the map)
-func (m CMap) RemoveCb(key string, cb RemoveCb) bool {
+func (m CiMap) RemoveCb(key uint64, cb RemoveCbi) bool {
 	// Try to get shard.
 	shard := m.GetShard(key)
 	shard.Lock()
@@ -153,7 +147,7 @@ func (m CMap) RemoveCb(key string, cb RemoveCb) bool {
 }
 
 // Pop removes an element from the map and returns it
-func (m CMap) Pop(key string) (v interface{}, exists bool) {
+func (m CiMap) Pop(key uint64) (v interface{}, exists bool) {
 	// Try to get shard.
 	shard := m.GetShard(key)
 	shard.Lock()
@@ -164,35 +158,35 @@ func (m CMap) Pop(key string) (v interface{}, exists bool) {
 }
 
 // IsEmpty checks if map is empty.
-func (m CMap) IsEmpty() bool {
+func (m CiMap) IsEmpty() bool {
 	return m.Count() == 0
 }
 
-// Tuple Used by the Iter & IterBuffered functions to wrap two variables together over a channel
-type Tuple struct {
-	Key string
+// TupleI Used by the Iter & IterBuffered functions to wrap two variables together over a channel
+type TupleI struct {
+	Key uint64
 	Val interface{}
 }
 
 // Iter returns an iterator which could be used in a for range loop.
 //
 // Deprecated: using IterBuffered() will get a better performence
-func (m CMap) Iter() <-chan Tuple {
-	chans := snapshot(m)
-	ch := make(chan Tuple)
-	go fanIn(chans, ch)
+func (m CiMap) Iter() <-chan TupleI {
+	chans := snapshotI(m)
+	ch := make(chan TupleI)
+	go fanInI(chans, ch)
 	return ch
 }
 
 // IterBuffered returns a buffered iterator which could be used in a for range loop.
-func (m CMap) IterBuffered() <-chan Tuple {
-	chans := snapshot(m)
+func (m CiMap) IterBuffered() <-chan TupleI {
+	chans := snapshotI(m)
 	total := 0
 	for _, c := range chans {
 		total += cap(c)
 	}
-	ch := make(chan Tuple, total)
-	go fanIn(chans, ch)
+	ch := make(chan TupleI, total)
+	go fanInI(chans, ch)
 	return ch
 }
 
@@ -200,19 +194,19 @@ func (m CMap) IterBuffered() <-chan Tuple {
 // which likely takes a snapshot of `m`.
 // It returns once the size of each buffered channel is determined,
 // before all the channels are populated using goroutines.
-func snapshot(m CMap) (chans []chan Tuple) {
-	chans = make([]chan Tuple, CMapShardCount)
+func snapshotI(m CiMap) (chans []chan TupleI) {
+	chans = make([]chan TupleI, CiMapShardCount)
 	wg := sync.WaitGroup{}
-	wg.Add(CMapShardCount)
+	wg.Add(CiMapShardCount)
 	// Foreach shard.
 	for index, shard := range m {
-		go func(index int, shard *CMapShared) {
+		go func(index int, shard *CiMapShared) {
 			// Foreach key, value pair.
 			shard.RLock()
-			chans[index] = make(chan Tuple, len(shard.items))
+			chans[index] = make(chan TupleI, len(shard.items))
 			wg.Done()
 			for key, val := range shard.items {
-				chans[index] <- Tuple{key, val}
+				chans[index] <- TupleI{key, val}
 			}
 			shard.RUnlock()
 			close(chans[index])
@@ -222,12 +216,12 @@ func snapshot(m CMap) (chans []chan Tuple) {
 	return chans
 }
 
-// fanIn reads elements from channels `chans` into channel `out`
-func fanIn(chans []chan Tuple, out chan Tuple) {
+// fanInI reads elements from channels `chans` into channel `out`
+func fanInI(chans []chan TupleI, out chan TupleI) {
 	wg := sync.WaitGroup{}
 	wg.Add(len(chans))
 	for _, ch := range chans {
-		go func(ch chan Tuple) {
+		go func(ch chan TupleI) {
 			for t := range ch {
 				out <- t
 			}
@@ -238,9 +232,9 @@ func fanIn(chans []chan Tuple, out chan Tuple) {
 	close(out)
 }
 
-// Items returns all items as map[string]interface{}
-func (m CMap) Items() map[string]interface{} {
-	tmp := make(map[string]interface{})
+// Items returns all items as map[uint64]interface{}
+func (m CiMap) Items() map[uint64]interface{} {
+	tmp := make(map[uint64]interface{})
 
 	// Insert items to temporary map.
 	for item := range m.IterBuffered() {
@@ -250,15 +244,15 @@ func (m CMap) Items() map[string]interface{} {
 	return tmp
 }
 
-// IterCb Iterator callback,called for every key,value found in
+// IterCbi Iterator callback,called for every key,value found in
 // maps. RLock is held for all calls for a given shard
 // therefore callback sess consistent view of a shard,
 // but not across the shards
-type IterCb func(key string, v interface{})
+type IterCbi func(key uint64, v interface{})
 
 // IterCb Callback based iterator, cheapest way to read
 // all elements in a map.
-func (m CMap) IterCb(fn IterCb) {
+func (m CiMap) IterCb(fn IterCbi) {
 	for idx := range m {
 		shard := (m)[idx]
 		shard.RLock()
@@ -269,16 +263,16 @@ func (m CMap) IterCb(fn IterCb) {
 	}
 }
 
-// Keys returns all keys as []string
-func (m CMap) Keys() []string {
+// Keys returns all keys as []uint64
+func (m CiMap) Keys() []uint64 {
 	count := m.Count()
-	ch := make(chan string, count)
+	ch := make(chan uint64, count)
 	go func() {
 		// Foreach shard.
 		wg := sync.WaitGroup{}
-		wg.Add(CMapShardCount)
+		wg.Add(CiMapShardCount)
 		for _, shard := range m {
-			go func(shard *CMapShared) {
+			go func(shard *CiMapShared) {
 				// Foreach key, value pair.
 				shard.RLock()
 				for key := range shard.items {
@@ -293,30 +287,20 @@ func (m CMap) Keys() []string {
 	}()
 
 	// Generate keys
-	keys := make([]string, 0, count)
+	keys := make([]uint64, 0, count)
 	for k := range ch {
 		keys = append(keys, k)
 	}
 	return keys
 }
 
-// JSON Reviles CMap "private" variables to json marshal.
-func (m CMap) JSON() ([]byte, error) {
-	tmp := make(map[string]interface{})
+// JSON Reviles CiMap "private" variables to json marshal.
+func (m CiMap) JSON() ([]byte, error) {
+	tmp := make(map[uint64]interface{})
 
 	// Insert items to temporary map.
 	for item := range m.IterBuffered() {
 		tmp[item.Key] = item.Val
 	}
 	return EncodeJson(tmp)
-}
-
-func fnv32(key string) uint32 {
-	hash := uint32(2166136261)
-	const prime32 = uint32(16777619)
-	for i := 0; i < len(key); i++ {
-		hash *= prime32
-		hash ^= uint32(key[i])
-	}
-	return hash
 }
