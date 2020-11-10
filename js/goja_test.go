@@ -2,6 +2,7 @@ package js
 
 import (
 	"encoding/xml"
+	"fmt"
 	"testing"
 
 	"github.com/angenalZZZ/gofunc/configfile"
@@ -18,6 +19,34 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
 )
+
+func TestNewObject(t *testing.T) {
+	vm := goja.New()
+	defer func() { vm.ClearInterrupt() }()
+
+	newObj := func(c goja.ConstructorCall) *goja.Object {
+		_ = c.This.Set("name", c.Argument(0).String())
+		_ = c.This.Set("display", func(c1 goja.FunctionCall) goja.Value {
+			fmt.Println("    display: my name is", c.This.Get("name").Export())
+			return goja.Undefined()
+		})
+		return nil
+	}
+
+	vm.Set("Obj", newObj)
+
+	if v, err := vm.RunString(`obj = new Obj('GO'); obj.name`); err != nil {
+		t.Fatal(err)
+	} else {
+		t.Logf("obj.name = %q", v.Export())
+	}
+
+	vm.ClearInterrupt()
+
+	if _, err := vm.RunString(`obj.display()`); err != nil {
+		t.Fatal(err)
+	}
+}
 
 func TestConsole(t *testing.T) {
 	vm := goja.New()
