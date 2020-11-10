@@ -1,9 +1,10 @@
 package f_test
 
 import (
+	"testing"
+
 	"github.com/angenalZZZ/gofunc/data/random"
 	"github.com/angenalZZZ/gofunc/f"
-	"testing"
 )
 
 func TestCMap_JSON(t *testing.T) {
