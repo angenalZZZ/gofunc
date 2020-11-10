@@ -16,39 +16,45 @@ var Runtime *GoRuntime
 
 // GoRuntime javascript runtime and register
 type GoRuntime struct {
+	// is already registered
+	registered bool
+	// new javascript runtime
 	*goja.Runtime
+	// field: *log.Logger
 	*log.Logger
+	// field: *sqlx.DB
 	*sqlx.DB
+	// field: *nats.Conn
+	NatConn    *nats.Conn
+	NatSubject string
+	// field: *redis.Client
+	RedisClient *redis.Client
 }
 
 // GoRuntimeParam all parameters of javascript runtime and register
 type GoRuntimeParam struct {
+	// parameter: *log.Logger
+	Log *log.Logger
 	// parameter: *sqlx.DB
 	DbType, DbConn string
 	// parameter: *nats.Conn
-	NatsConn    *nats.Conn
-	NatsSubject string
+	NatConn    *nats.Conn
+	NatSubject string
 	// parameter: *redis.Client
 	RedisClient *redis.Client
-	// parameter: *log.Logger
-	Log *log.Logger
 }
 
-// Clear runtime interrupt and other global vars clear.
-func (r *GoRuntime) Clear() {
-	r.ClearInterrupt()
-	if r.DB != nil {
-		_ = r.DB.Close()
-	}
-}
-
-// NewRuntime create a javascript runtime and register from other global vars.
+// NewRuntime create a javascript runtime and register from parameter or global vars.
 func NewRuntime(parameter *GoRuntimeParam) *GoRuntime {
 	var (
 		db  *sqlx.DB
 		vm  = goja.New()
+		r   = new(GoRuntime)
 		err error
 	)
+
+	// new javascript runtime
+	r.Runtime = vm
 
 	// parameter: *log.Logger
 	logger := log.Log
@@ -56,14 +62,8 @@ func NewRuntime(parameter *GoRuntimeParam) *GoRuntime {
 		logger = parameter.Log
 	}
 	if logger != nil {
-		Logger(vm, logger)
+		r.Logger = logger
 	}
-
-	// create all registers
-	Console(vm)
-	ID(vm)
-	RD(vm)
-	Ajax(vm)
 
 	// parameter: *sqlx.DB
 	dbType, dbConn := data.DbType, data.DbConn
@@ -75,16 +75,16 @@ func NewRuntime(parameter *GoRuntimeParam) *GoRuntime {
 		if err != nil && logger != nil {
 			logger.Error().Msgf("failed connect to db: %v\n", err)
 		}
-		Db(vm, db)
+		r.DB = db
 	}
 
 	// parameter: *nats.Conn
 	natConn, natSubject := nat.Conn, nat.Subject
-	if parameter != nil && parameter.NatsConn != nil && parameter.NatsSubject != "" {
-		natConn, natSubject = parameter.NatsConn, parameter.NatsSubject
+	if parameter != nil && parameter.NatConn != nil && parameter.NatSubject != "" {
+		natConn, natSubject = parameter.NatConn, parameter.NatSubject
 	}
 	if natConn != nil && natSubject != "" {
-		Nats(vm, natConn, natSubject)
+		r.NatConn, r.NatSubject = natConn, natSubject
 	}
 
 	// parameter: *redis.Client
@@ -93,8 +93,60 @@ func NewRuntime(parameter *GoRuntimeParam) *GoRuntime {
 		redisClient = parameter.RedisClient
 	}
 	if redisClient != nil {
-		Redis(vm, redisClient)
+		r.RedisClient = redisClient
 	}
 
-	return &GoRuntime{Runtime: vm, Logger: logger, DB: db}
+	r.Register()
+	return r
+}
+
+// Register init runtime register if not registered.
+func (r *GoRuntime) Register() {
+	if r.Runtime == nil || r.registered {
+		return
+	}
+
+	if r.Logger != nil {
+		Logger(r.Runtime, r.Logger)
+	}
+
+	if r.DB != nil {
+		Db(r.Runtime, r.DB)
+	}
+
+	if r.NatConn != nil && r.NatSubject != "" {
+		Nats(r.Runtime, r.NatConn, r.NatSubject)
+	}
+
+	if r.RedisClient != nil {
+		Redis(r.Runtime, r.RedisClient)
+	}
+
+	// create all registers
+	Console(r.Runtime)
+	ID(r.Runtime)
+	RD(r.Runtime)
+	Ajax(r.Runtime)
+
+	// sets registered
+	r.registered = true
+}
+
+// Clear runtime interrupt and fields.
+func (r *GoRuntime) Clear() {
+	r.ClearInterrupt()
+	// field: *log.Logger
+	if r.Logger != nil {
+	}
+	// field: *sqlx.DB
+	if r.DB != nil {
+		_ = r.DB.Close()
+	}
+	// field: *nats.Conn
+	if r.NatConn != nil {
+		//_ = r.NatConn.FlushTimeout(time.Second)
+	}
+	// field: *redis.Client
+	if r.RedisClient != nil {
+	}
 }

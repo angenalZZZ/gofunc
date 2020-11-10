@@ -11,9 +11,11 @@ import (
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/log"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
-	_ "github.com/denisenkom/go-mssqldb"
 	"github.com/go-redis/redis/v7"
+
+	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var (

@@ -16,6 +16,7 @@ import (
 
 	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func TestConsole(t *testing.T) {
@@ -85,7 +86,7 @@ func TestDb(t *testing.T) {
 
 	var d *sqlx.DB
 	if d, err = sqlx.Connect("mysql", conn["mysql"].(string)); err != nil {
-		t.Fatal(err)
+		t.Skip(err)
 	}
 	defer func() { _ = d.Close() }()
 

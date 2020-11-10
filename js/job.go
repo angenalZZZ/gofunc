@@ -47,14 +47,19 @@ type JobJs struct {
 	LastRunTime time.Time
 	// the last run id
 	LastRunID uint64
+
 	// the job name
 	Name string
 	// the job parent list
 	Parent []*JobJs
 	// the job parent var'name
 	ParentName string
-	// R register
-	R func() *GoRuntime
+
+	// R create a javascript runtime
+	R func(*GoRuntimeParam) *GoRuntime
+	// P create a javascript runtime input parameter
+	P *GoRuntimeParam
+
 	// Func func runner
 	Func func(goja.FunctionCall) goja.Value
 	// Self func this object
@@ -70,7 +75,7 @@ func (j *JobJs) Run() {
 		return
 	}
 
-	r := j.R()
+	r := j.R(j.P)
 	if r == nil {
 		return
 	}
@@ -78,7 +83,7 @@ func (j *JobJs) Run() {
 
 	id := atomic.AddUint64(&j.LastRunID, 1)
 	j.LastRunTime = time.Now()
-	s := fmt.Sprintf("%s [job] %q #%d run ", j.LastRunTime.Format(RunLogTimeFormat), j.Name, id)
+	s := fmt.Sprintf("%s [job] %q #%d started running. ", j.LastRunTime.Format(RunLogTimeFormat), j.Name, id)
 
 	var (
 		res goja.Value

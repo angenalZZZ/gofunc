@@ -203,8 +203,8 @@ func RD(r *goja.Runtime) {
 			l = c.Arguments[0].ToInteger()
 			if l < 2 {
 				l = 2
-			} else if l > 200 {
-				l = 200
+			} else if l > 2000 {
+				l = 2000
 			}
 		}
 		return r.ToValue(random.AlphaNumber(int(l)))

@@ -2,6 +2,8 @@ package js
 
 import (
 	"testing"
+
+	"github.com/angenalZZZ/gofunc/log"
 )
 
 func TestNewJobs(t *testing.T) {
@@ -17,7 +19,7 @@ cron = [
             var item = { Time: new Date() };
             item.ActionName = 'some action';
             var res = $.q("post", "https://postman-echo.com/post", item, "url");
-            dump(res);
+            log.debug(JSON.stringify(res));
         }
     },
 ];
@@ -29,7 +31,12 @@ cron = [
 		if err = jobs[0].Init(); err != nil {
 			t.Fatal(err)
 		}
-		t.Logf("jobs[0]: %+v", jobs[0])
-		t.Logf("jobs[0].FileIsMod: %t", jobs[0].FileIsMod())
+		t.Log("jobs[0] init ok.")
+		//t.Logf("jobs[0]: %+v", jobs[0])
+		//t.Logf("jobs[0].FileIsMod: %t", jobs[0].FileIsMod())
+		jobs[0].R, jobs[0].P = NewRuntime, &GoRuntimeParam{
+			Log: log.InitConsole("15:04:05", false),
+		}
+		jobs[0].Run()
 	}
 }
