@@ -29,18 +29,12 @@ type NdbStore struct {
 	bucket  string
 }
 
-// NewNdb creates a new store to nutsdb instance(s)
-func NewNdb(option *Options, bucketAndPath ...string) *NdbStore {
-	if option == nil {
-		option = &Options{}
-	}
+// OpenNdb creates a new store to nutsdb client.
+func OpenNdb(path ...string) (*nutsdb.DB, error) {
+	opt := nutsdb.DefaultOptions
 
-	var opt, l, bucket = nutsdb.DefaultOptions, len(bucketAndPath), "bucket"
-	if l == 1 {
-		bucket = bucketAndPath[0]
-	}
-	if l == 2 {
-		opt.Dir = bucketAndPath[1]
+	if len(path) > 0 && path[0] != "" {
+		opt.Dir = path[0]
 	} else {
 		opt.Dir = filepath.Join(f.CurrentDir(), ".nutsdb")
 	}
@@ -63,7 +57,26 @@ func NewNdb(option *Options, bucketAndPath ...string) *NdbStore {
 	// StartFileLoadingMode 代表启动数据库的载入文件的方式。参数选项同RWMode
 	opt.StartFileLoadingMode = nutsdb.MMap
 
-	client, err := nutsdb.Open(opt)
+	return nutsdb.Open(opt)
+}
+
+// NewNdb creates a new store to nutsdb instance(s)
+func NewNdb(option *Options, bucketAndPath ...string) *NdbStore {
+	if option == nil {
+		option = &Options{}
+	}
+
+	bucket, l := "default", len(bucketAndPath)
+	if l == 1 {
+		bucket = bucketAndPath[0]
+	}
+
+	dir := ""
+	if l == 2 {
+		dir = bucketAndPath[1]
+	}
+
+	client, err := OpenNdb(dir)
 	if err != nil {
 		return nil
 	}
@@ -77,9 +90,14 @@ func NewNdb(option *Options, bucketAndPath ...string) *NdbStore {
 
 // Get returns data stored from a given key
 func (s *NdbStore) Get(key string) (interface{}, error) {
+	return s.GetBy(key, s.bucket)
+}
+
+// GetBy returns data stored from a given key
+func (s *NdbStore) GetBy(key string, bucket string) (interface{}, error) {
 	var data []byte
 	err := s.client.View(func(tx *nutsdb.Tx) error {
-		item, err := tx.Get(s.bucket, f.Bytes(key))
+		item, err := tx.Get(bucket, f.Bytes(key))
 		if err != nil {
 			return err
 		}
@@ -91,10 +109,15 @@ func (s *NdbStore) Get(key string) (interface{}, error) {
 
 // TTL returns a expiration time
 func (s *NdbStore) TTL(key string) (time.Duration, error) {
+	return s.TTLby(key, s.bucket)
+}
+
+// TTLby returns a expiration time
+func (s *NdbStore) TTLby(key string, bucket string) (time.Duration, error) {
 	var expires int64
 
-	_ = s.client.View(func(txn *nutsdb.Tx) error {
-		item, err := txn.Get(s.bucket, f.Bytes(key))
+	_ = s.client.View(func(tx *nutsdb.Tx) error {
+		item, err := tx.Get(bucket, f.Bytes(key))
 		if err != nil {
 			expires = -2
 			return nil
@@ -119,15 +142,20 @@ func (s *NdbStore) TTL(key string) (time.Duration, error) {
 
 // Set defines data in nutsdb for given key identifier
 func (s *NdbStore) Set(key string, value interface{}, options *Options) error {
+	return s.SetBy(key, value, s.bucket, options)
+}
+
+// SetBy defines data in nutsdb for given key identifier
+func (s *NdbStore) SetBy(key string, value interface{}, bucket string, options *Options) error {
 	if options == nil {
 		options = s.options
 	}
 
-	err := s.client.Update(func(txn *nutsdb.Tx) (err error) {
+	err := s.client.Update(func(tx *nutsdb.Tx) (err error) {
 		if options.Expiration <= 0 {
-			err = txn.Put(s.bucket, f.Bytes(key), value.([]byte), 0)
+			err = tx.Put(bucket, f.Bytes(key), value.([]byte), 0)
 		} else {
-			err = txn.Put(s.bucket, f.Bytes(key), value.([]byte), uint32(options.Expiration.Seconds()))
+			err = tx.Put(bucket, f.Bytes(key), value.([]byte), uint32(options.Expiration.Seconds()))
 		}
 		return err
 	})
@@ -137,18 +165,18 @@ func (s *NdbStore) Set(key string, value interface{}, options *Options) error {
 	}
 
 	if tags := options.TagsValue(); len(tags) > 0 {
-		s.setTags(key, tags)
+		s.setTags(key, bucket, tags)
 	}
 
 	return nil
 }
 
-func (s *NdbStore) setTags(key string, tags []string) {
+func (s *NdbStore) setTags(key string, bucket string, tags []string) {
 	for _, tag := range tags {
 		var tagKey = fmt.Sprintf(NdbTagPattern, tag)
 		var cacheKeys []string
 
-		if result, err := s.Get(tagKey); err == nil {
+		if result, err := s.GetBy(tagKey, bucket); err == nil {
 			if bytes, ok := result.([]byte); ok {
 				cacheKeys = strings.Split(string(bytes), ",")
 			}
@@ -166,7 +194,7 @@ func (s *NdbStore) setTags(key string, tags []string) {
 			cacheKeys = append(cacheKeys, key)
 		}
 
-		_ = s.Set(tagKey, []byte(strings.Join(cacheKeys, ",")), &Options{
+		_ = s.SetBy(tagKey, []byte(strings.Join(cacheKeys, ",")), bucket, &Options{
 			Expiration: 720 * time.Hour,
 		})
 	}
@@ -174,17 +202,27 @@ func (s *NdbStore) setTags(key string, tags []string) {
 
 // Delete removes data from nutsdb for given key identifier
 func (s *NdbStore) Delete(key string) error {
-	return s.client.Update(func(txn *nutsdb.Tx) error {
-		return txn.Delete(s.bucket, f.Bytes(key))
+	return s.DeleteBy(key, s.bucket)
+}
+
+// DeleteBy removes data from nutsdb for given key identifier
+func (s *NdbStore) DeleteBy(key string, bucket string) error {
+	return s.client.Update(func(tx *nutsdb.Tx) error {
+		return tx.Delete(bucket, f.Bytes(key))
 	})
 }
 
 // Invalidate invalidates some cache data in nutsdb for given options
 func (s *NdbStore) Invalidate(options InvalidateOptions) error {
-	if tags := options.TagsValue(); len(tags) > 0 {
+	return s.InvalidateBy(s.bucket, options)
+}
+
+// InvalidateBy invalidates some cache data in nutsdb for given options
+func (s *NdbStore) InvalidateBy(bucket string, option InvalidateOptions) error {
+	if tags := option.TagsValue(); len(tags) > 0 {
 		for _, tag := range tags {
 			var tagKey = fmt.Sprintf(NdbTagPattern, tag)
-			result, err := s.Get(tagKey)
+			result, err := s.GetBy(tagKey, bucket)
 			if err != nil {
 				return nil
 			}
@@ -195,12 +233,49 @@ func (s *NdbStore) Invalidate(options InvalidateOptions) error {
 			}
 
 			for _, cacheKey := range cacheKeys {
-				_ = s.Delete(cacheKey)
+				_ = s.DeleteBy(cacheKey, bucket)
 			}
 		}
 	}
 
 	return nil
+}
+
+// Search keys with prefix and handle them.
+func (s *NdbStore) Search(prefix string, handle func(key string, value []byte, ttl uint32) error) error {
+	return s.SearchBy(s.bucket, prefix, handle)
+}
+
+// SearchBy keys with prefix and handle them.
+func (s *NdbStore) SearchBy(bucket string, prefix string, handle func(key string, value []byte, ttl uint32) error) error {
+	if prefix == "" || prefix == "*" {
+		return s.client.View(func(tx *nutsdb.Tx) error {
+			items, err := tx.GetAll(bucket)
+			if err != nil {
+				return err
+			}
+			for _, item := range items {
+				err = handle(f.String(item.Key), item.Value, item.Meta.TTL)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+	}
+	return s.client.View(func(tx *nutsdb.Tx) error {
+		items, err := tx.PrefixScan(bucket, f.Bytes(prefix), 2000)
+		if err != nil {
+			return err
+		}
+		for _, item := range items {
+			err = handle(f.String(item.Key), item.Value, item.Meta.TTL)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 // Clear resets all data in the store.
@@ -209,6 +284,11 @@ func (s *NdbStore) Invalidate(options InvalidateOptions) error {
 // 一旦执行会影响到正常的写请求，所以最好避开高峰期，比如半夜定时执行等。
 func (s *NdbStore) Clear() error {
 	return s.client.Merge()
+}
+
+// Close releases all db resources.
+func (s *NdbStore) Close() error {
+	return s.client.Close()
 }
 
 // Backup backup all data in the dir.

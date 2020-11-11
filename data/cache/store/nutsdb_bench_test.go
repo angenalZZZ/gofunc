@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func BenchmarkBadgerSet(b *testing.B) {
-	store := NewBadger(nil)
+func BenchmarkNdbSet(b *testing.B) {
+	store := NewNdb(nil)
 	defer func() { _ = store.Close() }()
 
 	for k := 0.; k <= 10; k++ {
@@ -25,8 +25,8 @@ func BenchmarkBadgerSet(b *testing.B) {
 	}
 }
 
-func BenchmarkBadgerGet(b *testing.B) {
-	store := NewBadger(nil)
+func BenchmarkNdbGet(b *testing.B) {
+	store := NewNdb(nil)
 	defer func() { _ = store.Close() }()
 
 	key := "test"

@@ -3,11 +3,14 @@ package store
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/dgraph-io/badger/v2"
 	"github.com/dgraph-io/badger/v2/options"
-	"strings"
-	"time"
 )
 
 const (
@@ -24,14 +27,10 @@ type BadgerStore struct {
 	options *Options
 }
 
-// NewBadger creates a new store to Badger instance(s)
-func NewBadger(option *Options, path ...string) *BadgerStore {
-	if option == nil {
-		option = &Options{}
-	}
-
+// OpenBadger creates a new store to Badger client.
+func OpenBadger(path ...string) (*badger.DB, error) {
 	var opt badger.Options
-	if len(path) == 1 {
+	if len(path) > 0 && path[0] != "" {
 		opt = badger.DefaultOptions(path[0])
 		opt.Truncate = true
 		opt.SyncWrites = false
@@ -46,12 +45,21 @@ func NewBadger(option *Options, path ...string) *BadgerStore {
 		opt = badger.DefaultOptions("").WithInMemory(true)
 	}
 
-	client, err := badger.Open(opt)
+	return badger.Open(opt)
+}
+
+// NewBadger creates a new store to Badger instance(s)
+func NewBadger(option *Options, path ...string) *BadgerStore {
+	if option == nil {
+		option = &Options{}
+	}
+
+	client, err := OpenBadger(path...)
 	if err != nil {
 		return nil
 	}
 
-	if opt.InMemory == false {
+	if len(path) > 0 && path[0] != "" {
 		go (func() {
 			for client.RunValueLogGC(0.5) == nil {
 				// cleaning ...
@@ -208,9 +216,25 @@ func (s *BadgerStore) Invalidate(options InvalidateOptions) error {
 	return nil
 }
 
-// Clear resets all data in the store
+// Clear resets all data in the store.
 func (s *BadgerStore) Clear() error {
 	return s.client.DropAll()
+}
+
+// Close releases all db resources.
+func (s *BadgerStore) Close() error {
+	return s.client.Close()
+}
+
+// Backup backup all data in the dir.
+func (s *BadgerStore) Backup(dir string) error {
+	p := filepath.Join(dir, fmt.Sprintf("%s.bak", f.TimeFrom(time.Now(), true)))
+	w, err := os.Open(p)
+	if err != nil {
+		return err
+	}
+	_, err = s.client.Backup(w, 0)
+	return err
 }
 
 // GetType returns the store type
