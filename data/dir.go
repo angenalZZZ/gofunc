@@ -1,6 +1,7 @@
 package data
 
 import (
+	"path/filepath"
 	"sync"
 
 	"github.com/angenalZZZ/gofunc/f"
@@ -19,6 +20,9 @@ var (
 	CurrentUserName = f.CurrentUserName()
 	// CurrentUserHomeDir get $HOME
 	CurrentUserHomeDir = f.CurrentUserHomeDir()
+
+	// Dir get the new directory under the current directory
+	Dir = func(name string) string { return filepath.Join(CurrentDir, name) }
 
 	// Init todo init function
 	Init = new(sync.Once).Do

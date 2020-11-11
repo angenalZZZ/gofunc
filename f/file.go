@@ -99,12 +99,12 @@ func IsFile(path string) bool {
 
 // IsExeFile returns true if searches for an executable named file in the
 // directories named by the PATH environment variable.
-func IsExeFile(name string) bool {
-	if name == "" {
+func IsExeFile(path string) bool {
+	if path == "" {
 		return false
 	}
 
-	if lp, err := exec.LookPath(name); err == nil {
+	if lp, err := exec.LookPath(path); err == nil {
 		if fi, err := os.Stat(lp); err == nil {
 			return !fi.IsDir()
 		}
@@ -202,8 +202,8 @@ func MakeNameInArchive(sourceInfo os.FileInfo, source, baseDir, fpath string) (s
 // SearchFile Search a file in paths.
 // this is often used in search config file in /etc ~/
 func SearchFile(filename string, paths ...string) (fullPath string) {
-	for _, path := range paths {
-		fullPath = filepath.Join(path, filename)
+	for _, name := range paths {
+		fullPath = filepath.Join(name, filename)
 		existed, _ := FileExist(fullPath)
 		if existed {
 			return
@@ -216,15 +216,18 @@ func SearchFile(filename string, paths ...string) (fullPath string) {
 // for example: MatchFile(`^hello`, "hello.txt")
 // \n is striped while read
 func MatchFile(patten string, filename string) (lines []string, err error) {
-	re, err := regexp.Compile(patten)
+	var re *regexp.Regexp
+	re, err = regexp.Compile(patten)
 	if err != nil {
 		return
 	}
 
-	fd, err := os.Open(filename)
+	var fd *os.File
+	fd, err = os.Open(filename)
 	if err != nil {
 		return
 	}
+
 	lines = make([]string, 0)
 	reader := bufio.NewReader(fd)
 	prefix := ""
@@ -336,7 +339,7 @@ func FilepathSlashInsensitive(path string) string {
 
 // FilepathContains checks if the basePath path contains the subPaths.
 func FilepathContains(basePath string, subPaths []string) error {
-	basePath, err := filepath.Abs(basePath)
+	name, err := filepath.Abs(basePath)
 	if err != nil {
 		return err
 	}
@@ -345,12 +348,12 @@ func FilepathContains(basePath string, subPaths []string) error {
 		if err != nil {
 			return err
 		}
-		rel, err := filepath.Rel(basePath, p)
+		rel, err := filepath.Rel(name, p)
 		if err != nil {
 			return err
 		}
 		if strings.HasPrefix(rel, "..") {
-			return fmt.Errorf("%s is not include %s", basePath, p)
+			return fmt.Errorf("%s is not include %s", name, p)
 		}
 	}
 	return nil
@@ -372,34 +375,34 @@ func FilepathAbsoluteMap(paths []string) (map[string]string, error) {
 
 // FilepathRelative returns the relative paths.
 func FilepathRelative(basePath string, targetPaths []string) ([]string, error) {
-	basePath, err := filepath.Abs(basePath)
+	name, err := filepath.Abs(basePath)
 	if err != nil {
 		return nil, err
 	}
 	return StringsConvert(targetPaths, func(p string) (string, error) {
-		return filepathRelative(basePath, p)
+		return filepathRelative(name, p)
 	})
 }
 
 // FilepathRelativeMap returns the relative paths map.
 func FilepathRelativeMap(basePath string, targetPaths []string) (map[string]string, error) {
-	basePath, err := filepath.Abs(basePath)
+	name, err := filepath.Abs(basePath)
 	if err != nil {
 		return nil, err
 	}
 	return StringsConvertMap(targetPaths, func(p string) (string, error) {
-		return filepathRelative(basePath, p)
+		return filepathRelative(name, p)
 	})
 }
 
 func filepathRelative(basePath, targetPath string) (string, error) {
-	abs, err := filepath.Abs(targetPath)
-	if err != nil {
-		return "", err
+	abs, err1 := filepath.Abs(targetPath)
+	if err1 != nil {
+		return "", err1
 	}
-	rel, err := filepath.Rel(basePath, abs)
-	if err != nil {
-		return "", err
+	rel, err2 := filepath.Rel(basePath, abs)
+	if err2 != nil {
+		return "", err2
 	}
 	if strings.HasPrefix(rel, "..") {
 		return "", fmt.Errorf("%s is not include %s", basePath, abs)
@@ -455,15 +458,52 @@ func FilepathSame(path1, path2 string) (bool, error) {
 	if path1 == path2 {
 		return true, nil
 	}
-	p1, err := filepath.Abs(path1)
-	if err != nil {
-		return false, err
+	p1, err1 := filepath.Abs(path1)
+	if err1 != nil {
+		return false, err1
 	}
-	p2, err := filepath.Abs(path2)
-	if err != nil {
-		return false, err
+	p2, err2 := filepath.Abs(path2)
+	if err2 != nil {
+		return false, err2
 	}
 	return p1 == p2, nil
+}
+
+// Mkdir creates a new directory with the specified name and permission
+// bits (before umask).
+// If there is an error, it will be of type *PathError.
+func Mkdir(path string, perm ...os.FileMode) error {
+	var exists, isDir bool
+	if info, err := os.Stat(path); err != nil {
+		exists = !os.IsNotExist(err)
+	} else {
+		exists, isDir = true, info.IsDir()
+	}
+
+	if exists {
+		if isDir {
+			return nil
+		}
+
+		if err := os.Remove(path); err != nil {
+			return err
+		}
+	}
+
+	var fm os.FileMode = 0755
+	if len(perm) > 0 {
+		fm = perm[0]
+	}
+
+	return os.Mkdir(path, fm)
+}
+
+// MkdirCurrent creates a new directory under the current directory
+// with the specified name and permission
+// bits (before umask).
+// If there is an error, it will be of type *PathError.
+func MkdirCurrent(name string, perm ...os.FileMode) error {
+	return Mkdir(filepath.Join(CurrentDir(), name), perm...)
 }
 
 // MkdirAll creates a directory named path,
@@ -512,14 +552,14 @@ func RewriteFile(filename string, fn func(content []byte) (newContent []byte, er
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	content, err := ioutil.ReadAll(f)
-	if err != nil {
-		return err
+	defer func() { _ = f.Close() }()
+	content, err1 := ioutil.ReadAll(f)
+	if err1 != nil {
+		return err1
 	}
-	newContent, err := fn(content)
-	if err != nil {
-		return err
+	newContent, err2 := fn(content)
+	if err2 != nil {
+		return err2
 	}
 	if bytes.Equal(content, newContent) {
 		return nil
@@ -537,18 +577,18 @@ func RewriteToFile(filename, newFilename string, fn func(content []byte) (newCon
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	info, err := f.Stat()
-	if err != nil {
-		return err
+	defer func() { _ = f.Close() }()
+	info, err1 := f.Stat()
+	if err1 != nil {
+		return err1
 	}
-	cnt, err := ioutil.ReadAll(f)
-	if err != nil {
-		return err
+	cnt, err2 := ioutil.ReadAll(f)
+	if err2 != nil {
+		return err2
 	}
-	newContent, err := fn(cnt)
-	if err != nil {
-		return err
+	newContent, err3 := fn(cnt)
+	if err3 != nil {
+		return err3
 	}
 	return WriteFile(newFilename, newContent, info.Mode())
 }
