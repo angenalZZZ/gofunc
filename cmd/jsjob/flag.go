@@ -84,7 +84,7 @@ func checkArgs() {
 	log.Log.Debug().Msgf("configuration complete")
 }
 
-func clientConnect() {
+func natClientConnect() {
 	var err error
 
 	// NatS

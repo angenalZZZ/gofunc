@@ -29,7 +29,7 @@ func main() {
 	checkArgs()
 
 	// New Client Connect.
-	clientConnect()
+	natClientConnect()
 
 	// Init complete.
 	runInit()

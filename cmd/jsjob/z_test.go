@@ -9,7 +9,7 @@ func Test(t *testing.T) {
 	checkArgs()
 
 	// New Client Connect.
-	clientConnect()
+	natClientConnect()
 
 	t.Logf("load js %q", scriptFile)
 

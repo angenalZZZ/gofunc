@@ -173,6 +173,17 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	})
 }
 
+// Stop runtime to end your application.
+func (sub *SubscriberFastCache) Stop(ms ...int) {
+	n := 10000
+	if len(ms) > 0 {
+		n = ms[0]
+	}
+	for ; sub.Running && n > 0; n-- {
+		time.Sleep(time.Millisecond)
+	}
+}
+
 // init handle old data.
 func (sub *SubscriberFastCache) init(ctx context.Context) {
 	if sub.Hand == nil {

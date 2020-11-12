@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
+
+	"github.com/nats-io/nats.go"
+
+	"github.com/dop251/goja"
 
 	"github.com/angenalZZZ/gofunc/data"
 	"github.com/angenalZZZ/gofunc/f"
@@ -30,6 +34,8 @@ var (
 var (
 	isTest   = false
 	jsonFile string
+	// js runtime and register
+	jsr *js.GoRuntime
 )
 
 // Your Arguments.
@@ -113,18 +119,124 @@ func checkArgs() {
 	nat.Log.Debug().Msgf("configuration complete")
 }
 
+// Create a subscriber for Client Connect.
+func natClientConnect(isGlobal bool, subj string) (conn *nats.Conn) {
+	var err error
+
+	// NatS
+	if isGlobal {
+		nat.Subject = subject + subj
+		nat.Conn, err = nat.New(subject, configInfo.Nats.Addr, configInfo.Nats.Cred, configInfo.Nats.Token, configInfo.Nats.Cert, configInfo.Nats.Key)
+		if err != nil {
+			nat.Log.Error().Msgf("[nats] failed connect to server: %v\n", err)
+			os.Exit(1)
+		}
+		return nat.Conn
+	}
+
+	conn, err = nat.New(subj, configInfo.Nats.Addr, configInfo.Nats.Cred, configInfo.Nats.Token, configInfo.Nats.Cert, configInfo.Nats.Key)
+	if err != nil {
+		nat.Log.Error().Msgf("[nats] failed connect to server: %v\n", err)
+		os.Exit(1)
+	}
+	return
+}
+
 // Init Subscribers
 func configSubscribers() {
-	if subscribers == nil {
-		subscribers = make([]*handler, 0)
+	if handlers == nil {
+		handlers = make([]*handler, 0)
 	}
-	for _, sub := range subscribers {
-		if sub.Sub != nil && sub.Sub.Running {
-			f.DoneContext(sub.Context)
-			for sub.Sub.Running {
-				time.Sleep(time.Millisecond)
+
+	for _, s := range handlers {
+		if s.sub != nil && s.sub.Running {
+			f.DoneContext(s.Context)
+			s.sub.Close()
+		}
+	}
+
+	if jsr == nil {
+		p := js.GoRuntimeParam{
+			DbType: configInfo.Db.Type,
+			DbConn: configInfo.Db.Conn,
+		}
+		jsr = js.NewRuntime(&p)
+	}
+	defer jsr.Clear()
+
+	_, err := jsr.RunString(configInfo.Nats.Script)
+	if err != nil {
+		return
+	}
+	self := jsr.Runtime.Get("subscribe")
+	if self == nil {
+		return
+	}
+	objs, ok := self.Export().([]interface{})
+	if !ok {
+		return
+	}
+
+	handlers = make([]*handler, 0)
+
+	for _, obj := range objs {
+		objMap, ok := obj.(map[string]interface{})
+		if !ok {
+			return
+		}
+
+		var itemSubj = subject
+		var itemName, itemSpec, itemDir string
+		if itemName, ok = objMap["name"].(string); !ok || itemName == "" {
+			return
+		}
+		if itemSpec, ok = objMap["spec"].(string); !ok {
+			return
+		}
+		if itemSpec == "+" {
+			itemSubj = itemSubj + itemName
+		} else {
+			itemSubj = itemName
+		}
+		if itemFunc, ok := objMap["func"].(func(goja.FunctionCall) goja.Value); !ok {
+			return
+		} else {
+			res := itemFunc(goja.FunctionCall{This: jsr.ToValue(obj)})
+			if res == nil || res.String() == "" {
+				itemDir = filepath.Join(cacheDir, itemName)
+			} else {
+				itemDir = filepath.Join(cacheDir, res.String())
 			}
 		}
+
+		item := new(handler)
+		ctx, wait := f.ContextWithWait(context.TODO())
+
+		// Create a subscriber for Client Connect.
+		conn := natClientConnect(false, itemSubj)
+		sub := nat.NewSubscriberFastCache(conn, itemSubj, itemDir)
+		sub.Hand = item.Handle
+
+		// js global variable
+		jso := make(map[string]interface{})
+		jso["config"] = configInfo
+		item.jso = jso
+
+		// js runtime and register
+		p1 := js.GoRuntimeParam{
+			DbType:     configInfo.Db.Type,
+			DbConn:     configInfo.Db.Conn,
+			NatConn:    conn,
+			NatSubject: itemSubj,
+		}
+		item.jsr = js.NewRuntime(&p1)
+
+		// natS subscriber
+		item.Context, item.sub = ctx, sub
+		handlers = append(handlers, item)
+
+		// Run natS subscriber.
+		go sub.Run(wait)
 	}
 }
 

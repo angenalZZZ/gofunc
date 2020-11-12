@@ -20,9 +20,13 @@ import (
 )
 
 type handler struct {
-	jsObj map[string]interface{}
 	context.Context
-	Sub *nat.SubscriberFastCache
+	// js global variable
+	jso map[string]interface{}
+	// js runtime and register
+	jsr *js.GoRuntime
+	// natS subscriber
+	sub *nat.SubscriberFastCache
 }
 
 // Handle run default handler

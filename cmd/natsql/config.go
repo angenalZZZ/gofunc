@@ -18,13 +18,13 @@ var (
 	// 全局订阅前缀:subject
 	subject string
 	// 发布订阅功能处理集
-	subscribers []*handler
-	scriptFile  string
-	configInfo  *Config
-	configFile  = "natsql.yaml"
-	cacheDir    = data.CurrentDir
-	configMod   time.Time
-	scriptMod   time.Time
+	handlers   []*handler
+	scriptFile string
+	configInfo *Config
+	configFile = "natsql.yaml"
+	cacheDir   = data.CurrentDir
+	configMod  time.Time
+	scriptMod  time.Time
 )
 
 // Config The Config Info For natsql.yaml

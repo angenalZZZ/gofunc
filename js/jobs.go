@@ -55,6 +55,9 @@ func NewJobs(r *GoRuntime, script string, parentName string, name string) ([]*Jo
 	}
 
 	self := r.Runtime.Get(parentName)
+	if self == nil {
+		return nil, errors.New(prev + "js script var name can't be empty")
+	}
 	objs, ok := self.Export().([]interface{})
 	if !ok {
 		return nil, newErr(parentName, "must be an array")
