@@ -9,11 +9,11 @@ db:
 nats: # 连接nats
   addr: nats://127.0.0.1:4222
   token: HGJ766GR767FKJU0
-  subscribe: test- # 全局订阅前缀
-  amount: 0 # 批量释放记录数限制
+  subscribe: test- # 全局订阅前缀=功能配置根目录cache+js目录 function func(records)
+  amount: 0 # 批量获取记录数限制
   bulk: 100 # 批量插入记录数<=2000
   interval: 2000 # 间隔2000毫秒,批量处理一次
-  script: natsql.js # 配置订阅任务"subscribe" func: function(records)
+  script: natsql.js # 配置订阅任务"subscribe"
 
 redis: # 连接redis
   addr: 192.168.100.20:1314

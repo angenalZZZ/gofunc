@@ -35,6 +35,7 @@ type SubscriberFastCache struct {
 	BytesLimit   int   // sets the limits for a message's bytes for this subscription.
 	OnceAmount   int64 // sets amount allocated at one time
 	OnceInterval time.Duration
+	Running      bool
 	async        bool
 	err          error
 	pool         *f.Pool
@@ -101,6 +102,7 @@ func (sub *SubscriberFastCache) Process(msg *CacheMsg) error {
 
 // Run runtime to end your application.
 func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
+	sub.Running = true
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Handle panic.
@@ -128,6 +130,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 		if err != nil {
 			log.Fatal(err)
 		}
+		sub.Running = false
 	}()
 
 	// Async Subscriber.

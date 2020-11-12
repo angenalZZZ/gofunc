@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/angenalZZZ/gofunc/data"
 	"github.com/angenalZZZ/gofunc/f"
@@ -15,15 +17,14 @@ import (
 var (
 	//flagMsgLimit = flag.Int("c", 100000000, "the nats-Limits for pending messages for this subscription")
 	//flagBytesLimit = flag.Int("d", 4096, "the nats-Limits for a message's bytes for this subscription")
-	flagConfig   = flag.String("c", "natsql.yaml", "sets config file")
-	flagCacheDir = flag.String("d", "", "sets cache persist to disk directory")
-	flagTest     = flag.String("t", "", "sets json file and run SQL test")
-	flagAddr     = flag.String("a", "", "the NatS-Server address")
-	flagName     = flag.String("name", "", "the NatS-Subscription name [required]")
-	flagToken    = flag.String("token", "", "the NatS-Token auth string [required]")
-	flagCred     = flag.String("cred", "", "the NatS-Cred file")
-	flagCert     = flag.String("cert", "", "the NatS-TLS cert file")
-	flagKey      = flag.String("key", "", "the NatS-TLS key file")
+	flagConfig = flag.String("c", "natsql.yaml", "sets config file")
+	flagTest   = flag.String("t", "", "sets json file and run SQL test")
+	flagAddr   = flag.String("a", "", "the NatS-Server address")
+	flagName   = flag.String("name", "", "the NatS-Subscription name prefix [required]")
+	flagToken  = flag.String("token", "", "the NatS-Token auth string [required]")
+	flagCred   = flag.String("cred", "", "the NatS-Cred file")
+	flagCert   = flag.String("cert", "", "the NatS-TLS cert file")
+	flagKey    = flag.String("key", "", "the NatS-TLS key file")
 )
 
 var (
@@ -31,7 +32,7 @@ var (
 	jsonFile string
 )
 
-// Flag Parse
+// Your Arguments.
 func initArgs() {
 	flag.Usage = func() {
 		fmt.Printf(" Usage of %s:\n", os.Args[0])
@@ -40,7 +41,7 @@ func initArgs() {
 	flag.Parse()
 }
 
-// Init Config
+// Check Arguments And Init Config.
 func checkArgs() {
 	if *flagConfig != "" {
 		configFile = *flagConfig
@@ -71,9 +72,6 @@ func checkArgs() {
 		isTest = true
 	}
 	if isTest {
-		if f.PathExists(jsonFile) == false {
-			panic(fmt.Errorf("test json file %q not found", jsonFile))
-		}
 		configInfo.Log.Level = "debug"
 	}
 
@@ -85,18 +83,17 @@ func checkArgs() {
 	}
 	js.RunLogTimeFormat = configInfo.Log.TimeFormat
 
+	// 全局订阅前缀:subject
 	subject = *flagName
 	if subject == "" {
 		subject = configInfo.Nats.Subscribe
 	}
-	if subject == "" && !isTest {
-		panic("the subscription name can't be empty.")
+	if subject == "" {
+		panic("the subscription name prefix can't be empty.")
 	}
 
-	if *flagCacheDir != "" {
-		cacheDir = *flagCacheDir
-	}
-	if cacheDir != "" && !isTest && f.PathExists(cacheDir) == false {
+	cacheDir = filepath.Join(data.CurrentDir, subject)
+	if f.PathExists(cacheDir) == false {
 		panic("the cache disk directory is not found.")
 	}
 
@@ -114,6 +111,21 @@ func checkArgs() {
 	}
 
 	nat.Log.Debug().Msgf("configuration complete")
+}
+
+// Init Subscribers
+func configSubscribers() {
+	if subscribers == nil {
+		subscribers = make([]*handler, 0)
+	}
+	for _, sub := range subscribers {
+		if sub.Sub != nil && sub.Sub.Running {
+			f.DoneContext(sub.Context)
+			for sub.Sub.Running {
+				time.Sleep(time.Millisecond)
+			}
+		}
+	}
 }
 
 func runTest(hd *handler) {

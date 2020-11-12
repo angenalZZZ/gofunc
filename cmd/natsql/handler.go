@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -20,6 +21,8 @@ import (
 
 type handler struct {
 	jsObj map[string]interface{}
+	context.Context
+	Sub *nat.SubscriberFastCache
 }
 
 // Handle run default handler

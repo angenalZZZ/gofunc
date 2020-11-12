@@ -15,28 +15,41 @@ import (
 )
 
 var (
-	subject    string
-	scriptFile string
-	configInfo *Config
-	configFile = "natsql.yaml"
-	cacheDir   = data.CurrentDir
-	configMod  time.Time
-	scriptMod  time.Time
+	// 全局订阅前缀:subject
+	subject string
+	// 发布订阅功能处理集
+	subscribers []*handler
+	scriptFile  string
+	configInfo  *Config
+	configFile  = "natsql.yaml"
+	cacheDir    = data.CurrentDir
+	configMod   time.Time
+	scriptMod   time.Time
 )
 
 // Config The Config Info For natsql.yaml
 type Config struct {
+	// 数据库client
 	Db struct {
+		// 支持mssql,mysql
 		Type string
+		// 连接字符串
 		Conn string
 	}
+	// 消息中间件/发布订阅处理
 	Nats struct {
+		// 消息中间件client
 		nat.Connection
+		// 全局订阅前缀=功能配置根目录cache+js目录 function func(records)
 		Subscribe string
-		Amount    int
-		Bulk      int
-		Interval  int
-		Script    string
+		// 批量获取记录数限制
+		Amount int
+		// 批量插入记录数<=2000
+		Bulk int
+		// 间隔?毫秒,批量处理一次
+		Interval int
+		// 配置订阅任务"subscribe"
+		Script string
 	}
 	Redis *redis.Options
 	Log   *log.Config
@@ -110,6 +123,9 @@ func isScriptMod() bool {
 }
 
 func doScriptMod() error {
+	if scriptFile == "" {
+		return nil
+	}
 	script, err := f.ReadFile(scriptFile)
 	if err != nil {
 		return err
