@@ -53,6 +53,8 @@ func TestSubscriberFastDb(t *testing.T) {
 	sub.Run(wait)
 }
 
+// Take time 16.9s to process 1 million records,
+// run times 58892 Qps.(4CPU+16G+MHD)
 func TestBenchSubscriberFastDb(t *testing.T) {
 	// New Client Connect.
 	nat.Subject = "BenchmarkSubscriberFastDb"

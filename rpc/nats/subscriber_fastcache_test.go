@@ -53,6 +53,8 @@ func TestSubscriberFastCache(t *testing.T) {
 	sub.Run(wait)
 }
 
+// Take time 2.369s to process 1 million records,
+// run times 421991 Qps.(4CPU+16G+MHD)
 func TestBenchSubscriberFastCache(t *testing.T) {
 	// New Client Connect.
 	nat.Subject = "BenchmarkSubscriberFastCache"

@@ -15,7 +15,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/angenalZZZ/gofunc/data"
 	"github.com/angenalZZZ/gofunc/data/cache/fastcache"
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/nats-io/nats.go"
@@ -43,27 +42,41 @@ type SubscriberFastCache struct {
 
 // NewSubscriberFastCache Create a subscriber with cache store for Client Connect.
 func NewSubscriberFastCache(nc *nats.Conn, subject string, cacheDir ...string) *SubscriberFastCache {
+	dir, since := ".nats", f.TimeFrom(time.Now(), true)
+
+	if len(cacheDir) == 1 && cacheDir[0] != "" {
+		if err := f.Mkdir(cacheDir[0]); err != nil {
+			return nil
+		}
+		dir = filepath.Join(cacheDir[0], since.LocalTimeStampString(true))
+	} else {
+		if err := f.MkdirCurrent(dir); err != nil {
+			return nil
+		}
+		dir = filepath.Join(f.CurrentDir(), dir, since.LocalTimeStampString(true))
+	}
+
+	client := fastcache.New(1073741824) // 1GB cache capacity
+
 	sub := &SubscriberFastCache{
 		Conn:         nc,
 		Subj:         subject,
-		Cache:        fastcache.New(1073741824), // 1GB cache capacity
-		Since:        f.TimeFrom(time.Now(), true),
+		Cache:        client, // fast cache
+		CacheDir:     dir,
+		Since:        since,
 		MsgLimit:     100000000, // pending messages: 100 million
 		BytesLimit:   1048576,   // a message's size: 1MB
 		OnceAmount:   -1,
 		OnceInterval: time.Second,
 		async:        true,
 	}
+
 	sub.pool = f.NewPool(f.NumCPUx16, func() f.PoolWorker {
 		return &CachePoolWorker{
 			processor: sub.Process,
 		}
 	})
-	if len(cacheDir) == 1 && cacheDir[0] != "" {
-		sub.CacheDir = cacheDir[0]
-	} else {
-		sub.CacheDir = data.CurrentDir
-	}
+
 	return sub
 }
 
@@ -108,7 +121,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 		cancel()
 		// Stop pool processor.
 		sub.pool.Close()
-		// Save cache.
+		// Save not processed data.
 		sub.Save(sub.CacheDir)
 
 		// os.Exit(1)
@@ -120,7 +133,7 @@ func (sub *SubscriberFastCache) Run(waitFunc ...func()) {
 	// Async Subscriber.
 	sub.sub, sub.err = sub.Conn.Subscribe(sub.Subj, func(msg *nats.Msg) {
 		key, val := atomic.AddUint64(&sub.Count, 1), msg.Data
-		//sub.pool.Process(&CacheMsg{Key: key, Val: val})
+		//sub.pool.Process(&CacheMsg{Key: key, Val: val}) // It's slow
 		sub.Cache.Set(f.BytesUint64(key), val)
 	})
 	// Set listening.
@@ -163,10 +176,14 @@ func (sub *SubscriberFastCache) init(ctx context.Context) {
 		return
 	}
 
-	oldFiles, _ := filepath.Glob(filepath.Join(sub.CacheDir, "*"))
-	sort.Strings(oldFiles)
-
 	cacheDir := sub.CacheDir
+	dir0, parentDir := filepath.Base(cacheDir), filepath.Dir(cacheDir)
+	oldDirs, err := filepath.Glob(filepath.Join(parentDir, "*"))
+	if err != nil || oldDirs == nil || len(oldDirs) == 0 {
+		return
+	}
+	sort.Strings(oldDirs)
+
 	var clearCache = func(cache *fastcache.Cache, index, count int64) {
 		for i, c := uint64(index)+1, uint64(count); i <= c; i++ {
 			k := f.BytesUint64(i)
@@ -174,69 +191,109 @@ func (sub *SubscriberFastCache) init(ctx context.Context) {
 		}
 	}
 
-	handRecords, onceRecords := 0, atomic.LoadInt64(&sub.OnceAmount)
-	for _, oldFile := range oldFiles {
-		dir, jsonFile := filepath.Split(oldFile)
-		if ok, _ := regexp.MatchString(`^\d+\.\d+\.\d+\.json$`, jsonFile); !ok {
-			continue
+	handRecords, oldRecords, onceRecords := 0, 0, atomic.LoadInt64(&sub.OnceAmount)
+	var runHandle = func(dir string, dirname string) (ok bool) {
+		oldFiles, err := filepath.Glob(filepath.Join(dir, "*"))
+		if err != nil || oldFiles == nil || len(oldFiles) == 0 {
+			ok = true
+			return
 		}
+		sort.Strings(oldFiles)
+		for _, oldFile := range oldFiles {
+			_, jsonFile := filepath.Split(oldFile)
+			if ok, _ := regexp.MatchString(`^\d+\.\d+\.\d+\.json$`, jsonFile); !ok {
+				continue
+			}
 
-		dirname := strings.ReplaceAll(jsonFile, ".json", "")
-		filePath := filepath.Join(dir, dirname)
-		if f.PathExists(filePath) == false {
-			continue
-		}
+			fileDir := strings.Replace(jsonFile, ".json", "", 1)
+			filePath := filepath.Join(dir, fileDir)
+			if f.PathExists(filePath) == false {
+				continue
+			}
 
-		cache, err := fastcache.LoadFromFile(filePath)
-		s := strings.Split(dirname, ".")
-		if err != nil || len(s) != 3 {
-			continue
-		}
+			cache, err := fastcache.LoadFromFile(filePath)
+			s := strings.Split(fileDir, ".")
+			if err != nil || len(s) != 3 {
+				continue
+			}
 
-		since := s[0]
-		index, _ := strconv.ParseInt(s[1], 10, 0)
-		count, _ := strconv.ParseInt(s[2], 10, 0)
-		indexZero, indexSize := uint64(index)+1, count-index
-		if onceRecords > 0 {
-			indexSize = onceRecords
-		}
+			since := s[0]
+			index, _ := strconv.ParseInt(s[1], 10, 0)
+			count, _ := strconv.ParseInt(s[2], 10, 0)
+			indexZero, indexSize := uint64(index)+1, count-index
+			if onceRecords > 0 {
+				indexSize = onceRecords
+			}
 
-		var handData = make([][]byte, 0, indexSize)
-		for i, c, dataIndex := indexZero, uint64(count), int64(0); i <= c; i++ {
-			if key := f.BytesUint64(i); cache.Has(key) {
-				val := cache.Get(nil, key)
-				handData = append(handData, val)
-				if dataIndex++; dataIndex == onceRecords || i == c {
-					// bulk handle
-					if err := sub.Hand(handData); err != nil {
-						// rollback
-						Log.Error().Msgf("[nats] init handle old data > %s > %s", dirname, err)
-						if i > indexZero {
-							clearCache(cache, int64(indexZero)-1, int64(i))
-							dirname1, filename1 := sub.dirnames(since, i-1, c), sub.filenames(since, i-1, c)
-							saveFastCache(cache, cacheDir, dirname1, filename1)
-							_ = os.Remove(oldFile)
-							_ = os.RemoveAll(filePath)
+			var handData = make([][]byte, 0, indexSize)
+			for i, c, dataIndex := indexZero, uint64(count), int64(0); i <= c; i++ {
+				if key := f.BytesUint64(i); cache.Has(key) {
+					val := cache.Get(nil, key)
+					handData = append(handData, val)
+					if dataIndex++; dataIndex == onceRecords || i == c {
+						// bulk handle
+						if err := sub.Hand(handData); err != nil {
+							// rollback
+							Log.Error().Msgf("[nats] init handle old data > %s > %s", dirname, err)
+							if i > indexZero {
+								clearCache(cache, int64(indexZero)-1, int64(i))
+								dirname1, filename1 := sub.dirnames(since, i-1, c), sub.filenames(since, i-1, c)
+								saveFastCache(cache, dir, dirname1, filename1)
+								_ = os.Remove(oldFile)
+								_ = os.RemoveAll(filePath)
+							}
+							return
 						}
-						// reboot init handle old data
+						handRecords += len(handData)
+						// reset data
+						dataIndex = 0
+						handData = make([][]byte, 0, indexSize)
 						time.Sleep(sub.OnceInterval)
-						sub.init(ctx)
-						return
 					}
-					handRecords += len(handData)
-					// reset data
-					dataIndex = 0
-					handData = make([][]byte, 0, indexSize)
-					time.Sleep(sub.OnceInterval)
 				}
 			}
+
+			_ = os.Remove(oldFile)
+			_ = os.RemoveAll(filePath)
 		}
 
-		_ = os.Remove(oldFile)
-		_ = os.RemoveAll(filePath)
+		ok = true
+		return
 	}
 
-	Log.Info().Msgf("[nats] init handle old data > %d records", handRecords)
+	for _, oldDir := range oldDirs {
+		if !f.IsDir(oldDir) {
+			continue
+		}
+
+		dir1 := filepath.Base(oldDir)
+		if ok, _ := regexp.MatchString(`^\d+$`, dir1); !ok {
+			continue
+		}
+		if len(dir1) != 14 || dir1 == dir0 {
+			continue
+		}
+		if datFiles, err := filepath.Glob(filepath.Join(oldDir, "*.json")); err != nil || datFiles == nil || len(datFiles) == 0 {
+			continue
+		}
+
+		// reboot init handle old data
+		for f.PathExists(oldDir) {
+			if runHandle(oldDir, dir1) {
+				if err1 := os.RemoveAll(oldDir); err1 != nil {
+					Log.Error().Msgf("[nats] remove old data directory > %s > %s", dir1, err1)
+				}
+			}
+			Log.Info().Msgf("[nats] init handle old data > %d records < %s", handRecords, dir1)
+			oldRecords += handRecords
+			handRecords = 0
+		}
+	}
+
+	if oldRecords > 0 {
+		Log.Info().Msgf("[nats] init handle old data > %d records", oldRecords)
+	}
+
 	if err := ctx.Err(); err != nil && err != context.Canceled {
 		Log.Warn().Msgf("[nats] init handle old data err > %s", err)
 	}

@@ -58,7 +58,7 @@ func NewSubscriberFastDb(nc *nats.Conn, subject string, cacheDir ...string) *Sub
 		Conn:         nc,
 		Subj:         subject,
 		Cache:        client, // fast nutsdb
-		CacheDir:     opt.Dir,
+		CacheDir:     dir,
 		Since:        since,
 		MsgLimit:     100000000, // pending messages: 100 million
 		BytesLimit:   1048576,   // a message's size: 1MB
@@ -176,8 +176,11 @@ func (sub *SubscriberFastDb) init(ctx context.Context) {
 
 	bucket, cacheDir := sub.Subj, sub.CacheDir
 	dir0, parentDir := filepath.Base(cacheDir), filepath.Dir(cacheDir)
-	oldFiles, _ := filepath.Glob(filepath.Join(parentDir, "*"))
-	sort.Strings(oldFiles)
+	oldDirs, err := filepath.Glob(filepath.Join(parentDir, "*"))
+	if err != nil || oldDirs == nil || len(oldDirs) == 0 {
+		return
+	}
+	sort.Strings(oldDirs)
 
 	var clearCache = func(cache *nutsdb.DB, keys [][]byte) {
 		for _, key := range keys {
@@ -187,7 +190,7 @@ func (sub *SubscriberFastDb) init(ctx context.Context) {
 		}
 	}
 
-	handRecords, onceRecords := 0, atomic.LoadInt64(&sub.OnceAmount)
+	handRecords, oldRecords, onceRecords := 0, 0, atomic.LoadInt64(&sub.OnceAmount)
 	var runHandle = func(dir string, dirname string) (ok bool) {
 		opt := newNdbOptions(dir)
 		client, err := nutsdb.Open(opt)
@@ -253,28 +256,37 @@ func (sub *SubscriberFastDb) init(ctx context.Context) {
 		return
 	}
 
-	for _, oldFile := range oldFiles {
-		if !f.IsDir(oldFile) {
+	for _, oldDir := range oldDirs {
+		if !f.IsDir(oldDir) {
 			continue
 		}
 
-		dir1 := filepath.Base(oldFile)
+		dir1 := filepath.Base(oldDir)
 		if ok, _ := regexp.MatchString(`^\d+$`, dir1); !ok {
 			continue
 		}
 		if len(dir1) != 14 || dir1 == dir0 {
 			continue
 		}
+		if datFiles, err := filepath.Glob(filepath.Join(oldDir, "*.dat")); err != nil || datFiles == nil || len(datFiles) == 0 {
+			continue
+		}
 
 		// reboot init handle old data
-		for f.PathExists(oldFile) {
-			if runHandle(oldFile, dir1) {
-				if err1 := os.RemoveAll(oldFile); err1 != nil {
+		for f.PathExists(oldDir) {
+			if runHandle(oldDir, dir1) {
+				if err1 := os.RemoveAll(oldDir); err1 != nil {
 					Log.Error().Msgf("[nats] remove old data directory > %s > %s", dir1, err1)
 				}
 			}
 			Log.Info().Msgf("[nats] init handle old data > %d records < %s", handRecords, dir1)
+			oldRecords += handRecords
+			handRecords = 0
 		}
+	}
+
+	if oldRecords > 0 {
+		Log.Info().Msgf("[nats] init handle old data > %d records", oldRecords)
 	}
 
 	if err := ctx.Err(); err != nil && err != context.Canceled {
