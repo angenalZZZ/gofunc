@@ -2,6 +2,7 @@ package js
 
 import (
 	"github.com/angenalZZZ/gofunc/data"
+	"github.com/angenalZZZ/gofunc/data/cache/fastcache"
 	"github.com/angenalZZZ/gofunc/data/cache/store"
 	"github.com/angenalZZZ/gofunc/log"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
@@ -29,6 +30,10 @@ type GoRuntime struct {
 	NatSubject string
 	// field: *redis.Client
 	RedisClient *redis.Client
+	// field: new fast thread-safe inmemory cache optimized for big number of entries
+	*fastcache.Cache
+	// field: sets cache persist to disk directory
+	CacheDir string
 }
 
 // GoRuntimeParam all parameters of javascript runtime and register
@@ -42,6 +47,10 @@ type GoRuntimeParam struct {
 	NatSubject string
 	// parameter: *redis.Client
 	RedisClient *redis.Client
+	// parameter: new fast thread-safe inmemory cache optimized for big number of entries
+	*fastcache.Cache
+	// parameter: sets cache persist to disk directory
+	CacheDir string
 }
 
 // NewRuntime create a javascript runtime and register from parameter or global vars.

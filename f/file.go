@@ -469,8 +469,8 @@ func FilepathSame(path1, path2 string) (bool, error) {
 	return p1 == p2, nil
 }
 
-// Mkdir creates a new directory with the specified name and permission
-// bits (before umask).
+// Mkdir creates a new directory if does not exist.
+// with the specified name and permission bits (before umask).
 // If there is an error, it will be of type *PathError.
 func Mkdir(path string, perm ...os.FileMode) error {
 	var exists, isDir bool

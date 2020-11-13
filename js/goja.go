@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/angenalZZZ/gofunc/data/cache/fastcache"
 	"github.com/angenalZZZ/gofunc/data/id"
 	"github.com/angenalZZZ/gofunc/data/random"
 	"github.com/angenalZZZ/gofunc/f"
@@ -752,6 +754,122 @@ func Ajax(r *goja.Runtime) {
 	})
 
 	r.Set("$", jObj)
+}
+
+// Cache use cache in javascript.
+// 	dump(cache.dir, cache.cap)
+//  var val = cache.get("key")
+//  var has = cache.has("key")
+//  cache.set("key",123)
+//  cache.del("key")
+//  cache.reset() or cache.clear()
+func Cache(r *goja.Runtime, cache *fastcache.Cache, cacheDir string, maxBytes ...int) {
+	// creates a new directory if does not exist
+	err := f.Mkdir(cacheDir)
+	if err != nil {
+		if err := f.MkdirCurrent(".nats"); err != nil {
+			panic("Unable to create a new directory!")
+		}
+		cacheDir = filepath.Join(f.CurrentDir(), ".nats")
+	}
+	// creates a fast cache instance
+	capacity := 1073741824 // 1GB cache capacity
+	if cache == nil {
+		if len(maxBytes) > 0 {
+			capacity = maxBytes[0]
+		}
+		cache = fastcache.New(capacity)
+	}
+
+	cObj := r.NewObject()
+
+	_ = cObj.Set("dir", cacheDir)
+	_ = cObj.Set("cap", capacity)
+
+	_ = cObj.Set("get", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l < 1 {
+			return v
+		}
+		key := c.Arguments[0].String()
+		if key == "" {
+			return v
+		}
+
+		p := cache.Get(nil, f.Bytes(key))
+		if p == nil || len(p) == 0 {
+			return v
+		}
+
+		var val interface{}
+		if err := json.Unmarshal(p, &val); err == nil {
+			v = r.ToValue(val)
+		}
+
+		return v
+	})
+
+	_ = cObj.Set("set", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l < 2 {
+			return v
+		}
+		key := c.Arguments[0].String()
+		if key == "" {
+			return v
+		}
+
+		val := c.Arguments[1].Export()
+		if p, err := json.Marshal(val); err != nil {
+			cache.Set(f.Bytes(key), []byte{})
+		} else {
+			cache.Set(f.Bytes(key), p)
+		}
+
+		return v
+	})
+
+	_ = cObj.Set("del", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Undefined(), len(c.Arguments)
+		if l < 1 {
+			return v
+		}
+		key := c.Arguments[0].String()
+		if key == "" {
+			return v
+		}
+
+		cache.Del(f.Bytes(key))
+
+		return v
+	})
+
+	_ = cObj.Set("has", func(c goja.FunctionCall) goja.Value {
+		v, l := r.ToValue(false), len(c.Arguments)
+		if l < 1 {
+			return v
+		}
+		key := c.Arguments[0].String()
+		if key == "" {
+			return v
+		}
+
+		p := cache.Has(f.Bytes(key))
+		v = r.ToValue(p)
+
+		return v
+	})
+
+	_ = cObj.Set("reset", func(c goja.FunctionCall) goja.Value {
+		cache.Reset()
+		return goja.Undefined()
+	})
+	_ = cObj.Set("clear", func(c goja.FunctionCall) goja.Value {
+		cache.Reset()
+		return goja.Undefined()
+	})
+
+	r.Set("cache", cObj)
 }
 
 // Redis use redis in javascript.
