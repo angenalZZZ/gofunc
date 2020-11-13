@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/nats-io/nats.go"
 
@@ -33,7 +32,8 @@ var (
 )
 
 var (
-	isTest   = false
+	isTest = false
+	// js test json data file
 	jsonFile string
 	// js runtime and register
 	jsr *js.GoRuntime
@@ -149,12 +149,7 @@ func createHandlers() {
 		handlers = make([]*handler, 0)
 	}
 
-	for _, s := range handlers {
-		if s.sub != nil && s.sub.Running {
-			f.DoneContext(s.Context)
-			s.sub.Close()
-		}
-	}
+	stopHandlers() // Stop Subscribers And Handlers.
 
 	if jsr == nil {
 		p := js.GoRuntimeParam{
@@ -209,78 +204,91 @@ func createHandlers() {
 		} else {
 			itemDir = filepath.Join(cacheDir, res.String())
 		}
-		jsFile := filepath.Join(itemDir, "natsql.js")
-		if ok = f.PathExists(jsFile); !ok {
+
+		h := new(handler)
+		h.jsFile = filepath.Join(itemDir, "natsql.js")
+		h.isScriptMod()
+		if err := h.doScriptMod(); err != nil {
 			return
 		}
-		script, err := f.ReadFile(jsFile)
-		if err != nil {
-			return
-		}
-
-		item := new(handler)
-		item.js = strings.TrimSpace(string(script))
-		ctx, wait := f.ContextWithWait(context.TODO())
-
-		// Create a subscriber for Client Connect.
-		conn := natClientConnect(false, itemSubj)
-		sub := nat.NewSubscriberFastCache(conn, itemSubj, itemDir)
-		sub.Hand = item.Handle
 
 		// js global variable
 		jso := make(map[string]interface{})
 		jso["config"] = configInfo
-		item.jso = jso
+		jso["configDir"] = itemDir
+		jso["configJs"] = h.jsFile
+		h.jso = jso
 
 		// js runtime and register param
 		jsp := js.GoRuntimeParam{
-			CacheDir:   filepath.Join(cacheDir, ".nats", itemSubj),
-			DbType:     configInfo.Db.Type,
-			DbConn:     configInfo.Db.Conn,
-			NatConn:    conn,
-			NatSubject: itemSubj,
+			CacheDir: filepath.Join(cacheDir, ".nats", itemSubj),
+			DbType:   configInfo.Db.Type,
+			DbConn:   configInfo.Db.Conn,
 		}
-		item.jsp = &jsp
+		h.jsp = &jsp
 
 		// natS subscriber
-		item.Context, item.sub = ctx, sub
-		handlers = append(handlers, item)
+		if !isTest {
+			// Create a subscriber for Client Connect
+			conn := natClientConnect(false, itemSubj)
+			h.jsp.NatConn, h.jsp.NatSubject = conn, itemSubj
 
-		// Run natS subscriber
-		go sub.Run(wait)
+			sub := nat.NewSubscriberFastCache(conn, itemSubj, itemDir)
+			sub.Hand = h.Handle
+
+			ctx, wait := f.ContextWithWait(context.TODO())
+			h.Context, h.sub = ctx, sub
+			// Run natS subscriber
+			go sub.Run(wait)
+		}
+
+		handlers = append(handlers, h)
 	}
 }
 
-func runTest(hd *handler) {
-	// Check Script
-	if err := hd.CheckJs(configInfo.Nats.Script); err != nil {
-		panic(err)
+// Stop Subscribers And Handlers.
+func stopHandlers() {
+	for _, h := range handlers {
+		if h.sub != nil && h.sub.Running {
+			f.DoneContext(h.Context)
+			h.sub.Stop()
+			h.Stop()
+		}
 	}
+}
 
+// Run script test.
+func runTest() {
 	if !isTest {
 		return
 	}
 
-	item, err := f.ReadFile(jsonFile)
-	if err != nil {
-		panic(fmt.Errorf("test json file %q not opened: %s", jsonFile, err.Error()))
-	}
+	createHandlers() // Init Subscribers And Handlers.
 
-	list, err := data.ListData(item)
-	if err != nil {
-		panic(err)
-	}
-	if len(list) == 0 {
-		panic(fmt.Errorf("test json file can't be empty"))
-	}
+	for _, h := range handlers {
+		itemDir := h.jso["configDir"].(string)
+		filename := filepath.Join(itemDir, jsonFile)
+		item, err := f.ReadFile(filename)
+		if err != nil {
+			panic(fmt.Errorf("test json file %q not opened: %s", jsonFile, err.Error()))
+		}
 
-	nat.Log.Debug().Msgf("test json file: %q %d records\r\n", jsonFile, len(list))
+		list, err := data.ListData(item)
+		if err != nil {
+			panic(err)
+		}
+		if len(list) == 0 {
+			panic(fmt.Errorf("test json file can't be empty"))
+		}
 
-	if subject == "" {
-		subject = "test"
-	}
-	if err = hd.Handle(list); err != nil {
-		panic(err)
+		nat.Log.Debug().Msgf("test json file: %q %d records\r\n", jsonFile, len(list))
+
+		if subject == "" {
+			subject = "test"
+		}
+		if err = hd.Handle(list); err != nil {
+			panic(err)
+		}
 	}
 
 	nat.Log.Debug().Msg("test finished.")

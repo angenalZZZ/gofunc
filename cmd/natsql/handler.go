@@ -3,15 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
-	bulk "github.com/angenalZZZ/gofunc/data/bulk/sqlx-bulk"
-	"github.com/angenalZZZ/gofunc/data/cache/store"
+	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/js"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
-	"github.com/dop251/goja"
-	"github.com/jmoiron/sqlx"
 	json "github.com/json-iterator/go"
 
 	_ "github.com/denisenkom/go-mssqldb"
@@ -21,8 +19,11 @@ import (
 
 type handler struct {
 	context.Context
+	running bool
 	// js code
-	js string
+	js     string
+	jsFile string
+	jsMod  time.Time
 	// js global variable
 	jso map[string]interface{}
 	// js runtime and register param
@@ -32,9 +33,11 @@ type handler struct {
 }
 
 // Handle run default handler
-func (hub *handler) Handle(list [][]byte) error {
+func (h *handler) Handle(list [][]byte) error {
+	h.running = true
 	size := len(list)
 	if size == 0 {
+		h.running = false
 		return nil
 	}
 
@@ -47,7 +50,7 @@ func (hub *handler) Handle(list [][]byte) error {
 		}
 		if item[0] == '{' {
 			if debug {
-				nat.Log.Debug().Msgf("[nats] received on %q: %s", hub.sub.Subj, item)
+				nat.Log.Debug().Msgf("[nats] received on %q: %s", h.sub.Subj, item)
 			}
 
 			var obj map[string]interface{}
@@ -59,141 +62,151 @@ func (hub *handler) Handle(list [][]byte) error {
 		}
 	}
 
-	count := len(records)
-	if count == 0 {
+	if len(records) == 0 {
+		h.running = false
 		return nil
 	}
 
 	// js runtime and register
-	vm := js.NewRuntime(hub.jsp)
+	vm := js.NewRuntime(h.jsp)
 	defer vm.Clear()
 
-	script, fnName := hub.js, "sql"
+	script, fnName, sqlLen := h.js, "sql", 20
 	isFn := strings.Contains(script, "function "+fnName)
 
-	bulkSize := configInfo.Nats.Bulk
-	bulkRecords, dataIndex := make([]map[string]interface{}, 0, bulkSize), 0
-	for i := 0; i < count; i++ {
-		obj := records[i]
-		bulkRecords = append(bulkRecords, obj)
-		if dataIndex++; dataIndex == bulkSize || dataIndex == count {
-			// bulk handle
-			if isFn {
-				if _, err := vm.RunString(script); err != nil {
+	if isFn {
+		if _, err := vm.Runtime.RunString(script); err != nil {
+			h.running = false
+			return err
+		}
+		var fn func([]map[string]interface{}) interface{}
+		val := vm.Runtime.Get(fnName)
+		if val == nil {
+			h.running = false
+			return fmt.Errorf("js function %q not found", fnName)
+		}
+		if err := vm.Runtime.ExportTo(val, &fn); err != nil {
+			h.running = false
+			return fmt.Errorf("js function %q not exported %s", fnName, err.Error())
+		}
+		// Split records with specified size not to exceed Database parameter limit
+		for _, rs := range f.SplitObjectMaps(records, configInfo.Nats.Bulk) {
+			// Output sql
+			val := fn(rs)
+			if val == nil {
+				continue
+			}
+
+			switch sql := val.(type) {
+			case string:
+				if len(sql) < sqlLen {
+					continue
+				}
+				if _, err := vm.DB.Exec(sql); err != nil {
+					h.running = false
 					return err
 				}
-				if err := bulk.BulkInsertByJsFunction(vm, bulkRecords, bulkSize, script, fnName, time.Microsecond); err != nil {
-					return err
-				}
-			} else {
-				if err := bulk.BulkInsertByJs(db, bulkRecords, bulkSize, script, time.Microsecond, hub.jsObj); err != nil {
-					return err
+			case []string:
+				for _, s := range sql {
+					if len(s) < sqlLen {
+						continue
+					}
+					if _, err := vm.DB.Exec(s); err != nil {
+						h.running = false
+						return err
+					}
 				}
 			}
-			// reset data
-			bulkRecords, dataIndex = make([]map[string]interface{}, 0, bulkSize), 0
+
+			time.Sleep(time.Microsecond)
+		}
+	} else {
+		fnName = "records"
+
+		// Split records with specified size not to exceed Database parameter limit
+		for _, rs := range f.SplitObjectMaps(records, configInfo.Nats.Bulk) {
+			// Input records
+			vm.Runtime.Set(fnName, rs)
+
+			// Output sql
+			res, err := vm.Runtime.RunString(script)
+			if err != nil {
+				h.running = false
+				return fmt.Errorf("the table script error, must contain array %q, error: %s", fnName, err.Error())
+			}
+			if res == nil {
+				continue
+			}
+
+			val := res.Export()
+			if val == nil {
+				continue
+			}
+
+			switch sql := val.(type) {
+			case string:
+				if len(sql) < sqlLen {
+					continue
+				}
+				if _, err := vm.DB.Exec(sql); err != nil {
+					h.running = false
+					return err
+				}
+			case []string:
+				for _, s := range sql {
+					if len(s) < sqlLen {
+						continue
+					}
+					if _, err := vm.DB.Exec(s); err != nil {
+						h.running = false
+						return err
+					}
+				}
+			}
+
+			time.Sleep(time.Microsecond)
 		}
 	}
 
+	h.running = false
 	return nil
 }
 
-// CheckJs run check javascript
-func (hub *handler) CheckJs(script string) error {
-	var (
-		fnName  = "sql"
-		isFn    = strings.Contains(script, "function "+fnName)
-		objects []map[string]interface{}
-		vm      = goja.New()
-	)
+// Stop run
+func (h *handler) Stop(ms ...int) {
+	n := 10000
+	if len(ms) > 0 {
+		n = ms[0]
+	}
+	for ; h.running && n > 0; n-- {
+		time.Sleep(time.Millisecond)
+	}
+}
 
-	// database
-	db, err := sqlx.Connect(configInfo.Db.Type, configInfo.Db.Conn)
+func (h *handler) isScriptMod() bool {
+	if h.jsFile == "" {
+		return false
+	}
+	info, err := os.Stat(h.jsFile)
+	if os.IsNotExist(err) {
+		return false
+	}
+	if t := info.ModTime(); t.Unix() != h.jsMod.Unix() {
+		h.jsMod = t
+		return true
+	}
+	return false
+}
+
+func (h *handler) doScriptMod() error {
+	if h.jsFile == "" {
+		return nil
+	}
+	script, err := f.ReadFile(h.jsFile)
 	if err != nil {
 		return err
 	}
 
-	defer func() { _ = db.Close() }()
-
-	js.Console(vm)
-	js.ID(vm)
-	js.RD(vm)
-	js.Db(vm, db)
-	js.Ajax(vm)
-	if nat.Conn != nil && nat.Subject != "" {
-		js.Nats(vm, nat.Conn, nat.Subject)
-	}
-	if store.RedisClient != nil {
-		js.Redis(vm, store.RedisClient)
-	}
-	if hub.jsObj != nil {
-		for k, v := range hub.jsObj {
-			vm.Set(k, v)
-		}
-	}
-
-	defer func() { vm.ClearInterrupt() }()
-
-	if isFn {
-		if _, err := vm.RunString(script); err != nil {
-			return err
-		}
-
-		val := vm.Get(fnName)
-		if val == nil {
-			return fmt.Errorf("js function %q not found", fnName)
-		}
-
-		var fn func([]map[string]interface{}) interface{}
-		if err := vm.ExportTo(val, &fn); err != nil {
-			return fmt.Errorf("js function %q not exported %s", fnName, err.Error())
-		}
-
-		v := fn(objects)
-		if v == nil {
-			return nil
-		}
-
-		switch sql := v.(type) {
-		case string:
-			if sql != "" {
-				return fmt.Errorf("js function %q return string must be empty", fnName)
-			}
-		case []string:
-			if len(sql) > 0 {
-				return fmt.Errorf("js function %q return string array must be empty", fnName)
-			}
-		default:
-			return fmt.Errorf("js function %q return type must be string or string array", fnName)
-		}
-	} else {
-		fnName = "records"
-		vm.Set(fnName, objects)
-
-		if res, err := vm.RunString(script); err != nil {
-			return fmt.Errorf("the table script error, must contain array %q, error: %s", fnName, err.Error())
-		} else if res == nil {
-			return nil
-		} else {
-			v := res.Export()
-			if v == nil {
-				return nil
-			}
-
-			switch sql := v.(type) {
-			case string:
-				if sql != "" {
-					return fmt.Errorf("js with array %q return string must be empty", fnName)
-				}
-			case []string:
-				if len(sql) > 0 {
-					return fmt.Errorf("js with array %q return string array must be empty", fnName)
-				}
-			default:
-				return fmt.Errorf("js with array %q return type must be string or string array", fnName)
-			}
-		}
-	}
-
+	h.js = strings.TrimSpace(string(script))
 	return nil
 }
