@@ -3,7 +3,10 @@ package js
 import (
 	"encoding/xml"
 	"fmt"
+	"path/filepath"
 	"testing"
+
+	"github.com/angenalZZZ/gofunc/data"
 
 	"github.com/angenalZZZ/gofunc/configfile"
 	"github.com/angenalZZZ/gofunc/data/cache/store"
@@ -163,6 +166,28 @@ dump(res)
 $.trace = true
 res = $.q("post","https://postman-echo.com/post",{strange:'boom'},"url")
 dump(res)
+`
+
+	if _, err := r.RunString(script); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCache(t *testing.T) {
+	r := goja.New()
+	defer func() { r.ClearInterrupt() }()
+	Console(r)
+	Cache(r, nil, filepath.Join(data.RootDir, ".nats01"))
+
+	script := `
+console.log("cache.dir =", cache.dir)
+console.log("cache.cap =", cache.cap)
+try { cache.load() } catch (e) { throw(e) }
+console.log("key =", cache.get("key"))
+cache.set("key",123)
+console.log("key =", cache.get("key"))
+cache.set("key",123456)
+try { cache.save(); cache.load(); console.log("key =",cache.get("key")); console.log("ok!") } catch (e) { throw(e) }
 `
 
 	if _, err := r.RunString(script); err != nil {

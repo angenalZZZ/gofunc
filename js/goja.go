@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -762,15 +763,15 @@ func Ajax(r *goja.Runtime) {
 //  var has = cache.has("key")
 //  cache.set("key",123)
 //  cache.del("key")
-//  cache.reset() or cache.clear()
+//  cache.reset(); cache.clear(); cache.clear('cache-01');
+//  try { cache.save('cache-01'); cache.load('cache-01'); } catch (e) { throw(e) }
 func Cache(r *goja.Runtime, cache *fastcache.Cache, cacheDir string, maxBytes ...int) {
-	// creates a new directory if does not exist
-	err := f.Mkdir(cacheDir)
-	if err != nil {
-		if err := f.MkdirCurrent(".nats"); err != nil {
-			panic("Unable to create a new directory!")
-		}
-		cacheDir = filepath.Join(f.CurrentDir(), ".nats")
+	var err error
+	// default directory
+	currentDir := f.CurrentDir()
+	defaultDir := filepath.Join(currentDir, ".nats")
+	if cacheDir == "" {
+		cacheDir = defaultDir
 	}
 	// creates a fast cache instance
 	capacity := 1073741824 // 1GB cache capacity
@@ -866,6 +867,64 @@ func Cache(r *goja.Runtime, cache *fastcache.Cache, cacheDir string, maxBytes ..
 	})
 	_ = cObj.Set("clear", func(c goja.FunctionCall) goja.Value {
 		cache.Reset()
+
+		l, dir := len(c.Arguments), ""
+		if l > 0 {
+			dir = filepath.Join(currentDir, c.Arguments[0].String())
+		}
+		if dir == "" {
+			dir = cacheDir
+		}
+		if f.IsDir(dir) {
+			if err := os.RemoveAll(dir); err != nil {
+				panic(err.Error())
+			}
+		}
+		return goja.Undefined()
+	})
+
+	_ = cObj.Set("load", func(c goja.FunctionCall) goja.Value {
+		l, dir := len(c.Arguments), ""
+		if l > 0 {
+			dir = filepath.Join(currentDir, c.Arguments[0].String())
+		}
+		if dir == "" {
+			dir = cacheDir
+			if f.PathExists(dir) == false {
+				return goja.Undefined()
+			}
+		}
+		if f.PathExists(dir) == false {
+			panic("The specified directory does not exist")
+		}
+		if cache, err = fastcache.LoadFromFile(dir); err != nil {
+			panic(err.Error())
+		}
+		return goja.Undefined()
+	})
+
+	_ = cObj.Set("save", func(c goja.FunctionCall) goja.Value {
+		l, dir := len(c.Arguments), ""
+		if l > 0 {
+			dir = filepath.Join(currentDir, c.Arguments[0].String())
+			// creates a new directory if does not exist
+			if err = f.Mkdir(dir); err != nil {
+				panic(err.Error())
+			}
+		}
+		if dir == "" {
+			dir = cacheDir
+			// creates a new directory if does not exist
+			if err = f.Mkdir(dir); err != nil {
+				panic(err.Error())
+			}
+		}
+		if f.PathExists(dir) == false {
+			panic("The specified directory does not exist")
+		}
+		if err = cache.SaveToFileConcurrent(dir, 0); err != nil {
+			panic(err.Error())
+		}
 		return goja.Undefined()
 	})
 

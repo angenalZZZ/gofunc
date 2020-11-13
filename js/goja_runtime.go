@@ -30,9 +30,9 @@ type GoRuntime struct {
 	NatSubject string
 	// field: *redis.Client
 	RedisClient *redis.Client
-	// field: new fast thread-safe inmemory cache optimized for big number of entries
+	// field: *fastcache.Cache new fast thread-safe inmemory cache optimized for big number of entries
 	*fastcache.Cache
-	// field: sets cache persist to disk directory
+	// field: CacheDir sets cache persist to disk directory
 	CacheDir string
 }
 
@@ -47,9 +47,9 @@ type GoRuntimeParam struct {
 	NatSubject string
 	// parameter: *redis.Client
 	RedisClient *redis.Client
-	// parameter: new fast thread-safe inmemory cache optimized for big number of entries
+	// parameter: *fastcache.Cache new fast thread-safe inmemory cache optimized for big number of entries
 	*fastcache.Cache
-	// parameter: sets cache persist to disk directory
+	// parameter: CacheDir sets cache persist to disk directory
 	CacheDir string
 }
 
@@ -105,6 +105,22 @@ func NewRuntime(parameter *GoRuntimeParam) *GoRuntime {
 		r.RedisClient = redisClient
 	}
 
+	// parameter: *fastcache.Cache
+	var (
+		cache    *fastcache.Cache
+		cacheDir string
+		maxBytes = 1073741824 // 1GB cache capacity
+	)
+	if parameter != nil && parameter.Cache != nil {
+		cache = parameter.Cache
+	} else {
+		cache = fastcache.New(maxBytes)
+	}
+	if parameter != nil && parameter.CacheDir != "" {
+		cacheDir = parameter.CacheDir
+	}
+	r.Cache, r.CacheDir = cache, cacheDir
+
 	r.Register()
 	return r
 }
@@ -136,6 +152,7 @@ func (r *GoRuntime) Register() {
 	ID(r.Runtime)
 	RD(r.Runtime)
 	Ajax(r.Runtime)
+	Cache(r.Runtime, r.Cache, r.CacheDir)
 
 	// sets registered
 	r.registered = true
