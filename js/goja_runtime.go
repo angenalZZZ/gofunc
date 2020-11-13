@@ -25,6 +25,7 @@ type GoRuntime struct {
 	*log.Logger
 	// field: *sqlx.DB
 	*sqlx.DB
+	DbType, DbConn string
 	// field: *nats.Conn
 	NatConn    *nats.Conn
 	NatSubject string
@@ -80,6 +81,7 @@ func NewRuntime(parameter *GoRuntimeParam) *GoRuntime {
 		dbType, dbConn = parameter.DbType, parameter.DbConn
 	}
 	if dbType != "" && dbConn != "" {
+		r.DbType, r.DbConn = dbType, dbConn
 		db, err = sqlx.Connect(dbType, dbConn)
 		if err != nil && logger != nil {
 			logger.Error().Msgf("failed connect to db: %v\n", err)
@@ -137,6 +139,8 @@ func (r *GoRuntime) Register() {
 
 	if r.DB != nil {
 		Db(r.Runtime, r.DB)
+	} else if r.DbType != "" && r.DbConn != "" {
+		Db(r.Runtime, nil, r.DbType, r.DbConn)
 	}
 
 	if r.NatConn != nil && r.NatSubject != "" {

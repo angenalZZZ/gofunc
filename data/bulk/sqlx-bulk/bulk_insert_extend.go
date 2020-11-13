@@ -88,41 +88,17 @@ func BulkInsertByJs(db *sqlx.DB, objects []map[string]interface{}, chunkSize int
 }
 
 // BulkInsertByJsFunction executes the query to insert multiple records at once.
-func BulkInsertByJsFunction(db *sqlx.DB, objects []map[string]interface{}, chunkSize int, javascript, functionName string, interval time.Duration, jsObj map[string]interface{}) error {
-	var (
-		vm = goja.New()
-		fn func([]map[string]interface{}) interface{}
-	)
-
-	js.Console(vm)
-	js.ID(vm)
-	js.RD(vm)
-	js.Db(vm, db)
-	js.Ajax(vm)
-	if nat.Conn != nil && nat.Subject != "" {
-		js.Nats(vm, nat.Conn, nat.Subject)
-	}
-	if store.RedisClient != nil {
-		js.Redis(vm, store.RedisClient)
-	}
-	if jsObj != nil {
-		for k, v := range jsObj {
-			vm.Set(k, v)
-		}
-	}
+func BulkInsertByJsFunction(vm *js.GoRuntime, objects []map[string]interface{}, chunkSize int, functionName string, interval time.Duration) error {
+	var fn func([]map[string]interface{}) interface{}
 
 	defer func() { vm.ClearInterrupt() }()
 
-	if _, err := vm.RunString(javascript); err != nil {
-		return err
-	}
-
-	val := vm.Get(functionName)
+	val := vm.Runtime.Get(functionName)
 	if val == nil {
 		return fmt.Errorf("js function %q not found", functionName)
 	}
 
-	if err := vm.ExportTo(val, &fn); err != nil {
+	if err := vm.Runtime.ExportTo(val, &fn); err != nil {
 		return fmt.Errorf("js function %q not exported %s", functionName, err.Error())
 	}
 
@@ -139,7 +115,7 @@ func BulkInsertByJsFunction(db *sqlx.DB, objects []map[string]interface{}, chunk
 			if len(sql) < 20 {
 				continue
 			}
-			if _, err := db.Exec(sql); err != nil {
+			if _, err := vm.DB.Exec(sql); err != nil {
 				return err
 			}
 		case []string:
@@ -147,7 +123,7 @@ func BulkInsertByJsFunction(db *sqlx.DB, objects []map[string]interface{}, chunk
 				if len(s) < 20 {
 					continue
 				}
-				if _, err := db.Exec(s); err != nil {
+				if _, err := vm.DB.Exec(s); err != nil {
 					return err
 				}
 			}

@@ -9,7 +9,7 @@ String.prototype.Time = function () { return this.replace("T", " ").split(" ")[1
 String.prototype.DateTime = function () { return this.replace("T", " ").split(".")[0]; };
 
 //订阅处理
-function func(records) {
+function sql(records) {
     if (!records || records.constructor.name != "Array") return "";
     var items = records.filter(function (item) { return item.constructor.name == "Object" && item.hasOwnProperty("Code"); });
     if (items.length == 0) return "";

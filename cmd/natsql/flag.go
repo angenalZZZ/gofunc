@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/nats-io/nats.go"
 
@@ -142,8 +143,8 @@ func natClientConnect(isGlobal bool, subj string) (conn *nats.Conn) {
 	return
 }
 
-// Init Subscribers
-func configSubscribers() {
+// Init Subscribers And Handlers.
+func createHandlers() {
 	if handlers == nil {
 		handlers = make([]*handler, 0)
 	}
@@ -157,15 +158,16 @@ func configSubscribers() {
 
 	if jsr == nil {
 		p := js.GoRuntimeParam{
-			DbType: configInfo.Db.Type,
-			DbConn: configInfo.Db.Conn,
+			CacheDir: filepath.Join(cacheDir, ".nats"),
+			DbType:   configInfo.Db.Type,
+			DbConn:   configInfo.Db.Conn,
 		}
+		_ = f.Mkdir(p.CacheDir)
 		jsr = js.NewRuntime(&p)
 	}
 	defer jsr.Clear()
 
-	_, err := jsr.RunString(configInfo.Nats.Script)
-	if err != nil {
+	if _, err := jsr.RunString(configInfo.Nats.Script); err != nil {
 		return
 	}
 	self := jsr.Runtime.Get("subscribe")
@@ -185,8 +187,7 @@ func configSubscribers() {
 			return
 		}
 
-		var itemSubj = subject
-		var itemName, itemSpec, itemDir string
+		var itemName, itemSpec, itemSubj, itemDir string
 		if itemName, ok = objMap["name"].(string); !ok || itemName == "" {
 			return
 		}
@@ -194,22 +195,31 @@ func configSubscribers() {
 			return
 		}
 		if itemSpec == "+" {
-			itemSubj = itemSubj + itemName
+			itemSubj = subject + itemName
 		} else {
 			itemSubj = itemName
 		}
-		if itemFunc, ok := objMap["func"].(func(goja.FunctionCall) goja.Value); !ok {
+		itemFunc, ok := objMap["func"].(func(goja.FunctionCall) goja.Value)
+		if !ok {
 			return
+		}
+		res := itemFunc(goja.FunctionCall{This: jsr.ToValue(obj)})
+		if res == nil || res.String() == "" {
+			itemDir = filepath.Join(cacheDir, itemName)
 		} else {
-			res := itemFunc(goja.FunctionCall{This: jsr.ToValue(obj)})
-			if res == nil || res.String() == "" {
-				itemDir = filepath.Join(cacheDir, itemName)
-			} else {
-				itemDir = filepath.Join(cacheDir, res.String())
-			}
+			itemDir = filepath.Join(cacheDir, res.String())
+		}
+		jsFile := filepath.Join(itemDir, "natsql.js")
+		if ok = f.PathExists(jsFile); !ok {
+			return
+		}
+		script, err := f.ReadFile(jsFile)
+		if err != nil {
+			return
 		}
 
 		item := new(handler)
+		item.js = strings.TrimSpace(string(script))
 		ctx, wait := f.ContextWithWait(context.TODO())
 
 		// Create a subscriber for Client Connect.
@@ -222,20 +232,21 @@ func configSubscribers() {
 		jso["config"] = configInfo
 		item.jso = jso
 
-		// js runtime and register
-		p1 := js.GoRuntimeParam{
+		// js runtime and register param
+		jsp := js.GoRuntimeParam{
+			CacheDir:   filepath.Join(cacheDir, ".nats", itemSubj),
 			DbType:     configInfo.Db.Type,
 			DbConn:     configInfo.Db.Conn,
 			NatConn:    conn,
 			NatSubject: itemSubj,
 		}
-		item.jsr = js.NewRuntime(&p1)
+		item.jsp = &jsp
 
 		// natS subscriber
 		item.Context, item.sub = ctx, sub
 		handlers = append(handlers, item)
 
-		// Run natS subscriber.
+		// Run natS subscriber
 		go sub.Run(wait)
 	}
 }

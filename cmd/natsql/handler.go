@@ -21,10 +21,12 @@ import (
 
 type handler struct {
 	context.Context
+	// js code
+	js string
 	// js global variable
 	jso map[string]interface{}
-	// js runtime and register
-	jsr *js.GoRuntime
+	// js runtime and register param
+	jsp *js.GoRuntimeParam
 	// natS subscriber
 	sub *nat.SubscriberFastCache
 }
@@ -45,7 +47,7 @@ func (hub *handler) Handle(list [][]byte) error {
 		}
 		if item[0] == '{' {
 			if debug {
-				nat.Log.Debug().Msgf("[nats] received on %q: %s", subject, item)
+				nat.Log.Debug().Msgf("[nats] received on %q: %s", hub.sub.Subj, item)
 			}
 
 			var obj map[string]interface{}
@@ -62,21 +64,14 @@ func (hub *handler) Handle(list [][]byte) error {
 		return nil
 	}
 
-	// database
-	db, err := sqlx.Connect(configInfo.Db.Type, configInfo.Db.Conn)
-	if err != nil {
-		return err
-	}
+	// js runtime and register
+	vm := js.NewRuntime(hub.jsp)
+	defer vm.Clear()
 
-	db.SetMaxIdleConns(20)
-	db.SetMaxOpenConns(100)
-	db.SetConnMaxLifetime(time.Minute)
-	defer func() { _ = db.Close() }()
-
-	script, fnName := configInfo.Db.Table.Script, "sql"
+	script, fnName := hub.js, "sql"
 	isFn := strings.Contains(script, "function "+fnName)
 
-	bulkSize := configInfo.Db.Table.Bulk
+	bulkSize := configInfo.Nats.Bulk
 	bulkRecords, dataIndex := make([]map[string]interface{}, 0, bulkSize), 0
 	for i := 0; i < count; i++ {
 		obj := records[i]
@@ -84,11 +79,14 @@ func (hub *handler) Handle(list [][]byte) error {
 		if dataIndex++; dataIndex == bulkSize || dataIndex == count {
 			// bulk handle
 			if isFn {
-				if err = bulk.BulkInsertByJsFunction(db, bulkRecords, bulkSize, script, fnName, time.Microsecond, hub.jsObj); err != nil {
+				if _, err := vm.RunString(script); err != nil {
+					return err
+				}
+				if err := bulk.BulkInsertByJsFunction(vm, bulkRecords, bulkSize, script, fnName, time.Microsecond); err != nil {
 					return err
 				}
 			} else {
-				if err = bulk.BulkInsertByJs(db, bulkRecords, bulkSize, script, time.Microsecond, hub.jsObj); err != nil {
+				if err := bulk.BulkInsertByJs(db, bulkRecords, bulkSize, script, time.Microsecond, hub.jsObj); err != nil {
 					return err
 				}
 			}

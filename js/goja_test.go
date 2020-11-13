@@ -187,7 +187,10 @@ console.log("key =", cache.get("key"))
 cache.set("key",123)
 console.log("key =", cache.get("key"))
 cache.set("key",123456)
-try { cache.save(); cache.load(); console.log("key =",cache.get("key")); console.log("ok!") } catch (e) { throw(e) }
+try { cache.save(); cache.load(); } catch (e) { throw(e) }
+console.log("key =",cache.get("key"))
+console.log("ok!")
+cache.clear()
 `
 
 	if _, err := r.RunString(script); err != nil {

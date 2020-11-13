@@ -227,8 +227,20 @@ func RD(r *goja.Runtime) {
 //  db.x: return RowsAffected all inserted,updated,deleted
 //  db.x('update table1 set name=? where id=?','test',1)
 //  db.x('update table1 set name=:name where id=:id',{id:1,name:'test'})
-func Db(r *goja.Runtime, d *sqlx.DB) {
+func Db(r *goja.Runtime, d *sqlx.DB, dbs ...string) {
 	dbObj := r.NewObject()
+
+	if d == nil && len(dbs) == 2 {
+		var err error
+		dbType, dbConn := dbs[0], dbs[1]
+		if d, err = sqlx.Connect(dbType, dbConn); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "[js.Register.Db] %v\n", err)
+			return
+		}
+	}
+	if d == nil {
+		_, _ = fmt.Fprintln(os.Stderr, "[js.Register] failed connect to db")
+	}
 
 	driver := make(map[string]interface{})
 	driver["name"] = d.DriverName()
@@ -896,6 +908,9 @@ func Cache(r *goja.Runtime, cache *fastcache.Cache, cacheDir string, maxBytes ..
 		}
 		if f.PathExists(dir) == false {
 			panic("The specified directory does not exist")
+		}
+		if f.PathExists(filepath.Join(dir, "metadata.bin")) == false {
+			return goja.Undefined()
 		}
 		if cache, err = fastcache.LoadFromFile(dir); err != nil {
 			panic(err.Error())
