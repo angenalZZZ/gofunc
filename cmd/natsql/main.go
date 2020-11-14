@@ -34,7 +34,7 @@ func main() {
 
 	// Hot update script file.
 	go func() {
-		ticket := time.NewTicker(1 * time.Second)
+		ticket := time.NewTicker(2 * time.Second)
 		for range ticket.C {
 			if !isScriptMod() {
 				continue
@@ -48,7 +48,7 @@ func main() {
 		}
 	}()
 	go func() {
-		ticket := time.NewTicker(1 * time.Second)
+		ticket := time.NewTicker(2 * time.Second)
 		for range ticket.C {
 			for _, h := range handlers {
 				if !h.isScriptMod() {

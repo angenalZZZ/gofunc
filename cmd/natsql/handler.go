@@ -50,7 +50,7 @@ func (h *handler) Handle(list [][]byte) error {
 		}
 		if item[0] == '{' {
 			if debug {
-				nat.Log.Debug().Msgf("[nats] received on %q: %s", h.sub.Subj, item)
+				nat.Log.Debug().Msgf("[nats] received on %q: %s", h.jsp.NatSubject, item)
 			}
 
 			var obj map[string]interface{}

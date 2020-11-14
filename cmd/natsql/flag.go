@@ -74,7 +74,9 @@ func checkArgs() {
 		configInfo.Nats.Key = *flagKey
 	}
 
-	jsonFile = *flagTest
+	if *flagTest != "" {
+		jsonFile = *flagTest
+	}
 	if jsonFile != "" {
 		isTest = true
 	}
@@ -91,7 +93,9 @@ func checkArgs() {
 	js.RunLogTimeFormat = configInfo.Log.TimeFormat
 
 	// 全局订阅前缀:subject
-	subject = *flagName
+	if *flagName != "" {
+		subject = *flagName
+	}
 	if subject == "" {
 		subject = configInfo.Nats.Subscribe
 	}
@@ -99,7 +103,9 @@ func checkArgs() {
 		panic("the subscription name prefix can't be empty.")
 	}
 
-	cacheDir = filepath.Join(data.CurrentDir, subject)
+	if cacheDir == "" {
+		cacheDir = filepath.Join(data.CurrentDir, subject)
+	}
 	if f.PathExists(cacheDir) == false {
 		panic("the cache disk directory is not found.")
 	}
@@ -153,7 +159,7 @@ func createHandlers() {
 
 	if jsr == nil {
 		p := js.GoRuntimeParam{
-			CacheDir: filepath.Join(cacheDir, ".nats"),
+			CacheDir: cacheDir,
 			DbType:   configInfo.Db.Type,
 			DbConn:   configInfo.Db.Conn,
 		}
@@ -221,9 +227,10 @@ func createHandlers() {
 
 		// js runtime and register param
 		jsp := js.GoRuntimeParam{
-			CacheDir: filepath.Join(cacheDir, ".nats", itemSubj),
-			DbType:   configInfo.Db.Type,
-			DbConn:   configInfo.Db.Conn,
+			CacheDir:   filepath.Join(cacheDir, itemName),
+			DbType:     configInfo.Db.Type,
+			DbConn:     configInfo.Db.Conn,
+			NatSubject: itemSubj,
 		}
 		h.jsp = &jsp
 
@@ -231,7 +238,7 @@ func createHandlers() {
 		if !isTest {
 			// Create a subscriber for Client Connect
 			conn := natClientConnect(false, itemSubj)
-			h.jsp.NatConn, h.jsp.NatSubject = conn, itemSubj
+			h.jsp.NatConn = conn
 
 			sub := nat.NewSubscriberFastCache(conn, itemSubj, itemDir)
 			sub.Hand = h.Handle
@@ -286,7 +293,7 @@ func runTest() {
 		if subject == "" {
 			subject = "test"
 		}
-		if err = hd.Handle(list); err != nil {
+		if err = h.Handle(list); err != nil {
 			panic(err)
 		}
 	}

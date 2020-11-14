@@ -23,7 +23,7 @@ var (
 	configInfo *Config
 	configFile = "natsql.yaml"
 	// 当前目录下:全局订阅前缀:目录
-	cacheDir  = data.CurrentDir
+	cacheDir  string
 	configMod time.Time
 	scriptMod time.Time
 )
