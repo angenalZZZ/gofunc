@@ -264,6 +264,15 @@ func stopHandlers() {
 	}
 }
 
+// Init complete.
+func runInit() {
+	if isTest {
+		return
+	}
+
+	createHandlers() // Init Subscribers And Handlers.
+}
+
 // Run script test.
 func runTest() {
 	if !isTest {

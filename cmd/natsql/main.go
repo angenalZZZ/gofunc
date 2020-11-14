@@ -1,7 +1,7 @@
 ///go get github.com/angenalZZZ/gofunc/cmd/natsql
 ///go build -ldflags "-s -w" -o A:/test/ ./cmd/natsql
 ///start A:/test/natsql.exe -t data.json
-///start A:/test/natsql.exe -name Test -token HGJ766GR767FKJU0
+///start A:/test/natsql.exe -c natsql.yaml
 
 package main
 
@@ -28,6 +28,9 @@ func main() {
 	// Check Arguments And Init Config.
 	checkArgs()
 	defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(runtime.NumCPU()))
+
+	// Init complete.
+	runInit()
 
 	// Run script test.
 	runTest()

@@ -1,5 +1,5 @@
 # <test> natsql -t data.json
-# <run&> natsql -name Test -token HGJ766GR767FKJU0
+# <run&> natsql -c natsql.yaml
 db:
   type: mysql
   #     mssql

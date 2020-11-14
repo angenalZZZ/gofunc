@@ -10,7 +10,6 @@ import (
 	"github.com/angenalZZZ/gofunc/data/cache/store"
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/log"
-	nat "github.com/angenalZZZ/gofunc/rpc/nats"
 	"github.com/go-redis/redis/v7"
 )
 
@@ -40,7 +39,12 @@ type Config struct {
 	// 消息中间件/发布订阅处理
 	Nats struct {
 		// 消息中间件client
-		nat.Connection
+		// nat.Connection
+		Addr  string
+		Token string
+		Cred  string
+		Cert  string
+		Key   string
 		// 全局订阅前缀=功能配置根目录cache+js目录 function func(records)
 		Subscribe string
 		// 批量获取记录数限制
