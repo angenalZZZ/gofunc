@@ -24,6 +24,7 @@ type handler struct {
 	running bool
 	// js code
 	js     string
+	jsr    *js.GoRuntime
 	jsMod  time.Time
 	jsFile string
 	jsName string
@@ -93,12 +94,21 @@ func (h *handler) Handle(list [][]byte) error {
 		//	return fmt.Errorf("js function %q not exported %s", fnName, err.Error())
 		//}
 
-		db, err := sqlx.Connect(h.jsp.DbType, h.jsp.DbConn)
-		if err != nil {
-			return err
+		db := h.jsp.DB
+		if db == nil && h.jsr != nil {
+			db = h.jsr.DB
 		}
-		db.SetConnMaxLifetime(time.Minute)
-		defer func() { _ = db.Close() }()
+		if db == nil {
+			var err error
+			db, err = sqlx.Connect(h.jsp.DbType, h.jsp.DbConn)
+			if err != nil {
+				return err
+			}
+			if db == nil {
+				return fmt.Errorf("%s Connect Error", h.jsp.DbType)
+			}
+			defer func() { _ = db.Close() }()
+		}
 
 		// Split records with specified size not to exceed Database parameter limit
 		for _, rs := range f.SplitObjectMaps(records, configInfo.Nats.Bulk) {
@@ -133,8 +143,27 @@ func (h *handler) Handle(list [][]byte) error {
 		}
 	} else {
 		// js runtime and register
-		vm, fnName := js.NewRuntime(h.jsp), h.jsName
+		vm, fnName := h.jsr, h.jsName
+		if vm == nil {
+			vm = js.NewRuntime(h.jsp)
+		}
 		defer vm.Clear()
+
+		db := h.jsp.DB
+		if db == nil {
+			db = vm.DB
+		}
+		if db == nil {
+			var err error
+			db, err = sqlx.Connect(h.jsp.DbType, h.jsp.DbConn)
+			if err != nil {
+				return err
+			}
+			if db == nil {
+				return fmt.Errorf("%s Connect Error", h.jsp.DbType)
+			}
+			defer func() { _ = db.Close() }()
+		}
 
 		// Split records with specified size not to exceed Database parameter limit
 		for _, rs := range f.SplitObjectMaps(records, configInfo.Nats.Bulk) {
@@ -161,7 +190,7 @@ func (h *handler) Handle(list [][]byte) error {
 				if len(sql) < sqlLen {
 					continue
 				}
-				if _, err := vm.DB.Exec(sql); err != nil {
+				if _, err := db.Exec(sql); err != nil {
 					h.running = false
 					return err
 				}
@@ -170,7 +199,7 @@ func (h *handler) Handle(list [][]byte) error {
 					if len(s) < sqlLen {
 						continue
 					}
-					if _, err := vm.DB.Exec(s); err != nil {
+					if _, err := db.Exec(s); err != nil {
 						h.running = false
 						return err
 					}

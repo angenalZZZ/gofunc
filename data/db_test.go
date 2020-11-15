@@ -19,7 +19,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func initDbSqlite3(t *testing.T) (db *sqlx.DB, err error) {
+func initDbSqlite3(t *testing.T, dbType string) (db *sqlx.DB, err error) {
 	var config map[interface{}]interface{}
 	config, err = configfile.YamlToMap("../test/config/database.yaml")
 	if err != nil {
@@ -30,17 +30,48 @@ func initDbSqlite3(t *testing.T) (db *sqlx.DB, err error) {
 		return nil, errors.New("database config error")
 	}
 
-	data.DbType = "sqlite3"
-	dbConn := conn[data.DbType].(string)
-	db, err = sqlx.Open(data.DbType, dbConn)
+	data.DbType = dbType
+	dbConn := conn[dbType].(string)
+	db, err = sqlx.Open(dbType, dbConn)
 	if err == nil {
-		t.Logf("[%s] %s", data.DbType, dbConn)
+		t.Logf("[%s] %s", dbType, dbConn)
 	}
+	if db == nil {
+		return nil, errors.New("database config error")
+	}
+	db.SetConnMaxLifetime(10 * time.Second)
+	db.SetMaxOpenConns(2)
+	db.SetMaxIdleConns(2)
 	return
 }
 
+func TestDb_test_mysql(t *testing.T) {
+	dbo, err := initDbSqlite3(t, "mysql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = dbo.Close() }()
+
+	err = dbo.Ping()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < 3; i++ {
+		time.Sleep(10 * time.Second)
+		tbl := "logtest"
+		sql := `INSERT INTO logtest(Code,Type,Message,Account,CreateTime,CreateUser) VALUES(?,2,?,?,CURRENT_TIMESTAMP(),?)`
+		if res, err := dbo.Exec(sql, random.AlphaNumber(6), random.AlphaNumber(100), random.AlphaNumber(6), id.L36()); err != nil {
+			t.Fatal(err)
+		} else {
+			num, _ := res.LastInsertId()
+			t.Logf(`[%s] %q inserted rows [Id=%d]`, data.DbType, tbl, num)
+		}
+	}
+}
+
 func TestDb_test_sqlite3(t *testing.T) {
-	dbo, err := initDbSqlite3(t)
+	dbo, err := initDbSqlite3(t, "sqlite3")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +108,7 @@ func TestDb_test_sqlite3(t *testing.T) {
 		}
 	}
 
-	sql = `INSERT INTO [logtest](Code,Type,Message,Account,CreateTime,CreateUser) VALUES(?,2,?,?,DATETIME(),?)`
+	sql = `INSERT INTO logtest(Code,Type,Message,Account,CreateTime,CreateUser) VALUES(?,2,?,?,DATETIME(),?)`
 	if res, err := dbo.Exec(sql, random.AlphaNumber(6), random.AlphaNumber(100), random.AlphaNumber(6), id.L36()); err != nil {
 		t.Fatal(err)
 	} else {
@@ -92,7 +123,7 @@ func TestBenchDb_insert_sqlite3(t *testing.T) {
 	dbN, number := len(dbs), 100
 
 	for i := 0; i < dbN; i++ {
-		dbo, err := initDbSqlite3(t)
+		dbo, err := initDbSqlite3(t, "sqlite3")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -113,7 +144,7 @@ func TestBenchDb_insert_sqlite3(t *testing.T) {
 				wg.Done()
 			}()
 			for i := 0; i < num; i++ {
-				sql := `INSERT INTO [logtest](Code,Type,Message,Account,CreateTime,CreateUser) VALUES(?,2,?,?,DATETIME(),?)`
+				sql := `INSERT INTO logtest(Code,Type,Message,Account,CreateTime,CreateUser) VALUES(?,2,?,?,DATETIME(),?)`
 				if _, err := dbo.Exec(sql, random.AlphaNumber(6), random.AlphaNumber(100), random.AlphaNumber(6), id.L36()); err != nil {
 					t.Fatal(err)
 				}

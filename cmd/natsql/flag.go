@@ -256,7 +256,7 @@ func createHandlers() {
 			return
 		}
 
-		h.jsName = "sql"
+		h.jsr, h.jsName = vm, "sql"
 		if val := vm.Runtime.Get(h.jsName); val == nil {
 			h.jsName = "records"
 		} else {

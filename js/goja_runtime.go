@@ -44,6 +44,7 @@ type GoRuntimeParam struct {
 	// parameter: *log.Logger
 	Log *log.Logger
 	// parameter: *sqlx.DB
+	*sqlx.DB
 	DbType, DbConn string
 	// parameter: *nats.Conn
 	NatConn    *nats.Conn
@@ -82,7 +83,9 @@ func NewRuntime(parameter *GoRuntimeParam) *GoRuntime {
 	if parameter != nil && parameter.DbType != "" && parameter.DbConn != "" {
 		dbType, dbConn = parameter.DbType, parameter.DbConn
 	}
-	if dbType != "" && dbConn != "" {
+	if parameter != nil && parameter.DB != nil {
+		r.DB = parameter.DB
+	} else if dbType != "" && dbConn != "" {
 		r.DbType, r.DbConn = dbType, dbConn
 		db, err = sqlx.Connect(dbType, dbConn)
 		if err != nil && logger != nil {
@@ -90,9 +93,12 @@ func NewRuntime(parameter *GoRuntimeParam) *GoRuntime {
 		}
 		if db != nil {
 			db.SetConnMaxLifetime(time.Minute)
-			db.SetMaxIdleConns(10)
-			db.SetMaxOpenConns(20)
+			db.SetMaxIdleConns(4)
+			db.SetMaxOpenConns(40)
 			r.DB = db
+		}
+		if parameter != nil {
+			parameter.DB = db
 		}
 	}
 
@@ -177,7 +183,7 @@ func (r *GoRuntime) Clear() {
 	}
 	// field: *sqlx.DB
 	if r.DB != nil {
-		_ = r.DB.Close()
+		//_ = r.DB.Close()
 	}
 	// field: *nats.Conn
 	if r.NatConn != nil {
