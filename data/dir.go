@@ -2,6 +2,7 @@ package data
 
 import (
 	"path/filepath"
+	"runtime"
 	"sync"
 
 	"github.com/angenalZZZ/gofunc/f"
@@ -10,16 +11,27 @@ import (
 var (
 	// RootDir todo sets application root dir
 	RootDir = `A:\test`
-	// CurrentDir gets current dir
+	// CurrentDir get current dir
 	CurrentDir = f.CurrentDir()
-	// CurrentPath gets current path
+	// CurrentPath get current path
 	CurrentPath = f.CurrentPath()
-	// CurrentFile gets current file name
+	// CurrentFile get current file name
 	CurrentFile = f.CurrentFile()
-	// CurrentUserName gets computer name - user name
+	// CurrentUserName get computer name - user name
 	CurrentUserName = f.CurrentUserName()
 	// CurrentUserHomeDir get $HOME
 	CurrentUserHomeDir = f.CurrentUserHomeDir()
+	// CodeDir get the directory where the current code file is located
+	CodeDirname, _ = CodeDirFileLine()
+
+	// CodeDir get current code dir
+	CodeDir = func(codeDir string) string { return filepath.Join(filepath.Dir(CodeDirname), codeDir) }
+
+	// CodeDirFileLine get current code file name and line number
+	CodeDirFileLine = func() (string, int) {
+		_, file, line, _ := runtime.Caller(0)
+		return filepath.Dir(file), line
+	}
 
 	// Dir get the new directory under the current directory
 	Dir = func(name string) string { return filepath.Join(CurrentDir, name) }

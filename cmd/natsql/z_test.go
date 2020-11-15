@@ -1,14 +1,15 @@
 package main
 
 import (
-	"os"
 	"testing"
+
+	"github.com/angenalZZZ/gofunc/data"
 )
 
 func Test(t *testing.T) {
 	isTest = true
 	jsonFile = "data.json"
-	cacheDir = os.Getenv("GOPATH") + `\src\github.com\angenalZZZ\gofunc\cmd\natsql\test-`
+	cacheDir = data.CodeDir("cmd/natsql/test-")
 
 	// Check Arguments And Init Config.
 	checkArgs()
