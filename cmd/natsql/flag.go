@@ -226,13 +226,12 @@ func createHandlers() {
 		h.jso = jso
 
 		// js runtime and register param
-		jsp := js.GoRuntimeParam{
+		h.jsp = &js.GoRuntimeParam{
 			CacheDir:   filepath.Join(cacheDir, itemName),
 			DbType:     configInfo.Db.Type,
 			DbConn:     configInfo.Db.Conn,
 			NatSubject: itemSubj,
 		}
-		h.jsp = &jsp
 
 		// natS subscriber
 		if !isTest {
