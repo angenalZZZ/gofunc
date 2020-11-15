@@ -123,6 +123,7 @@ func (j *JobJs) Run() {
 		fmt.Print("ok.")
 	}
 	fmt.Println()
+	fmt.Println()
 
 	return
 }

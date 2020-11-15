@@ -115,10 +115,8 @@ func runInit() {
 	}
 
 	// init jobCron
-	logger := &log.CronLogger{Log: log.Log}
-	jobCron = cron.New(cron.WithChain(
-		cron.SkipIfStillRunning(logger),
-	))
+	jobCron = cron.New()
+	//jobCron = cron.New(cron.WithChain(cron.SkipIfStillRunning(&log.CronLogger{Log: log.Log})))
 
 	// adds jobs to the cron
 	for _, job := range jobList {
