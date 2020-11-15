@@ -1,6 +1,8 @@
 package js
 
 import (
+	"time"
+
 	"github.com/angenalZZZ/gofunc/data"
 	"github.com/angenalZZZ/gofunc/data/cache/fastcache"
 	"github.com/angenalZZZ/gofunc/data/cache/store"
@@ -86,7 +88,12 @@ func NewRuntime(parameter *GoRuntimeParam) *GoRuntime {
 		if err != nil && logger != nil {
 			logger.Error().Msgf("failed connect to db: %v\n", err)
 		}
-		r.DB = db
+		if db != nil {
+			db.SetConnMaxLifetime(time.Minute)
+			db.SetMaxIdleConns(10)
+			db.SetMaxOpenConns(20)
+			r.DB = db
+		}
 	}
 
 	// parameter: *nats.Conn

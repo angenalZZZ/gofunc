@@ -233,6 +233,8 @@ func createHandlers() {
 			NatSubject: itemSubj,
 		}
 
+		ctx, wait := f.ContextWithWait(context.TODO())
+
 		// natS subscriber
 		if !isTest {
 			// Create a subscriber for Client Connect
@@ -242,10 +244,30 @@ func createHandlers() {
 			sub := nat.NewSubscriberFastCache(conn, itemSubj, itemDir)
 			sub.Hand = h.Handle
 
-			ctx, wait := f.ContextWithWait(context.TODO())
 			h.Context, h.sub = ctx, sub
-			// Run natS subscriber
-			go sub.Run(wait)
+		}
+
+		p, err := goja.Compile(itemSubj, h.js, false)
+		if err != nil {
+			return
+		}
+		vm := js.NewRuntime(h.jsp)
+		if _, err = vm.Runtime.RunProgram(p); err != nil {
+			return
+		}
+
+		h.jsName = "sql"
+		if val := vm.Runtime.Get(h.jsName); val == nil {
+			h.jsName = "records"
+		} else {
+			if err := vm.Runtime.ExportTo(val, &h.jsFunc); err != nil {
+				h.jsName = "records"
+			}
+		}
+
+		// Run natS subscriber
+		if !isTest {
+			go h.sub.Run(wait)
 		}
 
 		handlers = append(handlers, h)

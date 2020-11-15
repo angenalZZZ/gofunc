@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jmoiron/sqlx"
+
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/js"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
@@ -22,8 +24,10 @@ type handler struct {
 	running bool
 	// js code
 	js     string
-	jsFile string
 	jsMod  time.Time
+	jsFile string
+	jsName string
+	jsFunc func([]map[string]interface{}) interface{}
 	// js global variable
 	jso map[string]interface{}
 	// js runtime and register param
@@ -67,32 +71,39 @@ func (h *handler) Handle(list [][]byte) error {
 		return nil
 	}
 
-	// js runtime and register
-	vm := js.NewRuntime(h.jsp)
-	defer vm.Clear()
+	script, sqlLen := h.js, 20
 
-	script, fnName, sqlLen := h.js, "sql", 20
-	isFn := strings.Contains(script, "function "+fnName)
+	if h.jsFunc != nil {
+		// js runtime and register
+		//vm := js.NewRuntime(h.jsp)
+		//defer vm.Clear()
+		//
+		//if _, err := vm.Runtime.RunString(script); err != nil {
+		//	h.running = false
+		//	return err
+		//}
+		//var fn func([]map[string]interface{}) interface{}
+		//val := vm.Runtime.Get(h.jsName)
+		//if val == nil {
+		//	h.running = false
+		//	return fmt.Errorf("js function %q not found", fnName)
+		//}
+		//if err := vm.Runtime.ExportTo(val, &fn); err != nil {
+		//	h.running = false
+		//	return fmt.Errorf("js function %q not exported %s", fnName, err.Error())
+		//}
 
-	if isFn {
-		if _, err := vm.Runtime.RunString(script); err != nil {
-			h.running = false
+		db, err := sqlx.Connect(h.jsp.DbType, h.jsp.DbConn)
+		if err != nil {
 			return err
 		}
-		var fn func([]map[string]interface{}) interface{}
-		val := vm.Runtime.Get(fnName)
-		if val == nil {
-			h.running = false
-			return fmt.Errorf("js function %q not found", fnName)
-		}
-		if err := vm.Runtime.ExportTo(val, &fn); err != nil {
-			h.running = false
-			return fmt.Errorf("js function %q not exported %s", fnName, err.Error())
-		}
+		db.SetConnMaxLifetime(time.Minute)
+		defer func() { _ = db.Close() }()
+
 		// Split records with specified size not to exceed Database parameter limit
 		for _, rs := range f.SplitObjectMaps(records, configInfo.Nats.Bulk) {
 			// Output sql
-			val := fn(rs)
+			val := h.jsFunc(rs)
 			if val == nil {
 				continue
 			}
@@ -102,7 +113,7 @@ func (h *handler) Handle(list [][]byte) error {
 				if len(sql) < sqlLen {
 					continue
 				}
-				if _, err := vm.DB.Exec(sql); err != nil {
+				if _, err := db.Exec(sql); err != nil {
 					h.running = false
 					return err
 				}
@@ -111,7 +122,7 @@ func (h *handler) Handle(list [][]byte) error {
 					if len(s) < sqlLen {
 						continue
 					}
-					if _, err := vm.DB.Exec(s); err != nil {
+					if _, err := db.Exec(s); err != nil {
 						h.running = false
 						return err
 					}
@@ -121,12 +132,14 @@ func (h *handler) Handle(list [][]byte) error {
 			time.Sleep(time.Microsecond)
 		}
 	} else {
-		fnName = "records"
+		// js runtime and register
+		vm, fnName := js.NewRuntime(h.jsp), h.jsName
+		defer vm.Clear()
 
 		// Split records with specified size not to exceed Database parameter limit
 		for _, rs := range f.SplitObjectMaps(records, configInfo.Nats.Bulk) {
 			// Input records
-			vm.Runtime.Set(fnName, rs)
+			vm.Runtime.Set(h.jsName, rs)
 
 			// Output sql
 			res, err := vm.Runtime.RunString(script)
