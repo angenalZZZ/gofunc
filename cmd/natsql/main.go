@@ -1,5 +1,5 @@
 ///go get github.com/angenalZZZ/gofunc/cmd/natsql
-///go build -ldflags "-s -w" -o A:/test/ ./cmd/natsql
+///go build -ldflags "-s -w" -o A:/test/cmd/natsql/ ./cmd/natsql
 ///start A:/test/natsql.exe -t data.json
 ///start A:/test/natsql.exe -c natsql.yaml
 
