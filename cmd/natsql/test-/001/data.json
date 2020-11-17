@@ -4,6 +4,7 @@
     "Type": 2,
     "Message": "some message",
     "Account": "test",
-    "CreateTime": "2020-11-11T03:21:19.021Z"
+    "CreateTime": "2020-11-11T03:21:19.021Z",
+    "CreateUser": null
   }
 ]

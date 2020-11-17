@@ -2,9 +2,8 @@
 # <run&> natsql -c natsql.yaml
 db:
   type: mysql
-  #     mssql
-  #     "sqlserver://sa:HGJ766GR767FKJU0@localhost?database=AppAuth&connection+timeout=3"
-  conn: "root:HGJ766GR767FKJU0@tcp(localhost:3306)/AppAuth?charset=utf8"
+  conn: "root:HGJ766GR767FKJU0@tcp(localhost:3306)/test?charset=utf8&parseTime=True&loc=Local&timeout=3s"
+  # mssql "sqlserver://sa:HGJ766GR767FKJU0@localhost?database=test&connection+timeout=3"
 
 nats: # 连接nats
   addr: nats://127.0.0.1:4222
@@ -16,7 +15,7 @@ nats: # 连接nats
   script: natsql.js # 配置订阅任务"subscribe"
 
 redis: # 连接redis
-  addr: 192.168.100.20:1314
+  addr: 127.0.0.1:6379 # 192.168.100.2:1314
   db: 0
   password:
   username:
