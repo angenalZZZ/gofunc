@@ -16,6 +16,7 @@ var (
 var (
 	ErrConvertFail       = errors.New("convert value is failure")
 	ErrBadComparisonType = errors.New("invalid type for operation")
+	ErrBadInput          = errors.New("invalid input for operation")
 )
 
 // goroutine.go

@@ -1,7 +1,7 @@
 ///go get github.com/angenalZZZ/gofunc/cmd/jsjob
 ///go build -ldflags "-s -w" -o A:/test/cmd/jsjob/ ./cmd/jsjob
-///start A:/test/jsjob.exe -t
-///start A:/test/jsjob.exe -c jsjob.yaml
+///start A:/test/cmd/jsjob/jsjob.exe -t
+///start A:/test/cmd/jsjob/jsjob.exe -c jsjob.yaml
 
 package main
 
