@@ -5,8 +5,6 @@
 package main
 
 import (
-	"flag"
-	"os"
 	"runtime"
 	"syscall"
 
@@ -16,10 +14,6 @@ import (
 func main() {
 	// Your Arguments.
 	initArgs()
-	if len(os.Args) < 2 {
-		flag.Usage()
-		return
-	}
 
 	defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(runtime.NumCPU()))
 

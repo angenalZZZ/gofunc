@@ -19,9 +19,14 @@ var (
 	flagDaemon = flag.Bool("d", false, "set as daemons")
 )
 
+func usage() {
+	flag.Usage()
+	os.Exit(0)
+}
+
 func initArgs() {
 	flag.Usage = func() {
-		fmt.Printf(" Usage of %s:\n", os.Args[0])
+		fmt.Printf(" Usage of %s:\n e.g. > jsrun jsrun.js\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -73,6 +78,22 @@ func checkArgs() {
 		scriptFile = filename
 	}
 
+	// load js
+	if strings.HasSuffix(scriptFile, ".js") {
+		if isScriptMod() == false {
+			usage()
+		}
+		if err := doScriptMod(); err != nil {
+			usage()
+		}
+	} else {
+		configInfo.Script = strings.TrimSpace(scriptFile)
+	}
+
+	if configInfo.Script == "" {
+		usage()
+	}
+
 	log.Log.Debug().Msgf("configuration complete.")
 }
 
@@ -91,27 +112,14 @@ func natClientConnect() {
 func run() {
 	var r = js.NewRuntime(nil)
 	defer func() { r.Clear() }()
-
-	// load js
-	if strings.HasSuffix(scriptFile, ".js") {
-		if isScriptMod() == false {
-			exit(os.ErrNotExist)
-		}
-		if err := doScriptMod(); err != nil {
-			exit(err)
-		}
-	} else {
-		configInfo.Script = strings.TrimSpace(scriptFile)
-	}
-
-	if configInfo.Script == "" {
-		exit(f.ErrBadInput)
-	}
+	log.Log.Debug().Msg("[js] run started.")
+	println()
 
 	if _, err := r.RunString(configInfo.Script); err != nil {
 		exit(err)
 	}
 
+	println()
 	log.Log.Debug().Msg("[js] run finished.")
 
 	if *flagDaemon == false {
