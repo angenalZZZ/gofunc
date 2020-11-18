@@ -16,7 +16,7 @@ import (
 
 var (
 	flagConfig = flag.String("c", "jsrun.yaml", "set config file")
-	flagDaemon = flag.Bool("d", false, "set as Daemons")
+	flagDaemon = flag.Bool("d", false, "set as daemons")
 )
 
 func initArgs() {
@@ -33,7 +33,7 @@ func inputArg() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return f.String(buf), err
+		return f.String(buf), nil
 	}
 
 	args := flag.Args()
@@ -62,7 +62,17 @@ func checkArgs() {
 	if nat.Log == nil {
 		nat.Log = log.Log
 	}
+
 	js.RunLogTimeFormat = configInfo.Log.TimeFormat
+
+	filename, err := inputArg()
+	if err != nil {
+		exit(err)
+	}
+	if filename != "" {
+		scriptFile = filename
+	}
+
 	log.Log.Debug().Msgf("configuration complete.")
 }
 
@@ -82,31 +92,23 @@ func run() {
 	var r = js.NewRuntime(nil)
 	defer func() { r.Clear() }()
 
-	filename, err := inputArg()
-	if err != nil {
-		exit(err)
-	}
-
 	// load js
-	if strings.HasSuffix(filename, ".js") {
-		scriptFile = filename
-
+	if strings.HasSuffix(scriptFile, ".js") {
 		if isScriptMod() == false {
 			exit(os.ErrNotExist)
 		}
-
 		if err := doScriptMod(); err != nil {
 			exit(err)
 		}
 	} else {
-		configInfo.Script = strings.TrimSpace(filename)
+		configInfo.Script = strings.TrimSpace(scriptFile)
 	}
 
 	if configInfo.Script == "" {
 		exit(f.ErrBadInput)
 	}
 
-	if _, err = r.RunString(configInfo.Script); err != nil {
+	if _, err := r.RunString(configInfo.Script); err != nil {
 		exit(err)
 	}
 

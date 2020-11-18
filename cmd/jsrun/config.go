@@ -22,7 +22,7 @@ var (
 	configInfo *Config
 	configFile = "jsrun.yaml"
 	configMod  time.Time
-	scriptFile string
+	scriptFile = "jsrun.js"
 	scriptMod  time.Time
 )
 
