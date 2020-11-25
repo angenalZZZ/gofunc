@@ -3,6 +3,8 @@
 ///start A:/test/cmd/natsql/natsql.exe -t data.json
 ///start A:/test/cmd/natsql/natsql.exe -c natsql.yaml
 
+// CSharp(4CPU+16G+MHD).benchmark PUB:60K~100Kq/s SUB:100K~1Mq/s
+
 package main
 
 import (
