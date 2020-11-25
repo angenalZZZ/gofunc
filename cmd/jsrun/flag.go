@@ -7,11 +7,12 @@ import (
 	"os"
 	"strings"
 
+	"golang.org/x/crypto/ssh/terminal"
+
 	"github.com/angenalZZZ/gofunc/f"
 	"github.com/angenalZZZ/gofunc/js"
 	"github.com/angenalZZZ/gofunc/log"
 	nat "github.com/angenalZZZ/gofunc/rpc/nats"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 var (
@@ -33,19 +34,29 @@ func initArgs() {
 }
 
 func inputArg() (string, error) {
-	if terminal.IsTerminal(0) == false {
-		buf, err := ioutil.ReadAll(os.Stdin)
-		if err != nil {
-			return "", err
-		}
-		return f.String(buf), nil
+	args := flag.Args()
+	l := len(args)
+	if f.StringsContains(args, "-d") {
+		f.StringsExclude(args, "-d")
+		l--
 	}
 
-	args := flag.Args()
-	if len(args) > 2 {
+	if l > 2 {
 		if args[0] == "-c" {
 			return args[2], nil
 		}
+		return args[0], nil
+	}
+	if l == 2 || l == 0 {
+		if terminal.IsTerminal(0) == false {
+			buf, err := ioutil.ReadAll(os.Stdin)
+			if err != nil {
+				return "", err
+			}
+			return f.String(buf), nil
+		}
+	}
+	if l == 1 {
 		return args[0], nil
 	}
 
@@ -113,13 +124,11 @@ func run() {
 	var r = js.NewRuntime(nil)
 	defer func() { r.Clear() }()
 	log.Log.Debug().Msg("[js] run started.")
-	println()
 
 	if _, err := r.RunString(configInfo.Script); err != nil {
 		exit(err)
 	}
 
-	println()
 	log.Log.Debug().Msg("[js] run finished.")
 
 	if *flagDaemon == false {

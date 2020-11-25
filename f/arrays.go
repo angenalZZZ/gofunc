@@ -96,3 +96,15 @@ func StringsContains(s []string, sub string) bool {
 	}
 	return false
 }
+
+// StringsExclude returns new string slice exclude sub string.
+func StringsExclude(s []string, sub string) []string {
+	p := make([]string, 0, len(s))
+	for _, v := range s {
+		if v == sub {
+			continue
+		}
+		p = append(p, v)
+	}
+	return p
+}
