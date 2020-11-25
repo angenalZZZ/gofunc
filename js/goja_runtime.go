@@ -87,7 +87,7 @@ func NewRuntime(parameter *GoRuntimeParam) *GoRuntime {
 		r.DB = parameter.DB
 	} else if dbType != "" && dbConn != "" {
 		r.DbType, r.DbConn = dbType, dbConn
-		db, err = sqlx.Connect(dbType, dbConn)
+		db, err = sqlx.Open(dbType, dbConn)
 		if err != nil && logger != nil {
 			logger.Error().Msgf("failed connect to db: %v\n", err)
 		}

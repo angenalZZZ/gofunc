@@ -9,18 +9,9 @@ Date.prototype.Time = function () { return this.toISOString().split("T")[1].spli
 // String.prototype.DateTime = function () { return this.replace("T", " ").split(".")[0]; };
 // function col(s) { if (!s) { return "NULL"; } return "'" + s.replace("'", "''") + "'"; };
 
-//配置计划任务
-cron = [
-    {
-        name: "001",
-        spec: "* * * * *", // every minutes
-        func: function () {
-            $.trace = true; // 反代接口 URL调试
-            var bSubject = nats.subject + "-"; // 反代消息 注意后缀
-            var item = { Subject: bSubject, Time: new Date().Time() };
-            item.ActionName = '反代接口';
-            var res = $.q("post", "https://postman-echo.com/post", item, "url");
-            // dump(res);
-        }
-    },
-];
+$.trace = true; // 反代接口 URL调试
+var bSubject = nats.subject + "-"; // 反代消息 注意后缀
+var item = { Subject: bSubject, Time: new Date().Time() };
+item.ActionName = '反代接口';
+var res = $.q("post", "https://postman-echo.com/post", item, "url");
+// dump(res);

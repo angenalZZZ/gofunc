@@ -523,7 +523,7 @@ func Ajax(r *goja.Runtime) {
 
 	header := make(map[string]interface{})
 	header["Accept"] = "*/*"
-	header["Accept-Language"] = "zh-CN,zh-TW,zh;q=0.9,zh;q=0.8,en;q=0.7"
+	header["Accept-Language"] = "zh-CN,zh;q=0.9,zh;q=0.8,en;q=0.7"
 	header["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36"
 	_ = jObj.Set("header", header)
 
@@ -543,8 +543,17 @@ func Ajax(r *goja.Runtime) {
 				name, val := cookie.Name, cookie.Value
 				cookies[name] = val
 			}
-			dump := "\r\n---- %s: %s\r\n---- trace: %+v\r\n---- request-header: %+v\r\n---- request-cookie: %+v\r\n---- request-body: %s\r\n---- response-body: %s\r\n---- response-cookie: %+v\r\n---- response-result: %+v\r\n"
-			fmt.Printf(dump, req.Method, req.URL, req.TraceInfo(), jObj.Get("header").Export(), cookies, req.Body, res.Body(), jObj.Get("cookie").Export(), result)
+			dump := `
+---- %s: %s
+---- trace: %s
+---- request-header: %s
+---- request-cookie: %s
+---- request-body: %s
+---- response-body: %s
+---- response-cookie: %s
+---- response-result: %s
+`
+			fmt.Printf(dump, req.Method, req.URL, f.EncodedJson(req.TraceInfo()), f.EncodedJson(jObj.Get("header").Export()), f.EncodedJson(cookies), req.Body, res.Body(), f.EncodedJson(jObj.Get("cookie").Export()), f.EncodedJson(result))
 		}
 	}
 

@@ -101,8 +101,8 @@ func natClientConnect() {
 	var err error
 
 	// NatS
-	nat.Subject = "jsjob"
-	nat.Conn, err = nat.New("jsjob", configInfo.Nats.Addr, configInfo.Nats.Cred, configInfo.Nats.Token, configInfo.Nats.Cert, configInfo.Nats.Key)
+	nat.Subject = "jsrun"
+	nat.Conn, err = nat.New("jsrun", configInfo.Nats.Addr, configInfo.Nats.Cred, configInfo.Nats.Token, configInfo.Nats.Cert, configInfo.Nats.Key)
 	if err != nil {
 		nat.Log.Error().Msgf("[nats] failed connect to server: %v\n", err)
 		os.Exit(1)

@@ -26,7 +26,7 @@ var (
 	scriptMod  time.Time
 )
 
-// Config The Config Info For jsjob.yaml
+// Config The Config Info For jsrun.yaml
 type Config struct {
 	Db struct {
 		Type string
