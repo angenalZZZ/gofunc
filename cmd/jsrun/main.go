@@ -1,5 +1,5 @@
 ///go get github.com/angenalZZZ/gofunc/cmd/jsrun
-///go build -ldflags "-s -w" -o A:/test/cmd/jsrun/ ./cmd/jsrun
+///go build -ldflags "-s -w" -o A:/test/cmd/jsrun/jsrun.exe ./cmd/jsrun
 ///start A:/test/cmd/jsrun/jsrun.exe jsrun.js
 
 package main
