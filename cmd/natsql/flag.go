@@ -104,7 +104,11 @@ func checkArgs() {
 	}
 
 	if cacheDir == "" {
-		cacheDir = filepath.Join(data.CurrentDir, subject)
+		if configInfo.Dir == "" {
+			cacheDir = filepath.Join(data.CurrentDir, subject)
+		} else {
+			cacheDir = filepath.Join(data.CurrentDir, configInfo.Dir)
+		}
 	}
 	if f.PathExists(cacheDir) == false {
 		panic("the cache disk directory is not found.")
@@ -180,6 +184,11 @@ func createHandlers() {
 		return
 	}
 
+	dir1, js1 := cacheDir, configInfo.Js
+	if js1 == "" {
+		js1 = "natsql.js"
+	}
+
 	handlers = make([]*handler, 0)
 
 	for _, obj := range objs {
@@ -206,13 +215,16 @@ func createHandlers() {
 		}
 		res := itemFunc(goja.FunctionCall{This: jsr.ToValue(obj)})
 		if res == nil || res.String() == "" {
-			itemDir = filepath.Join(cacheDir, itemName)
+			itemDir = filepath.Join(dir1, itemName)
 		} else {
-			itemDir = filepath.Join(cacheDir, res.String())
+			itemDir = filepath.Join(dir1, res.String())
 		}
 
+		conf := f.Clone(configInfo).(*Config)
+		conf.Dir, conf.Js = itemDir, filepath.Join(itemDir, js1)
+
 		h := new(handler)
-		h.jsFile = filepath.Join(itemDir, "natsql.js")
+		h.jsFile = conf.Js
 		h.isScriptMod()
 		if err := h.doScriptMod(); err != nil {
 			return
@@ -220,16 +232,14 @@ func createHandlers() {
 
 		// js global variable
 		jso := make(map[string]interface{})
-		jso["config"] = configInfo
-		jso["configDir"] = itemDir
-		jso["configJs"] = h.jsFile
+		jso["config"] = conf
 		h.jso = jso
 
 		// js runtime and register param
 		h.jsp = &js.GoRuntimeParam{
-			CacheDir:   filepath.Join(cacheDir, itemName),
-			DbType:     configInfo.Db.Type,
-			DbConn:     configInfo.Db.Conn,
+			CacheDir:   filepath.Join(dir1, itemName),
+			DbType:     conf.Db.Type,
+			DbConn:     conf.Db.Conn,
 			NatSubject: itemSubj,
 		}
 
