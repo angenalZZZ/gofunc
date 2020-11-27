@@ -1,5 +1,5 @@
 ///go get github.com/angenalZZZ/gofunc/cmd/jsjob
-///go build -ldflags "-s -w" -o A:/test/cmd/jsjob/ ./cmd/jsjob
+///go build -ldflags "-s -w" -o A:/test/cmd/jsjob/jsjob.exe ./cmd/jsjob
 ///start A:/test/cmd/jsjob/jsjob.exe -t
 ///start A:/test/cmd/jsjob/jsjob.exe -c jsjob.yaml
 
