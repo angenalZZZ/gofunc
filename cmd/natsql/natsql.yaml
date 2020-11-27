@@ -5,6 +5,9 @@ db:
   conn: "root:HGJ766GR767FKJU0@tcp(localhost:3306)/test?charset=utf8&parseTime=True&loc=Local&timeout=3s"
   # mssql "sqlserver://sa:HGJ766GR767FKJU0@localhost?database=test&connection+timeout=3"
 
+dir: "test-" # 功能配置根目录cache+js目录
+js: "natsql.js" # 功能配置js任务
+
 nats: # 连接nats
   addr: nats://127.0.0.1:4222
   token: HGJ766GR767FKJU0
