@@ -29,6 +29,10 @@ var (
 
 // Config The Config Info For natsql.yaml
 type Config struct {
+	// 功能配置根目录cache+js目录
+	Dir string
+	// 功能配置js文件
+	Js string
 	// 数据库client
 	Db struct {
 		// 支持mssql,mysql
