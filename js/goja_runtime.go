@@ -1,7 +1,11 @@
 package js
 
 import (
+	"io/ioutil"
+	"path/filepath"
 	"time"
+
+	"github.com/angenalZZZ/gofunc/f"
 
 	"github.com/angenalZZZ/gofunc/data"
 	"github.com/angenalZZZ/gofunc/data/cache/fastcache"
@@ -23,6 +27,8 @@ type GoRuntime struct {
 	registered bool
 	// new javascript runtime
 	*goja.Runtime
+	// load javascript modules
+	Modules map[string]goja.Value
 	// field: *log.Logger
 	*log.Logger
 	// field: *sqlx.DB
@@ -67,7 +73,7 @@ func NewRuntime(parameter *GoRuntimeParam) *GoRuntime {
 	)
 
 	// new javascript runtime
-	r.Runtime = vm
+	r.Runtime, r.Modules = vm, make(map[string]goja.Value)
 
 	// parameter: *log.Logger
 	logger := log.Log
@@ -146,6 +152,8 @@ func (r *GoRuntime) Register() {
 		return
 	}
 
+	r.loadModules()
+
 	if r.Logger != nil {
 		Logger(r.Runtime, r.Logger)
 	}
@@ -173,6 +181,51 @@ func (r *GoRuntime) Register() {
 
 	// sets registered
 	r.registered = true
+}
+
+// loadModules load javascript modules.
+func (r *GoRuntime) loadModules() {
+	r.Runtime.Set("require", func(c goja.FunctionCall) goja.Value {
+		v, p := goja.Undefined(), c.Argument(0).String()
+		if p == "" {
+			return v
+		}
+
+		p = filepath.Clean(p)
+		if pkg, ok := r.Modules[p]; ok {
+			return pkg
+		}
+
+		code, err1 := ioutil.ReadFile(p)
+		if err1 != nil {
+			return v
+		}
+
+		text := "(function(module,exports){\n" + f.String(code) + "\nif(exports)module.exports=exports;})"
+		prg, err2 := goja.Compile(p, text, false)
+		if err2 != nil {
+			return v
+		}
+
+		res, err3 := r.Runtime.RunProgram(prg)
+		if err3 != nil {
+			return v
+		}
+
+		fun, ok := goja.AssertFunction(res)
+		if !ok {
+			return v
+		}
+
+		m, e := r.Runtime.NewObject(), r.Runtime.NewObject()
+		_ = m.Set("exports", e)
+		_, err4 := fun(e, m, v)
+		if err4 != nil {
+			return v
+		}
+
+		return m.Get("exports")
+	})
 }
 
 // Clear runtime interrupt and fields.

@@ -226,3 +226,17 @@ console.log(k+' =>', res)
 		t.Fatal(err)
 	}
 }
+
+func TestGoRuntime_loadModules(t *testing.T) {
+	Runtime = NewRuntime(nil)
+	v, err := Runtime.RunString(`
+		var t = require('../test/js/load-modules.js');
+		console.log(Object.getOwnPropertyNames(t));
+		t.test();
+	`)
+	if err != nil {
+		t.Fatal(err)
+	} else {
+		t.Log(v)
+	}
+}
