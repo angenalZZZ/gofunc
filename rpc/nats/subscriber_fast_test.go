@@ -53,8 +53,8 @@ func TestSubscriberFast(t *testing.T) {
 	sub.Run(wait)
 }
 
-// Take time 2.387s to process 1 million records,
-// run times 418761 Qps.(4CPU+16G+MHD)
+// Take time 1.15s:60bytes, 5.2s:500bytes to process 1 million records,
+// run times 868055:60Bytes, 192270:500bytes Qps.(4CPU+16G+MHD)
 func TestBenchSubscriberFast(t *testing.T) {
 	// New Client Connect.
 	nat.Subject = "BenchmarkSubscriberFast"
@@ -85,7 +85,7 @@ func TestBenchSubscriberFast(t *testing.T) {
 	go sub.Run(wait)
 	time.Sleep(time.Millisecond)
 
-	var bufferData = random.AlphaNumberBytes(60)
+	var bufferData = random.AlphaNumberBytes(500)
 
 	// start benchmark test
 	t1 := time.Now()
@@ -94,9 +94,9 @@ func TestBenchSubscriberFast(t *testing.T) {
 	for i := 0; i < 1000000; i++ {
 		err = nat.Conn.Publish(sub.Subj, bufferData)
 		if err != nil {
-			atomic.AddInt64(&failedNumber, 1)
+			failedNumber++
 		} else {
-			atomic.AddInt64(&publishedNumber, 1)
+			publishedNumber++
 		}
 	}
 

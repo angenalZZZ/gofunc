@@ -46,12 +46,14 @@ func TestSubscriber(t *testing.T) {
 	sub.Run(wait)
 }
 
-func BenchmarkPublisher(b *testing.B) {
+// Take time 770ms:60bytes, 4.52s:500bytes to process 1 million records,
+// run times 1298700:60Bytes, 220848:500bytes Qps.(4CPU+16G+MHD)
+func TestBenchmarkPublisher(t *testing.T) {
 	// New Client Connect.
 	nat.Subject = "BenchmarkPublisher"
 	nat.Conn, err = nat.New("nats.go", "", "", "HGJ766GR767FKJU0", "", "")
 	if err != nil {
-		b.Fatalf("[nats] failed to connect: %s\n", err.Error())
+		t.Fatalf("[nats] failed to connect: %s\n", err.Error())
 	}
 
 	var publishedNumber, succeededNumber, failedNumber int64
@@ -65,25 +67,28 @@ func BenchmarkPublisher(b *testing.B) {
 	go sub.Run(wait)
 	time.Sleep(time.Millisecond)
 
-	var bufferData = random.AlphaNumberBytes(60)
+	var bufferData = random.AlphaNumberBytes(500)
 
 	// start benchmark test
-	b.ResetTimer()
+	t1 := time.Now()
 
 	// test publish pressure
-	for i := 0; i < b.N; i++ {
+	for i := 0; i < 1000000; i++ {
 		err = nat.Conn.Publish(sub.Subj, bufferData)
 		if err != nil {
-			atomic.AddInt64(&failedNumber, 1)
+			failedNumber++
 		} else {
-			atomic.AddInt64(&publishedNumber, 1)
+			publishedNumber++
 		}
 	}
 
 	// wait succeeded-number equals published-number
 	f.NumIncrWait(&publishedNumber, &succeededNumber)
+	t2 := time.Now()
+	ts := t2.Sub(t1)
+	//time.Sleep(time.Millisecond)
 	f.DoneContext(ctx)
-	b.StopTimer()
 
-	b.Logf("Publish Number: %d, Successful Number: %d, Failed Number %d", publishedNumber, succeededNumber, failedNumber)
+	t.Logf("Publish Number: %d, Successful Number: %d, Failed Number %d", publishedNumber, succeededNumber, failedNumber)
+	t.Logf("Take time %s, handle received messages %d qps", ts, 1000*succeededNumber/ts.Milliseconds())
 }
