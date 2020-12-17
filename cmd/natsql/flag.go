@@ -136,8 +136,8 @@ func natClientConnect(isGlobal bool, subj string) (conn *nats.Conn) {
 
 	// NatS
 	if isGlobal {
-		nat.Subject = subject + subj
-		nat.Conn, err = nat.New(subject, configInfo.Nats.Addr, configInfo.Nats.Cred, configInfo.Nats.Token, configInfo.Nats.Cert, configInfo.Nats.Key)
+		nat.Subject = subj
+		nat.Conn, err = nat.New(subj, configInfo.Nats.Addr, configInfo.Nats.Cred, configInfo.Nats.Token, configInfo.Nats.Cert, configInfo.Nats.Key)
 		if err != nil {
 			nat.Log.Error().Msgf("[nats] failed connect to server: %v\n", err)
 			os.Exit(1)
