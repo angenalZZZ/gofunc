@@ -15,6 +15,6 @@
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-CREATE TRIGGER `trigger_update_subscribes` AFTER UPDATE ON `subscribes` FOR EACH ROW BEGIN
-	UPDATE `subscribes` SET `Version` = OLD.`Version` + 1 WHERE `Id` = OLD.`Id`;
+CREATE TRIGGER `trigger_update_subscribes` BEFORE UPDATE ON `subscribes` FOR EACH ROW BEGIN
+	SET NEW.`Version` = OLD.`Version` + 1;
 END;
