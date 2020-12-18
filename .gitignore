@@ -1,5 +1,5 @@
 # Mac OS X files
-.DS_Store
+**/.DS_Store
 
 # Binaries for programs and plugins
 *.exe
@@ -10,6 +10,22 @@
 *.tmp
 *.log
 *.pprof
+
+.buildpath
+.hgignore.swp
+.project
+.orig
+.swp
+.idea/
+.settings/
+.vscode/
+.example/other/
+pkg/
+bin/
+build
+cbuild
+composer.lock
+gitpush.sh
 
 # Test binary, build with `go test -c`
 *.test
@@ -27,5 +43,7 @@ workspace.xml
 
 # Project-local Web api swagger files
 swagger.zip
+
+# Dependency directories (remove the comment below to include it)
+vendor/
 go.sum
-/vendor/
