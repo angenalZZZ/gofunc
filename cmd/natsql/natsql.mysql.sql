@@ -11,6 +11,7 @@
   `Bulk` int(11) NOT NULL,
   `Interval` int(11) NOT NULL,
   `Version` int(11) NOT NULL DEFAULT '1',
+  `Created` bigint NOT NULL,
   `Deleted` bit(1) NOT NULL DEFAULT b'0',
   PRIMARY KEY (`Id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -35,7 +36,7 @@ CREATE TABLE `sys_log` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
-INSERT INTO `subscribes` (`Id`,`Name`,`Spec`,`Func`,`Content`,`CacheDir`,`MsgLimit`,`BytesLimit`,`Amount`,`Bulk`,`Interval`,`Version`,`Deleted`) VALUES ('6f3bdd75-4042-11eb-9fd5-0c9d920d3d9a','001','+','001','//扩展方法
+INSERT INTO `subscribes` (`Id`,`Name`,`Spec`,`Func`,`Content`,`CacheDir`,`MsgLimit`,`BytesLimit`,`Amount`,`Bulk`,`Interval`,`Created`) VALUES (UUID(),'001','+','001','//扩展方法
 Date.prototype.Add = function (seconds) { var t = new Date(); t.setTime(this.getTime() + seconds * 1000); return t; };
 Date.prototype.AddDate = Date.prototype.AddDays = function (days) { var t = new Date(); t.setTime(this.getTime() + days * 24 * 3600 * 1000); return t; };
 Date.prototype.Date = function () { return this.toISOString().split("T")[0]; };
@@ -96,4 +97,4 @@ function sql(records) {
     console.log(''Cache ROW.Data:'', row.Data);
 
     //return s;
-}','001',100000000,1024,0,200,2000,1,0);
+}','001',100000000,1024,0,200,2000,UNIX_TIMESTAMP());

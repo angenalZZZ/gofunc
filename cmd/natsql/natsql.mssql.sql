@@ -11,6 +11,7 @@
 	[Bulk] int NOT NULL, 
 	[Interval] int NOT NULL, 
 	[Version] int NOT NULL DEFAULT ((1)), 
+	[Created] bigint NOT NULL DEFAULT (datediff(second,'1970-01-01 00:00:00',getdate())), 
 	[Deleted] bit NOT NULL DEFAULT ((0))
 ) ON [PRIMARY];
 
@@ -21,20 +22,20 @@ END;
 
 
 CREATE TABLE [dbo].[Sys_Log] (
-	[Id] bigint NOT NULL IDENTITY(1,1) PRIMARY KEY CLUSTERED,
-	[Code] varchar(50),
-	[Type] int,
-	[Message] varchar(4000) NOT NULL,
-	[Exception] varchar(2000),
-	[ActionName] varchar(500) NOT NULL,
-	[Data] nvarchar(4000),
-	[CreateTime] datetime NOT NULL,
-	[CreateUser] varchar(36),
+	[Id] bigint NOT NULL IDENTITY(1,1) PRIMARY KEY CLUSTERED, 
+	[Code] varchar(50), 
+	[Type] int, 
+	[Message] varchar(4000) NOT NULL, 
+	[Exception] varchar(2000), 
+	[ActionName] varchar(500) NOT NULL, 
+	[Data] nvarchar(4000), 
+	[CreateTime] datetime NOT NULL, 
+	[CreateUser] varchar(36), 
 	[AccountName] varchar(30)
 ) ON [PRIMARY];
 
 
-INSERT INTO [subscribes] ([Id],[Name],[Spec],[Func],[Content],[CacheDir],[MsgLimit],[BytesLimit],[Amount],[Bulk],[Interval],[Version],[Deleted]) VALUES (LOWER(NEWID()),N'001',N'+',N'001',N'//扩展方法
+INSERT INTO [subscribes] ([Id],[Name],[Spec],[Func],[Content],[CacheDir],[MsgLimit],[BytesLimit],[Amount],[Bulk],[Interval]) VALUES (LOWER(NEWID()),N'001',N'+',N'001',N'//扩展方法
 Date.prototype.Add = function (seconds) { var t = new Date(); t.setTime(this.getTime() + seconds * 1000); return t; };
 Date.prototype.AddDate = Date.prototype.AddDays = function (days) { var t = new Date(); t.setTime(this.getTime() + days * 24 * 3600 * 1000); return t; };
 Date.prototype.Date = function () { return this.toISOString().split("T")[0]; };
@@ -47,7 +48,6 @@ function col(s) { if (!s) { return "NULL"; } return "''" + s.replace("''", "''''
 
 //计划任务
 function sql(records) {
-    //console.log(records);
     if (!records || records.constructor.name != "Array") return "";
     var items = records.filter(function (item) { return item.constructor.name == "Object" && item.hasOwnProperty("Code") && item.hasOwnProperty("Type"); });
     if (items.length == 0) return "";
@@ -64,35 +64,5 @@ function sql(records) {
                 + col(item.CreateUser) + ","
                 + col(item.AccountName) + ")";
         }).join(",") + ";";
-    //console.log(s);
-
-    var res = $.q("get", "https://postman-echo.com/time/now", { show: ''当前时间'' }); // query string
-    if (res && res.error) console.log(res); else console.log(new Date(res).Add(8 * 3600).DateTime());
-    res = $.q("post", "https://postman-echo.com/post", { strange: ''boom'' }); // form submit
-    console.log(res);
-    res = $.q("post", "https://postman-echo.com/post", { strange: ''boom'' }, "json");
-    console.log(res);
-
-    console.log(''nats.name:'', nats.name);
-    console.log(''nats.subject:'', nats.subject);
-
-    var Id = db.i(s);
-    console.log(''INSERT ROWS:'', items.length, ''LAST INSERT ID:'', Id);
-
-    var rows = db.q(''select * from Sys_Log where Id=@Id'', { Id: Id });
-    console.log(''QUERY RESULT:'', rows[0].CreateTime);
-
-    var createTime = db.g(''select CreateTime from Sys_Log where Id=@Id'', { Id: Id });
-    console.log(''QUERY RESULT:'', createTime);
-
-    var ids = []; for (var i = items.length - 1; i >= 0; i--) ids.push(Id - i);
-    var effected = db.x(''delete from Sys_Log where Id in('' + ids.join('','') + '')'');
-    console.log(''DELETE ROWS:'', effected, ids);
-
-    cache.set("Sys_Log", rows[0]);
-    var row = cache.get("Sys_Log");
-    //console.log(''Cache ROW:'', row);
-    console.log(''Cache ROW.Data:'', row.Data);
-
-    //return s;
-}',N'001',100000000,1024,0,200,2000,1,0);
+    console.log(s);
+}',N'001',100000000,1024,0,200,2000);

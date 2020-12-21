@@ -10,6 +10,7 @@
 	Bulk int NOT NULL, 
 	Interval int NOT NULL, 
 	Version int NOT NULL DEFAULT 1, 
+    Created bigint NOT NULL, 
 	Deleted bit NOT NULL DEFAULT 0
 );
 
@@ -19,20 +20,20 @@ END;
 
 
 CREATE TABLE sys_log (
-	Id integer NOT NULL PRIMARY KEY AUTOINCREMENT,
-	Code varchar(50),
-	Type int NOT NULL,
-	Message varchar(4000) NOT NULL,
-	Exception varchar(2000),
-	ActionName varchar(500) NOT NULL,
-	Data varchar(4000),
-	CreateTime datetime NOT NULL,
-	CreateUser varchar(36),
+	Id integer NOT NULL PRIMARY KEY AUTOINCREMENT, 
+	Code varchar(50), 
+	Type int NOT NULL, 
+	Message varchar(4000) NOT NULL, 
+	Exception varchar(2000), 
+	ActionName varchar(500) NOT NULL, 
+	Data varchar(4000), 
+	CreateTime datetime NOT NULL, 
+	CreateUser varchar(36), 
 	AccountName varchar(30)
 );
 
 
-INSERT INTO [subscribes] ([Name],[Spec],[Func],[Content],[CacheDir],[MsgLimit],[BytesLimit],[Amount],[Bulk],[Interval],[Version],[Deleted]) VALUES ('001','+','001','//扩展方法
+INSERT INTO subscribes (Name,Spec,Func,Content,CacheDir,MsgLimit,BytesLimit,Amount,Bulk,Interval,Created) VALUES ('001','+','001','//扩展方法
 Date.prototype.Add = function (seconds) { var t = new Date(); t.setTime(this.getTime() + seconds * 1000); return t; };
 Date.prototype.AddDate = Date.prototype.AddDays = function (days) { var t = new Date(); t.setTime(this.getTime() + days * 24 * 3600 * 1000); return t; };
 Date.prototype.Date = function () { return this.toISOString().split("T")[0]; };
@@ -93,4 +94,4 @@ function sql(records) {
     console.log(''Cache ROW.Data:'', row.Data);
 
     //return s;
-}','001',100000000,1024,0,200,2000,1,0);
+}','001',100000000,1024,0,200,2000,strftime('%s','now','localtime'));
