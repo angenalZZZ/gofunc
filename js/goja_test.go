@@ -106,6 +106,9 @@ func TestDb(t *testing.T) {
 	r := goja.New()
 	defer func() { r.ClearInterrupt() }()
 	Console(r)
+	Cache(r, nil, filepath.Join(data.RootDir, ".nats01"))
+	store.RedisClient = redis.NewClient(&redis.Options{Addr: "127.0.0.1:6379"})
+	Redis(r, store.RedisClient)
 
 	config, err := configfile.YamlToMap("../test/config/database.yaml")
 	if err != nil {
@@ -140,7 +143,11 @@ func TestDb(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	script = `console.log('select rows: '+JSON.stringify(db.q("select * from logtest where Id=?",` + ID + ")))"
+	script = `console.log('select rows: '+JSON.stringify(db.q2(2,"select * from logtest where Id=?",` + ID + ")))"
+	if _, err := r.RunString(script); err != nil {
+		t.Fatal(err)
+	}
+	script = `console.log('select rows: '+JSON.stringify(db.q2(0,"select * from logtest where Id=?",` + ID + ")))"
 	if _, err := r.RunString(script); err != nil {
 		t.Fatal(err)
 	}

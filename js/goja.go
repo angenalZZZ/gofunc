@@ -22,6 +22,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/jmoiron/sqlx"
 	json "github.com/json-iterator/go"
+	"github.com/klauspost/crc32"
 	"github.com/nats-io/nats.go"
 )
 
@@ -218,9 +219,13 @@ func RD(r *goja.Runtime) {
 // 	db.q: return ResultObject or Array of all rows
 // 	db.q('select * from table1 where id=?',1)
 // 	db.q('select * from table1 where id=:id',{id:1})
+//  db.q2: return Cache{ Memory = 0, Redis, Default } ResultObject or Array of all rows
+//  db.q2(0,'select * from table1 where id=:id',{id:1})
 // 	db.g: return ResultValue of first column in first row
 // 	db.g('select name from table1 where id=?',1)
 // 	db.g('select name from table1 where id=:id',{id:1})
+//  db.g2: return Cache{ Memory = 0, Redis, Default } ResultValue of first column in first row
+//  db.g2(0,'select name from table1 where id=:id',{id:1})
 // 	db.i: return LastInsertId must int in number-id-column
 // 	db.i('insert into table1 values(?,?)',1,'test')
 // 	db.i('insert into table1 values(:id,:name)',{id:1,name:'test'})
@@ -303,6 +308,79 @@ func Db(r *goja.Runtime, d *sqlx.DB, dbs ...string) {
 		return v
 	})
 
+	_ = dbObj.Set("q2", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l <= 1 {
+			return v
+		}
+
+		var (
+			typ      = c.Arguments[0].ToInteger()
+			sql      = c.Arguments[1].String()
+			rows     *sqlx.Rows
+			err      error
+			value    map[string]interface{}
+			hasValue bool
+		)
+
+		results := make([]map[string]interface{}, 0)
+
+		key := getCacheKeyFrom(c.Arguments)
+		val := getCacheValFrom(r, typ, key)
+		expiration := time.Hour
+		if val != nil {
+			if err := json.Unmarshal(val, &results); err != nil {
+				results = make([]map[string]interface{}, 0)
+			}
+		}
+
+		if len(results) == 0 {
+			if l == 3 {
+				value, hasValue = c.Arguments[2].Export().(map[string]interface{})
+			}
+
+			if hasValue {
+				if rows, err = d.NamedQuery(sql, value); err != nil {
+					return r.ToValue(err)
+				}
+			} else {
+				values := make([]interface{}, 0, l-2)
+				if l > 2 {
+					for _, a := range c.Arguments[2:] {
+						values = append(values, a.Export())
+					}
+				}
+				if rows, err = d.Queryx(sql, values...); err != nil {
+					return r.ToValue(err)
+				}
+			}
+
+			for rows.Next() {
+				result := make(map[string]interface{})
+				if err = rows.MapScan(result); err != nil {
+					return r.ToValue(err)
+				}
+				for k, v := range result {
+					if s, ok := v.([]byte); ok {
+						result[k] = string(s)
+					}
+				}
+				results = append(results, result)
+			}
+			if len(results) > 0 {
+				setCacheValFrom(r, typ, key, results, expiration)
+			}
+		}
+
+		if len(results) == 1 {
+			v = r.ToValue(results[0])
+		} else {
+			v = r.ToValue(results)
+		}
+
+		return v
+	})
+
 	_ = dbObj.Set("g", func(c goja.FunctionCall) goja.Value {
 		v, l := goja.Null(), len(c.Arguments)
 		if l == 0 {
@@ -347,12 +425,91 @@ func Db(r *goja.Runtime, d *sqlx.DB, dbs ...string) {
 					result[k] = string(s)
 				}
 			}
-			if cols, err := rows.Columns(); err != nil {
+			if cols, err := rows.Columns(); err != nil || len(cols) > 1 {
 				v = r.ToValue(result)
 			} else if len(cols) > 0 {
 				v = r.ToValue(result[cols[0]])
 			}
 			break
+		}
+
+		return v
+	})
+
+	_ = dbObj.Set("g2", func(c goja.FunctionCall) goja.Value {
+		v, l := goja.Null(), len(c.Arguments)
+		if l <= 1 {
+			return v
+		}
+
+		var (
+			typ      = c.Arguments[0].ToInteger()
+			sql      = c.Arguments[1].String()
+			rows     *sqlx.Rows
+			err      error
+			value    map[string]interface{}
+			hasValue bool
+		)
+
+		var one interface{}
+		result := make(map[string]interface{})
+
+		key := getCacheKeyFrom(c.Arguments)
+		val := getCacheValFrom(r, typ, key)
+		expiration := time.Hour
+		if val != nil {
+			if val[0] == '{' {
+				if err := json.Unmarshal(val, &result); err != nil {
+					result = make(map[string]interface{})
+				} else {
+					v = r.ToValue(result)
+				}
+			} else {
+				if err := json.Unmarshal(val, &one); err == nil {
+					v = r.ToValue(one)
+				}
+			}
+		}
+
+		if one == nil && len(result) == 0 {
+			if l == 3 {
+				value, hasValue = c.Arguments[2].Export().(map[string]interface{})
+			}
+
+			if hasValue {
+				if rows, err = d.NamedQuery(sql, value); err != nil {
+					return r.ToValue(err)
+				}
+			} else {
+				values := make([]interface{}, 0, l-2)
+				if l > 2 {
+					for _, a := range c.Arguments[2:] {
+						values = append(values, a.Export())
+					}
+				}
+				if rows, err = d.Queryx(sql, values...); err != nil {
+					return r.ToValue(err)
+				}
+			}
+
+			for rows.Next() {
+				if err = rows.MapScan(result); err != nil {
+					return r.ToValue(err)
+				}
+				for k, v := range result {
+					if s, ok := v.([]byte); ok {
+						result[k] = string(s)
+					}
+				}
+				if cols, err := rows.Columns(); err != nil || len(cols) > 1 {
+					setCacheValFrom(r, typ, key, result, expiration)
+					v = r.ToValue(result)
+				} else if len(cols) > 0 {
+					setCacheValFrom(r, typ, key, result[cols[0]], expiration)
+					v = r.ToValue(result[cols[0]])
+				}
+				break
+			}
 		}
 
 		return v
@@ -953,6 +1110,7 @@ func Cache(r *goja.Runtime, cache *fastcache.Cache, cacheDir string, maxBytes ..
 	})
 
 	r.Set("cache", cObj)
+	setCacheClient(r, cache)
 }
 
 // Redis use redis in javascript.
@@ -1213,4 +1371,118 @@ func Redis(r *goja.Runtime, client *redis.Client) {
 	})
 
 	r.Set("redis", rObj)
+	setRedisClient(r, client)
+}
+
+// getCacheValFrom Cache{ Memory = 0, Redis, Default }
+func getCacheValFrom(r *goja.Runtime, typ int64, key []byte) []byte {
+	if typ == 0 {
+		if c := getCacheClient(r); c != nil {
+			val := c.Get(nil, key)
+			if val == nil || len(val) == 0 {
+				return nil
+			}
+			return val
+		}
+	} else if typ == 1 {
+		if c := getRedisClient(r); c != nil {
+			val, err := c.Get(f.String(key)).Result()
+			if err != nil {
+				return nil
+			}
+			return f.Bytes(val)
+		}
+	} else if typ == 2 {
+		if c := getCacheClient(r); c != nil {
+			val := c.Get(nil, key)
+			if val == nil || len(val) == 0 {
+				if c := getRedisClient(r); c != nil {
+					val, err := c.Get(f.String(key)).Result()
+					if err != nil {
+						return nil
+					}
+					return f.Bytes(val)
+				}
+			}
+			return val
+		}
+		if c := getRedisClient(r); c != nil {
+			val, err := c.Get(f.String(key)).Result()
+			if err != nil {
+				return nil
+			}
+			return f.Bytes(val)
+		}
+	}
+	return nil
+}
+
+// setCacheValFrom Cache{ Memory = 0, Redis, Default }
+func setCacheValFrom(r *goja.Runtime, typ int64, key []byte, value interface{}, expiration time.Duration) {
+	p, err := json.Marshal(value)
+	if err != nil {
+		return
+	}
+	if typ == 0 {
+		if c := getCacheClient(r); c != nil {
+			c.Set(key, p)
+		}
+	} else if typ == 1 {
+		if c := getRedisClient(r); c != nil {
+			_ = c.Set(f.String(key), p, expiration).Err()
+		}
+	} else if typ == 2 {
+		if c := getCacheClient(r); c != nil {
+			c.Set(key, p)
+		}
+		if c := getRedisClient(r); c != nil {
+			_ = c.Set(f.String(key), p, expiration).Err()
+		}
+	}
+}
+
+func getCacheKeyFrom(args []goja.Value) []byte {
+	data := make([]byte, 0, 256)
+	for _, obj := range args[1:] {
+		if goja.IsUndefined(obj) || goja.IsNull(obj) {
+			//data = append(data, ' ')
+			continue
+		}
+		v := obj.Export()
+		if p, err := json.Marshal(v); err == nil {
+			data = append(data, p...)
+		}
+	}
+	data = f.BytesUint32(crc32.ChecksumIEEE(data))
+	return data
+}
+
+func setCacheClient(r *goja.Runtime, client *fastcache.Cache) {
+	r.Set("_cache", client)
+}
+
+func getCacheClient(r *goja.Runtime) *fastcache.Cache {
+	obj := r.Get("_cache")
+	if obj == nil || goja.IsUndefined(obj) || goja.IsNull(obj) {
+		return nil
+	}
+	if client, ok := obj.Export().(*fastcache.Cache); ok {
+		return client
+	}
+	return nil
+}
+
+func setRedisClient(r *goja.Runtime, client *redis.Client) {
+	r.Set("_redis", client)
+}
+
+func getRedisClient(r *goja.Runtime) *redis.Client {
+	obj := r.Get("_redis")
+	if obj == nil || goja.IsUndefined(obj) || goja.IsNull(obj) {
+		return nil
+	}
+	if client, ok := obj.Export().(*redis.Client); ok {
+		return client
+	}
+	return nil
 }
