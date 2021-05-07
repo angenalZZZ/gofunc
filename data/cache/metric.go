@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"time"
+
 	"github.com/angenalZZZ/gofunc/data/cache/metrics"
 	"github.com/angenalZZZ/gofunc/data/cache/store"
 )
@@ -39,7 +41,7 @@ func (c *MetricCache) Set(key string, object interface{}, options *store.Options
 }
 
 // TTL returns an expiration time
-func (c *MetricCache) TTL(key string) int64 {
+func (c *MetricCache) TTL(key string) (time.Duration, error) {
 	return c.cache.TTL(key)
 }
 

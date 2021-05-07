@@ -2,6 +2,8 @@ package cache
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/angenalZZZ/gofunc/data/cache/store"
 )
 
@@ -68,7 +70,7 @@ func (c *LoadableCache) Set(key string, object interface{}, options *store.Optio
 }
 
 // TTL returns an expiration time
-func (c *LoadableCache) TTL(key string) int64 {
+func (c *LoadableCache) TTL(key string) (time.Duration, error) {
 	return c.cache.TTL(key)
 }
 
